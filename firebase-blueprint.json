@@ -1,0 +1,79 @@
+{
+  "entities": {
+    "Group": {
+      "title": "Product Group",
+      "description": "A category for products",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Name of the group" },
+        "createdAt": { "type": "number", "description": "Timestamp of creation" }
+      },
+      "required": ["name", "createdAt"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "A product in stock",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Name of the product" },
+        "groupId": { "type": "string", "description": "ID of the group it belongs to" },
+        "groupName": { "type": "string", "description": "Name of the group it belongs to" },
+        "purchaseRate": { "type": "number", "description": "Cost price" },
+        "mrp": { "type": "number", "description": "Selling price" },
+        "stock": { "type": "number", "description": "Current stock quantity" },
+        "unit": { "type": "string", "description": "Unit of measurement (e.g., Pcs, Kg)" },
+        "updatedAt": { "type": "number", "description": "Timestamp of last update" }
+      },
+      "required": ["name", "groupId", "purchaseRate", "mrp", "stock", "unit", "updatedAt"]
+    },
+    "Bill": {
+      "title": "Bill",
+      "description": "A sales transaction",
+      "type": "object",
+      "properties": {
+        "billNo": { "type": "string", "description": "Unique bill number" },
+        "customerName": { "type": "string", "description": "Name of the customer" },
+        "customerPhone": { "type": "string", "description": "Phone number of the customer" },
+        "customerAddress": { "type": "string", "description": "Address of the customer" },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "productId": { "type": "string" },
+              "productName": { "type": "string" },
+              "qty": { "type": "number" },
+              "rate": { "type": "number" },
+              "total": { "type": "number" }
+            }
+          }
+        },
+        "totalAmount": { "type": "number" },
+        "paidAmount": { "type": "number" },
+        "dueAmount": { "type": "number" },
+        "date": { "type": "number" }
+      },
+      "required": ["billNo", "customerName", "customerPhone", "totalAmount", "paidAmount", "dueAmount", "date"]
+    },
+    "CustomerDue": {
+      "title": "Customer Due",
+      "description": "Outstanding balance for a customer",
+      "type": "object",
+      "properties": {
+        "customerPhone": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerAddress": { "type": "string" },
+        "totalDue": { "type": "number" },
+        "lastBillDate": { "type": "number" },
+        "lastUpdated": { "type": "number" }
+      },
+      "required": ["customerPhone", "customerName", "totalDue", "lastBillDate", "lastUpdated"]
+    }
+  },
+  "firestore": {
+    "/groups": { "schema": "Group", "description": "Collection of product groups" },
+    "/products": { "schema": "Product", "description": "Collection of products" },
+    "/bills": { "schema": "Bill", "description": "Collection of sales bills" },
+    "/dues": { "schema": "CustomerDue", "description": "Collection of customer dues" }
+  }
+}

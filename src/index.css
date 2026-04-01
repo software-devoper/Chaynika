@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Playfair Display", serif;
+
+  --color-primary: #0f172a;
+  --color-surface: #1e293b;
+  --color-accent: #f59e0b;
+  --color-text: #f8fafc;
+  --color-muted: #94a3b8;
+}
+
+@layer base {
+  body {
+    @apply bg-primary text-text font-sans;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@700&display=swap');
+

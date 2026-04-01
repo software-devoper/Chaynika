@@ -1,0 +1,5 @@
+{
+  "name": "Chaynika Business Management App",
+  "description": "A full-stack business management application for Chaynika, featuring OTP login, stock management, billing with PDF generation, revenue tracking, and due management.",
+  "requestFramePermissions": []
+}

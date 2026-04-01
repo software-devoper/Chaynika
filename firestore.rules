@@ -1,0 +1,111 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: groups
+    // Fields:
+    //   - name: string (required)
+    //   - createdAt: number (required)
+    //
+    // Collection: products
+    // Fields:
+    //   - name: string (required)
+    //   - groupId: string (required)
+    //   - groupName: string (required)
+    //   - purchaseRate: number (required)
+    //   - mrp: number (required)
+    //   - stock: number (required)
+    //   - unit: string (required)
+    //   - updatedAt: number (required)
+    //
+    // Collection: bills
+    // Fields:
+    //   - billNo: string (required)
+    //   - customerName: string (required)
+    //   - customerPhone: string (required)
+    //   - items: list (required)
+    //   - totalAmount: number (required)
+    //   - paidAmount: number (required)
+    //   - dueAmount: number (required)
+    //   - date: number (required)
+    //
+    // Collection: dues
+    // Fields:
+    //   - customerPhone: string (required)
+    //   - customerName: string (required)
+    //   - totalDue: number (required)
+    //   - lastBillDate: number (required)
+    //   - lastUpdated: number (required)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (request.auth.token.email == "subhadipmondal0101@gmail.com" && request.auth.token.email_verified == true);
+    }
+
+    function isValidGroup(data) {
+      return data.keys().hasAll(['name', 'createdAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.createdAt is number;
+    }
+
+    function isValidProduct(data) {
+      return data.keys().hasAll(['name', 'groupId', 'groupName', 'purchaseRate', 'mrp', 'stock', 'unit', 'updatedAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
+             data.groupId is string &&
+             data.groupName is string &&
+             data.purchaseRate is number && data.purchaseRate >= 0 &&
+             data.mrp is number && data.mrp >= 0 &&
+             data.stock is number &&
+             data.unit is string &&
+             data.updatedAt is number;
+    }
+
+    function isValidBill(data) {
+      return data.keys().hasAll(['billNo', 'customerName', 'customerPhone', 'items', 'totalAmount', 'paidAmount', 'dueAmount', 'date']) &&
+             data.billNo is string &&
+             data.customerName is string && data.customerName.size() > 0 &&
+             data.customerPhone is string &&
+             data.items is list &&
+             data.totalAmount is number &&
+             data.paidAmount is number &&
+             data.dueAmount is number &&
+             data.date is number;
+    }
+
+    function isValidDue(data) {
+      return data.keys().hasAll(['customerPhone', 'customerName', 'totalDue', 'lastBillDate', 'lastUpdated']) &&
+             data.customerPhone is string &&
+             data.customerName is string &&
+             data.totalDue is number &&
+             data.lastBillDate is number &&
+             data.lastUpdated is number;
+    }
+
+    // Rules
+    match /groups/{groupId} {
+      allow read, write: if true;
+    }
+
+    match /products/{productId} {
+      allow read, write: if true;
+    }
+
+    match /bills/{billId} {
+      allow read, write: if true;
+    }
+
+    match /dues/{dueId} {
+      allow read, write: if true;
+    }
+  }
+}
