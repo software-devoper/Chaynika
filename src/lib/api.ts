@@ -247,3 +247,28 @@ export const dueApi = {
     }
   },
 };
+
+export const userApi = {
+  getByUsername: async (username: string) => {
+    const path = `users/${username.toLowerCase()}`;
+    try {
+      const userDoc = await getDoc(doc(db, "users", username.toLowerCase()));
+      return userDoc.exists() ? userDoc.data() : null;
+    } catch (error) {
+      handleFirestoreError(error, OperationType.GET, path);
+    }
+  },
+  create: async (username: string, email: string, uid: string) => {
+    const path = `users/${username.toLowerCase()}`;
+    try {
+      await setDoc(doc(db, "users", username.toLowerCase()), {
+        username: username.toLowerCase(),
+        email,
+        uid,
+        createdAt: Date.now()
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, path);
+    }
+  }
+};

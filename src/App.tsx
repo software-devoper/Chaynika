@@ -9,24 +9,39 @@ import Due from "./components/Due";
 import Profile from "./components/Profile";
 import { Toaster, toast } from "react-hot-toast";
 import { cn } from "./lib/utils";
-import { authApi } from "./lib/api";
+import { authApi, userApi } from "./lib/api";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { 
-  RecaptchaVerifier, 
-  signInWithPhoneNumber, 
-  ConfirmationResult 
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+  signOut
 } from "firebase/auth";
 import { auth } from "./lib/firebase";
+import { Loader2, Mail } from "lucide-react";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [isActionLoading, setIsActionLoading] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isRegistering, setIsRegistering] = useState(false);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -42,62 +57,108 @@ export default function App() {
     checkAuth();
   }, []);
 
-  const setupRecaptcha = () => {
-    if (!(window as any).recaptchaVerifier) {
-      (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible',
-        'callback': () => {
-          // reCAPTCHA solved, allow signInWithPhoneNumber.
-        }
-      });
-    }
-  };
-
-  const handleSendOtp = async () => {
-    if (phone.length !== 10) {
-      return toast.error("Please enter a valid 10-digit mobile number");
+  const handleLogin = async () => {
+    if (!username || !password) {
+      return toast.error("Please enter both username and password");
     }
     
+    setIsActionLoading(true);
     try {
-      setupRecaptcha();
-      const appVerifier = (window as any).recaptchaVerifier;
-      const formatPhone = `+91${phone}`;
-      
-      const confirmation = await signInWithPhoneNumber(auth, formatPhone, appVerifier);
-      setConfirmationResult(confirmation);
-      setOtpSent(true);
-      toast.success("OTP sent successfully to your phone!");
-    } catch (err: any) {
-      console.error("Firebase Auth Error:", err);
-      toast.error(err.message || "Failed to send OTP. Please check if Phone Auth is enabled in Firebase Console.");
-      if ((window as any).recaptchaVerifier) {
-        (window as any).recaptchaVerifier.clear();
-        (window as any).recaptchaVerifier = null;
+      // 1. Find email by username
+      const userData = await userApi.getByUsername(username);
+      if (!userData) {
+        setIsActionLoading(false);
+        return toast.error("Username not found. Please register first.");
       }
-    }
-  };
 
-  const handleVerifyOtp = async () => {
-    if (otp.length !== 6) {
-      return toast.error("Please enter a valid 6-digit OTP");
-    }
-    if (!confirmationResult) {
-      return toast.error("Please request an OTP first");
-    }
+      // 2. Sign in with email and password
+      const userCredential = await signInWithEmailAndPassword(auth, userData.email, password);
+      
+      if (!userCredential.user.emailVerified) {
+        await signOut(auth);
+        setIsActionLoading(false);
+        return toast.error("Please verify your email address before logging in. Check your inbox.");
+      }
 
-    try {
-      const userCredential = await confirmationResult.confirm(otp);
       const idToken = await userCredential.user.getIdToken();
       
       await authApi.verifyToken(idToken);
       setIsAuthenticated(true);
       toast.success("Login successful");
     } catch (err: any) {
-      console.error("Verification Error:", err);
-      toast.error("Invalid OTP or verification failed");
+      console.error("Login Error:", err);
+      if (err.code === 'auth/wrong-password') {
+        toast.error("Incorrect password.");
+      } else if (err.code === 'auth/user-not-found') {
+        toast.error("User account not found.");
+      } else {
+        toast.error(err.message || "Login failed");
+      }
+    } finally {
+      setIsActionLoading(false);
     }
   };
 
+  const handleRegister = async () => {
+    if (!username || !email || !password) {
+      return toast.error("Please fill in all fields");
+    }
+    if (password.length < 6) {
+      return toast.error("Password must be at least 6 characters");
+    }
+    
+    setIsActionLoading(true);
+    try {
+      // 1. Check if username is taken
+      const existingUser = await userApi.getByUsername(username);
+      if (existingUser) {
+        setIsActionLoading(false);
+        return toast.error("Username is already taken");
+      }
+
+      // 2. Create Firebase Auth user
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // 3. Send verification email
+      await sendEmailVerification(userCredential.user);
+      
+      // 4. Save username mapping to Firestore
+      await userApi.create(username, email, userCredential.user.uid);
+      
+      // 5. Sign out immediately until verified
+      await signOut(auth);
+      
+      setNeedsVerification(true);
+      toast.success("Registration successful! Please check your email for verification link.");
+    } catch (err: any) {
+      console.error("Registration Error:", err);
+      toast.error(err.message || "Registration failed");
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (resendTimer > 0) return;
+    setIsActionLoading(true);
+    try {
+      // We need to sign in temporarily to resend
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      await sendEmailVerification(userCredential.user);
+      await signOut(auth);
+      setResendTimer(60);
+      toast.success("Verification email resent!");
+    } catch (err: any) {
+      if (err.code === 'auth/too-many-requests') {
+        toast.error("Too many requests. Please wait a minute before trying again.");
+        setResendTimer(60);
+      } else {
+        toast.error(err.message || "Failed to resend email");
+      }
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
   const handleLogout = async () => {
     try {
       await authApi.logout();
@@ -183,52 +244,129 @@ export default function App() {
               <p className="text-muted mt-2">Business Management App</p>
             </div>
 
-            <div className="space-y-6">
-              <div id="recaptcha-container"></div>
-              {!otpSent ? (
+            {needsVerification ? (
+              <div className="text-center space-y-6">
+                <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto text-accent">
+                  <Mail className="w-8 h-8" />
+                </div>
+                <h2 className="text-xl font-bold text-text">Verify your email</h2>
+                <p className="text-muted text-sm">
+                  We've sent a verification link to <span className="text-accent font-medium">{email}</span>. 
+                  Please check your inbox and click the link to activate your account.
+                </p>
+                <button 
+                  onClick={handleResendVerification}
+                  disabled={isActionLoading || resendTimer > 0}
+                  className="w-full bg-surface border border-accent/20 text-text font-bold py-3 rounded-xl hover:bg-accent/5 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isActionLoading && <Loader2 className="w-5 h-5 animate-spin" />}
+                  {resendTimer > 0 ? `Resend in ${resendTimer}s` : "Resend Email"}
+                </button>
+                <button 
+                  onClick={() => {
+                    setNeedsVerification(false);
+                    setIsRegistering(false);
+                  }}
+                  className="w-full text-muted text-sm hover:text-accent transition-all"
+                >
+                  Back to Login
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {isRegistering && (
                 <div>
-                  <label className="block text-sm font-medium text-muted mb-2">Mobile Number</label>
+                  <label className="block text-sm font-medium text-muted mb-2">Username</label>
                   <input 
-                    type="tel" 
-                    placeholder="Enter 10-digit number"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    type="text" 
+                    placeholder="Choose a username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
                     className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
                   />
-                  <button 
-                    onClick={handleSendOtp}
-                    className="w-full bg-accent text-primary font-bold py-3 rounded-xl hover:opacity-90 transition-all mt-6"
-                  >
-                    Send OTP
-                  </button>
+                </div>
+              )}
+              
+              {!isRegistering ? (
+                <div>
+                  <label className="block text-sm font-medium text-muted mb-2">Username</label>
+                  <input 
+                    type="text" 
+                    placeholder="Enter your username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
+                  />
                 </div>
               ) : (
                 <div>
-                  <label className="block text-sm font-medium text-muted mb-2">Enter OTP</label>
+                  <label className="block text-sm font-medium text-muted mb-2">Email Address</label>
                   <input 
-                    type="text" 
-                    placeholder="6-digit OTP"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
+                    type="email" 
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
                   />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-muted mb-2">Password</label>
+                <input 
+                  type="password" 
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
+                />
+              </div>
+
+              {!isRegistering ? (
+                <div>
                   <button 
-                    onClick={handleVerifyOtp}
-                    className="w-full bg-accent text-primary font-bold py-3 rounded-xl hover:opacity-90 transition-all mt-6"
+                    onClick={handleLogin}
+                    disabled={isActionLoading}
+                    className="w-full bg-accent text-primary font-bold py-3 rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                   >
-                    Verify OTP
+                    {isActionLoading && <Loader2 className="w-5 h-5 animate-spin" />}
+                    Login
                   </button>
+                  <p className="text-center text-muted text-sm mt-4">
+                    Don't have an account?{" "}
+                    <button 
+                      onClick={() => setIsRegistering(true)}
+                      className="text-accent font-medium hover:underline"
+                    >
+                      Register
+                    </button>
+                  </p>
+                </div>
+              ) : (
+                <div>
                   <button 
-                    onClick={() => setOtpSent(false)}
-                    className="w-full text-muted text-sm mt-4 hover:text-accent transition-all"
+                    onClick={handleRegister}
+                    disabled={isActionLoading}
+                    className="w-full bg-accent text-primary font-bold py-3 rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                   >
-                    Change Phone Number
+                    {isActionLoading && <Loader2 className="w-5 h-5 animate-spin" />}
+                    Register
                   </button>
+                  <p className="text-center text-muted text-sm mt-4">
+                    Already have an account?{" "}
+                    <button 
+                      onClick={() => setIsRegistering(false)}
+                      className="text-accent font-medium hover:underline"
+                    >
+                      Login
+                    </button>
+                  </p>
                 </div>
               )}
             </div>
-          </div>
-          <Toaster position="top-right" />
+          )}
+        </div>
+        <Toaster position="top-right" />
         </div>
       </ErrorBoundary>
     );

@@ -42,11 +42,13 @@ async function startServer() {
 
     try {
       const decodedToken = await admin.auth().verifyIdToken(idToken);
-      const phone = decodedToken.phone_number?.replace("+91", ""); // Strip +91 for consistency
+      const email = decodedToken.email;
+      const emailVerified = decodedToken.email_verified;
 
-      if (!phone) return res.status(400).json({ error: "No phone number in token" });
+      if (!email) return res.status(400).json({ error: "No email in token" });
+      if (!emailVerified) return res.status(403).json({ error: "Email not verified" });
 
-      const token = jwt.sign({ phone }, JWT_SECRET, { expiresIn: "7d" });
+      const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: "7d" });
 
       res.cookie("token", token, {
         httpOnly: true,

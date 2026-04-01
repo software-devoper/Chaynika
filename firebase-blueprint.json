@@ -68,12 +68,25 @@
         "lastUpdated": { "type": "number" }
       },
       "required": ["customerPhone", "customerName", "totalDue", "lastBillDate", "lastUpdated"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile with username mapping",
+      "type": "object",
+      "properties": {
+        "username": { "type": "string" },
+        "email": { "type": "string" },
+        "uid": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["username", "email", "uid", "createdAt"]
     }
   },
   "firestore": {
     "/groups": { "schema": "Group", "description": "Collection of product groups" },
     "/products": { "schema": "Product", "description": "Collection of products" },
     "/bills": { "schema": "Bill", "description": "Collection of sales bills" },
-    "/dues": { "schema": "CustomerDue", "description": "Collection of customer dues" }
+    "/dues": { "schema": "CustomerDue", "description": "Collection of customer dues" },
+    "/users": { "schema": "User", "description": "Collection of user profiles" }
   }
 }
