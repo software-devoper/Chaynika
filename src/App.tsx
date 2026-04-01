@@ -11,6 +11,12 @@ import { Toaster, toast } from "react-hot-toast";
 import { cn } from "./lib/utils";
 import { authApi } from "./lib/api";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { 
+  RecaptchaVerifier, 
+  signInWithPhoneNumber, 
+  ConfirmationResult 
+} from "firebase/auth";
+import { auth } from "./lib/firebase";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -20,6 +26,7 @@ export default function App() {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -35,19 +42,38 @@ export default function App() {
     checkAuth();
   }, []);
 
+  const setupRecaptcha = () => {
+    if (!(window as any).recaptchaVerifier) {
+      (window as any).recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible',
+        'callback': () => {
+          // reCAPTCHA solved, allow signInWithPhoneNumber.
+        }
+      });
+    }
+  };
+
   const handleSendOtp = async () => {
     if (phone.length !== 10) {
       return toast.error("Please enter a valid 10-digit mobile number");
     }
+    
     try {
-      const response = await authApi.sendOtp(phone);
+      setupRecaptcha();
+      const appVerifier = (window as any).recaptchaVerifier;
+      const formatPhone = `+91${phone}`;
+      
+      const confirmation = await signInWithPhoneNumber(auth, formatPhone, appVerifier);
+      setConfirmationResult(confirmation);
       setOtpSent(true);
-      // In a prototype, we'll show the OTP in the toast for convenience
-      // In production, this would be sent via SMS
-      toast.success("OTP sent successfully! (Check console for OTP or use 123456 for testing if needed)");
-      console.log("OTP Response:", response.data);
+      toast.success("OTP sent successfully to your phone!");
     } catch (err: any) {
-      toast.error(err.response?.data?.error || "Failed to send OTP");
+      console.error("Firebase Auth Error:", err);
+      toast.error(err.message || "Failed to send OTP. Please check if Phone Auth is enabled in Firebase Console.");
+      if ((window as any).recaptchaVerifier) {
+        (window as any).recaptchaVerifier.clear();
+        (window as any).recaptchaVerifier = null;
+      }
     }
   };
 
@@ -55,12 +81,20 @@ export default function App() {
     if (otp.length !== 6) {
       return toast.error("Please enter a valid 6-digit OTP");
     }
+    if (!confirmationResult) {
+      return toast.error("Please request an OTP first");
+    }
+
     try {
-      await authApi.verifyOtp(phone, otp);
+      const userCredential = await confirmationResult.confirm(otp);
+      const idToken = await userCredential.user.getIdToken();
+      
+      await authApi.verifyToken(idToken);
       setIsAuthenticated(true);
       toast.success("Login successful");
     } catch (err: any) {
-      toast.error(err.response?.data?.error || "Invalid OTP");
+      console.error("Verification Error:", err);
+      toast.error("Invalid OTP or verification failed");
     }
   };
 
@@ -150,6 +184,7 @@ export default function App() {
             </div>
 
             <div className="space-y-6">
+              <div id="recaptcha-container"></div>
               {!otpSent ? (
                 <div>
                   <label className="block text-sm font-medium text-muted mb-2">Mobile Number</label>

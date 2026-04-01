@@ -77,6 +77,7 @@ const api = axios.create({
 export const authApi = {
   sendOtp: (phone: string) => api.post("/auth/send-otp", { phone }),
   verifyOtp: (phone: string, otp: string) => api.post("/auth/verify-otp", { phone, otp }),
+  verifyToken: (idToken: string) => api.post("/auth/verify-token", { idToken }),
   logout: () => api.post("/auth/logout"),
   me: () => api.get("/auth/me"),
 };
