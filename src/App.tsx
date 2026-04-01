@@ -125,14 +125,40 @@ export default function App() {
       // 4. Save username mapping to Firestore
       await userApi.create(username, email, userCredential.user.uid);
       
-      // 5. Sign out immediately until verified
-      await signOut(auth);
-      
+      // 5. Don't sign out, just show verification screen
       setNeedsVerification(true);
       toast.success("Registration successful! Please check your email for verification link.");
     } catch (err: any) {
       console.error("Registration Error:", err);
       toast.error(err.message || "Registration failed");
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleCheckVerification = async () => {
+    setIsActionLoading(true);
+    try {
+      const user = auth.currentUser;
+      if (user) {
+        await user.reload();
+        if (user.emailVerified) {
+          const idToken = await user.getIdToken();
+          await authApi.verifyToken(idToken);
+          setIsAuthenticated(true);
+          setNeedsVerification(false);
+          toast.success("Email verified! Welcome to Chaynika.");
+        } else {
+          toast.error("Email not verified yet. Please check your inbox and click the link.");
+        }
+      } else {
+        // If no user is signed in (e.g. after refresh), they must log in
+        setNeedsVerification(false);
+        setIsRegistering(false);
+        toast("Please log in with your credentials to check status.");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to check status");
     } finally {
       setIsActionLoading(false);
     }
@@ -254,6 +280,14 @@ export default function App() {
                   We've sent a verification link to <span className="text-accent font-medium">{email}</span>. 
                   Please check your inbox and click the link to activate your account.
                 </p>
+                <button 
+                  onClick={handleCheckVerification}
+                  disabled={isActionLoading}
+                  className="w-full bg-accent text-primary font-bold py-3 rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isActionLoading && <Loader2 className="w-5 h-5 animate-spin" />}
+                  I've Verified My Email
+                </button>
                 <button 
                   onClick={handleResendVerification}
                   disabled={isActionLoading || resendTimer > 0}
