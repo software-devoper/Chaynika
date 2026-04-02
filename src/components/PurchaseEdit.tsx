@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Search, Trash2 } from "lucide-react";
 import { toast } from "react-hot-toast";
-import { Group, Product } from "../types";
-import { productApi, groupApi } from "../lib/api";
+import { Group, Subgroup, Product } from "../types";
+import { productApi, groupApi, subgroupApi } from "../lib/api";
 
 export default function PurchaseEdit() {
   const [groups, setGroups] = useState<Group[]>([]);
+  const [allSubgroups, setAllSubgroups] = useState<Subgroup[]>([]);
+  const [filteredSubgroups, setFilteredSubgroups] = useState<Subgroup[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -17,14 +19,26 @@ export default function PurchaseEdit() {
       setLoading(false);
     });
     const unsubGroups = groupApi.getAll(setGroups);
+    const unsubSubgroups = subgroupApi.getAll(setAllSubgroups);
     return () => {
       unsubProducts();
       unsubGroups();
+      unsubSubgroups();
     };
   }, []);
 
+  useEffect(() => {
+    if (selectedProduct?.groupId) {
+      setFilteredSubgroups(allSubgroups.filter(sg => sg.groupId === selectedProduct.groupId));
+    } else {
+      setFilteredSubgroups([]);
+    }
+  }, [selectedProduct?.groupId, allSubgroups]);
+
   const filteredProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase())
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.groupName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (p.subgroupName && p.subgroupName.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -33,9 +47,12 @@ export default function PurchaseEdit() {
     
     try {
       const selectedGroup = groups.find(g => g.id === selectedProduct.groupId);
+      const selectedSubgroup = allSubgroups.find(sg => sg.id === selectedProduct.subgroupId);
+      
       await productApi.update(selectedProduct.id, {
         ...selectedProduct,
-        groupName: selectedGroup?.name || selectedProduct.groupName
+        groupName: selectedGroup?.name || selectedProduct.groupName,
+        subgroupName: selectedSubgroup?.name || selectedProduct.subgroupName || ""
       });
       toast.success("Product updated successfully");
       setSelectedProduct(null);
@@ -67,7 +84,7 @@ export default function PurchaseEdit() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" size={18} />
             <input
               type="text"
-              placeholder="Search product to edit..."
+              placeholder="Search product, group or subgroup..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-primary border border-accent/10 rounded-xl pl-12 pr-4 py-3 text-text focus:border-accent outline-none transition-all"
@@ -82,7 +99,10 @@ export default function PurchaseEdit() {
                   onClick={() => setSelectedProduct(p)}
                   className="w-full text-left px-4 py-3 hover:bg-surface transition-colors flex justify-between items-center"
                 >
-                  <span className="font-medium">{p.name}</span>
+                  <div className="flex flex-col">
+                    <span className="font-medium">{p.name}</span>
+                    <span className="text-[10px] text-muted uppercase tracking-wider">{p.subgroupName || 'No Subgroup'}</span>
+                  </div>
                   <span className="text-xs text-muted">{p.groupName}</span>
                 </button>
               ))}
@@ -117,16 +137,33 @@ export default function PurchaseEdit() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-muted mb-2">Group</label>
+            <label className="block text-sm font-medium text-muted mb-2">Group/Company</label>
             <select
               required
               value={selectedProduct.groupId}
-              onChange={(e) => setSelectedProduct({ ...selectedProduct, groupId: e.target.value })}
+              onChange={(e) => setSelectedProduct({ ...selectedProduct, groupId: e.target.value, subgroupId: "" })}
               className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
             >
               {groups.map((group) => (
                 <option key={group.id} value={group.id}>
                   {group.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-muted mb-2">Subgroup/Category</label>
+            <select
+              required
+              value={selectedProduct.subgroupId}
+              onChange={(e) => setSelectedProduct({ ...selectedProduct, subgroupId: e.target.value })}
+              className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
+            >
+              <option value="">Select Subgroup</option>
+              {filteredSubgroups.map((sg) => (
+                <option key={sg.id} value={sg.id}>
+                  {sg.name}
                 </option>
               ))}
             </select>
@@ -148,6 +185,16 @@ export default function PurchaseEdit() {
               type="number"
               value={selectedProduct.purchaseRate}
               onChange={(e) => setSelectedProduct({ ...selectedProduct, purchaseRate: Number(e.target.value) })}
+              className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-muted mb-2">Wholesale Rate</label>
+            <input
+              type="number"
+              value={selectedProduct.wholesaleRate}
+              onChange={(e) => setSelectedProduct({ ...selectedProduct, wholesaleRate: Number(e.target.value) })}
               className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
             />
           </div>

@@ -4,25 +4,31 @@ import { toast } from "react-hot-toast";
 import { Product, BillItem, Customer, Bill } from "../types";
 import { formatCurrency } from "../lib/utils";
 import { generateBillPDF } from "../lib/BillPDFGenerator";
-import { productApi, billApi, dueApi } from "../lib/api";
+import { productApi, billApi, dueApi, customerApi } from "../lib/api";
 
 export default function BillForm() {
   const [customer, setCustomer] = useState<Partial<Customer>>({
     name: "",
     address: "",
     email: "",
-    phone: "",
   });
+  const [phones, setPhones] = useState<string[]>([""]);
   const [previousDue, setPreviousDue] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [billItems, setBillItems] = useState<BillItem[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [paidAmount, setPaidAmount] = useState(0);
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = productApi.getAll(setProducts);
-    return () => unsubscribe();
+    const unsubscribeProducts = productApi.getAll(setProducts);
+    const unsubscribeCustomers = customerApi.getAll(setCustomers);
+    return () => {
+      unsubscribeProducts();
+      unsubscribeCustomers();
+    };
   }, []);
 
   useEffect(() => {
@@ -35,19 +41,52 @@ export default function BillForm() {
     }
   }, [searchTerm, products]);
 
-  // Fetch previous due when phone changes
+  // Fetch previous due when primary phone changes
   useEffect(() => {
-    if (customer.phone && customer.phone.length === 10) {
+    const primaryPhone = phones[0];
+    if (primaryPhone && primaryPhone.length === 10) {
       const unsubscribe = dueApi.getAll((dues) => {
-        const due = dues.find(d => d.customerPhone === customer.phone);
+        const due = dues.find(d => d.customerPhone === primaryPhone);
         setPreviousDue(due ? due.amount : 0);
-        if (due && !customer.name) {
-          setCustomer(prev => ({ ...prev, name: due.customerName, address: due.customerAddress }));
-        }
       });
       return () => unsubscribe();
+    } else {
+      setPreviousDue(0);
     }
-  }, [customer.phone]);
+  }, [phones[0]]);
+
+  const handleCustomerSelect = (selectedCustomer: Customer) => {
+    setCustomer({
+      name: selectedCustomer.name,
+      address: selectedCustomer.address || "",
+      email: selectedCustomer.email || "",
+    });
+    setPhones([selectedCustomer.phone, ...(selectedCustomer.additionalPhones || [])]);
+    setShowCustomerDropdown(false);
+  };
+
+  const handlePhoneChange = (index: number, value: string) => {
+    // Only allow numbers and max 10 digits
+    const numericValue = value.replace(/\D/g, "").slice(0, 10);
+    const newPhones = [...phones];
+    newPhones[index] = numericValue;
+    setPhones(newPhones);
+  };
+
+  const addPhoneField = () => {
+    if (phones.length < 3) { // Limit to 3 phones for UI sanity
+      setPhones([...phones, ""]);
+    } else {
+      toast.error("Maximum 3 phone numbers allowed");
+    }
+  };
+
+  const removePhoneField = (index: number) => {
+    if (phones.length > 1) {
+      const newPhones = phones.filter((_, i) => i !== index);
+      setPhones(newPhones);
+    }
+  };
 
   const addProductToBill = (product: Product) => {
     const existing = billItems.find(item => item.productId === product.id);
@@ -94,8 +133,11 @@ export default function BillForm() {
   const currentBillDue = Math.max(0, subtotal - paidAmount);
 
   const handleGenerateBill = async () => {
-    if (!customer.name || !customer.phone || billItems.length === 0) {
-      toast.error("Please fill customer details and add products");
+    const primaryPhone = phones[0];
+    const additionalPhones = phones.slice(1).filter(p => p.length === 10);
+
+    if (!customer.name || !primaryPhone || primaryPhone.length !== 10 || billItems.length === 0) {
+      toast.error("Please fill customer details (valid 10-digit phone) and add products");
       return;
     }
 
@@ -103,8 +145,10 @@ export default function BillForm() {
     const billData: Omit<Bill, "id"> = {
       billNo,
       customerName: customer.name,
-      customerPhone: customer.phone,
+      customerPhone: primaryPhone,
+      additionalPhones,
       customerAddress: customer.address || "",
+      customerEmail: customer.email || "",
       items: billItems,
       subtotal,
       grandTotal: subtotal + previousDue,
@@ -119,7 +163,8 @@ export default function BillForm() {
       
       toast.success("Bill generated successfully");
       // Reset form
-      setCustomer({ name: "", address: "", email: "", phone: "" });
+      setCustomer({ name: "", address: "", email: "" });
+      setPhones([""]);
       setBillItems([]);
       setPreviousDue(0);
       setPaidAmount(0);
@@ -134,26 +179,38 @@ export default function BillForm() {
       <div className="lg:col-span-1 space-y-6">
         <h4 className="text-lg font-bold text-accent border-b border-accent/10 pb-2">Customer Details</h4>
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-muted mb-2">Phone Number</label>
-            <input
-              type="tel"
-              value={customer.phone}
-              onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
-              className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
-              placeholder="Enter phone"
-            />
-          </div>
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-muted mb-2">Customer Name</label>
             <input
               type="text"
               value={customer.name}
-              onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
+              onChange={(e) => {
+                setCustomer({ ...customer, name: e.target.value });
+                setShowCustomerDropdown(true);
+              }}
+              onFocus={() => setShowCustomerDropdown(true)}
+              onBlur={() => setTimeout(() => setShowCustomerDropdown(false), 200)}
               className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
               placeholder="Enter name"
             />
+            {showCustomerDropdown && customers.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl z-20 max-h-48 overflow-y-auto">
+                {customers
+                  .filter(c => c.name.toLowerCase().includes((customer.name || "").toLowerCase()))
+                  .map(c => (
+                    <div
+                      key={c.id}
+                      className="px-4 py-2 hover:bg-primary cursor-pointer text-sm"
+                      onClick={() => handleCustomerSelect(c)}
+                    >
+                      <div className="font-medium">{c.name}</div>
+                      <div className="text-xs text-muted">{c.phone}</div>
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
+          
           <div>
             <label className="block text-sm font-medium text-muted mb-2">Address</label>
             <input
@@ -164,6 +221,45 @@ export default function BillForm() {
               placeholder="Enter address"
             />
           </div>
+
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <label className="block text-sm font-medium text-muted">Phone Number(s) *</label>
+              {phones.length < 3 && (
+                <button 
+                  onClick={addPhoneField}
+                  className="text-xs flex items-center gap-1.5 bg-accent/10 text-accent px-3 py-1.5 rounded-lg hover:bg-accent/20 transition-all font-bold"
+                >
+                  <Plus size={14} /> Add Alternate
+                </button>
+              )}
+            </div>
+            {phones.map((phone, index) => (
+              <div key={index} className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted text-xs font-bold">
+                  {index === 0 ? "PRI" : `ALT ${index}`}
+                </div>
+                <input
+                  type="tel"
+                  required={index === 0}
+                  value={phone}
+                  onChange={(e) => handlePhoneChange(index, e.target.value)}
+                  className="w-full bg-primary border border-accent/10 rounded-xl pl-16 pr-12 py-3 text-text focus:border-accent outline-none transition-all font-mono tracking-wider"
+                  placeholder="10 digit number"
+                />
+                {phones.length > 1 && (
+                  <button 
+                    onClick={() => removePhoneField(index)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-500/10 rounded-lg"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+            ))}
+            <p className="text-[10px] text-muted italic">Primary number is used for tracking dues.</p>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-muted mb-2">Email</label>
             <input
@@ -174,6 +270,7 @@ export default function BillForm() {
               placeholder="Enter email"
             />
           </div>
+
           <div className="pt-4 p-4 bg-primary/30 rounded-xl border border-accent/5">
             <div className="flex justify-between items-center">
               <span className="text-muted">Previous Due:</span>
@@ -288,7 +385,7 @@ export default function BillForm() {
           
           <div className="flex gap-4 w-full max-w-xs">
             <button 
-              onClick={() => { setBillItems([]); setCustomer({ name: "", address: "", email: "", phone: "" }); }}
+              onClick={() => { setBillItems([]); setCustomer({ name: "", address: "", email: "" }); setPhones([""]); }}
               className="flex-1 bg-primary text-muted font-bold py-3 rounded-xl hover:text-text transition-all"
             >
               Clear

@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Menu
 } from "lucide-react";
+import Logo from "./Logo";
 import { cn } from "../lib/utils";
 import { motion } from "motion/react";
 
@@ -65,7 +66,8 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
       animate={{ width: collapsed ? 80 : 220 }}
       className="fixed left-0 top-16 bottom-0 bg-primary border-r border-accent/10 flex flex-col z-40"
     >
-      <div className="p-4 flex justify-end">
+      <div className="p-4 flex items-center justify-between">
+        {!collapsed && <Logo size={32} showText={false} />}
         <button 
           onClick={() => setCollapsed(!collapsed)}
           className="p-1 rounded-md hover:bg-surface text-muted hover:text-accent"

@@ -59,11 +59,12 @@ service cloud.firestore {
     }
 
     function isValidProduct(data) {
-      return data.keys().hasAll(['name', 'groupId', 'groupName', 'purchaseRate', 'mrp', 'stock', 'unit', 'updatedAt']) &&
+      return data.keys().hasAll(['name', 'groupId', 'groupName', 'purchaseRate', 'wholesaleRate', 'mrp', 'stock', 'unit', 'updatedAt']) &&
              data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
              data.groupId is string &&
              data.groupName is string &&
              data.purchaseRate is number && data.purchaseRate >= 0 &&
+             data.wholesaleRate is number && data.wholesaleRate >= 0 &&
              data.mrp is number && data.mrp >= 0 &&
              data.stock is number &&
              data.unit is string &&
@@ -71,57 +72,70 @@ service cloud.firestore {
     }
 
     function isValidBill(data) {
-      return data.keys().hasAll(['billNo', 'customerName', 'customerPhone', 'items', 'totalAmount', 'paidAmount', 'dueAmount', 'date']) &&
+      return data.keys().hasAll(['billNo', 'customerName', 'customerPhone', 'items', 'subtotal', 'grandTotal', 'paidAmount', 'dueAmount', 'date']) &&
              data.billNo is string &&
              data.customerName is string && data.customerName.size() > 0 &&
              data.customerPhone is string &&
              data.items is list &&
-             data.totalAmount is number &&
+             data.subtotal is number &&
+             data.grandTotal is number &&
              data.paidAmount is number &&
              data.dueAmount is number &&
              data.date is number;
     }
 
     function isValidDue(data) {
-      return data.keys().hasAll(['customerPhone', 'customerName', 'totalDue', 'lastBillDate', 'lastUpdated']) &&
+      return data.keys().hasAll(['customerPhone', 'customerName', 'amount', 'lastBillDate']) &&
              data.customerPhone is string &&
              data.customerName is string &&
-             data.totalDue is number &&
-             data.lastBillDate is number &&
-             data.lastUpdated is number;
+             data.amount is number &&
+             data.lastBillDate is number;
     }
 
-    function isValidUser(data) {
-      return data.keys().hasAll(['username', 'email', 'uid', 'createdAt']) &&
-             data.username is string && data.username.size() > 0 &&
-             data.email is string &&
-             data.uid is string &&
-             data.createdAt is number;
+    function isValidProfile(data) {
+      return data.keys().hasAll(['fullName', 'lastAccess']) &&
+             data.fullName is string && data.fullName.size() > 0 &&
+             data.lastAccess is number;
+    }
+
+    function isValidSettings(data) {
+      return data.keys().hasAll(['password']) &&
+             data.password is string && data.password.size() > 0;
     }
 
     // Rules
-    match /users/{username} {
-      // Anyone can read to find email by username
-      // Only authenticated users can create their own profile
-      allow read: if true;
-      allow create: if isAuthenticated() && isValidUser(request.resource.data) && request.resource.data.username == username;
-      allow update, delete: if isAdmin();
+    match /profiles/{uid} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && request.auth.uid == uid && isValidProfile(request.resource.data);
+      allow delete: if isAuthenticated() && request.auth.uid == uid;
+    }
+
+    match /settings/access {
+      allow read, write: if isAuthenticated();
     }
 
     match /groups/{groupId} {
-      allow read, write: if true;
+      allow read, write: if isAuthenticated();
+    }
+    
+    match /subgroups/{subgroupId} {
+      allow read, write: if isAuthenticated();
     }
 
     match /products/{productId} {
-      allow read, write: if true;
+      allow read, write: if isAuthenticated();
     }
 
     match /bills/{billId} {
-      allow read, write: if true;
+      allow read, write: if isAuthenticated();
+    }
+
+    match /customers/{customerId} {
+      allow read, write: if isAuthenticated();
     }
 
     match /dues/{dueId} {
-      allow read, write: if true;
+      allow read, write: if isAuthenticated();
     }
   }
 }

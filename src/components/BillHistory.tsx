@@ -23,7 +23,8 @@ export default function BillHistory() {
     (b) =>
       b.billNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
       b.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      b.customerPhone.includes(searchTerm)
+      b.customerPhone.includes(searchTerm) ||
+      b.additionalPhones?.some(p => p.includes(searchTerm))
   );
 
   const handleViewPDF = (bill: Bill) => {
@@ -73,7 +74,14 @@ export default function BillHistory() {
               <tr key={bill.id} className="border-b border-accent/5 hover:bg-primary/50 transition-colors">
                 <td className="px-4 py-4 font-bold text-accent">{bill.billNo}</td>
                 <td className="px-4 py-4 font-medium">{bill.customerName}</td>
-                <td className="px-4 py-4 text-muted">{bill.customerPhone}</td>
+                <td className="px-4 py-4 text-muted">
+                  {bill.customerPhone}
+                  {bill.additionalPhones && bill.additionalPhones.length > 0 && (
+                    <div className="text-[10px] opacity-70">
+                      {bill.additionalPhones.join(", ")}
+                    </div>
+                  )}
+                </td>
                 <td className="px-4 py-4 text-muted">{formatDate(bill.date)}</td>
                 <td className="px-4 py-4 text-right font-bold">{formatCurrency(bill.grandTotal)}</td>
                 <td className="px-4 py-4 text-right text-red-500">{formatCurrency(bill.dueAmount)}</td>

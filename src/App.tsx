@@ -9,16 +9,16 @@ import Due from "./components/Due";
 import Profile from "./components/Profile";
 import { Toaster, toast } from "react-hot-toast";
 import { cn } from "./lib/utils";
-import { authApi, userApi } from "./lib/api";
+import { settingsApi, profileApi } from "./lib/api";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { 
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  sendEmailVerification,
+  signInAnonymously,
+  onAuthStateChanged,
   signOut
 } from "firebase/auth";
 import { auth } from "./lib/firebase";
-import { Loader2, Mail } from "lucide-react";
+import Logo from "./components/Logo";
+import { Loader2, Lock, User as UserIcon, Eye, EyeOff } from "lucide-react";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -26,168 +26,74 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
-  const [needsVerification, setNeedsVerification] = useState(false);
-  const [resendTimer, setResendTimer] = useState(0);
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isRegistering, setIsRegistering] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [accessPassword, setAccessPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (resendTimer > 0) {
-      interval = setInterval(() => {
-        setResendTimer((prev) => prev - 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [resendTimer]);
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        await authApi.me();
-        setIsAuthenticated(true);
-      } catch (err) {
-        setIsAuthenticated(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-    checkAuth();
-  }, []);
-
-  const handleLogin = async () => {
-    if (!username || !password) {
-      return toast.error("Please enter both username and password");
-    }
-    
-    setIsActionLoading(true);
-    try {
-      // 1. Find email by username
-      const userData = await userApi.getByUsername(username);
-      if (!userData) {
-        setIsActionLoading(false);
-        return toast.error("Username not found. Please register first.");
-      }
-
-      // 2. Sign in with email and password
-      const userCredential = await signInWithEmailAndPassword(auth, userData.email, password);
-      
-      if (!userCredential.user.emailVerified) {
-        await signOut(auth);
-        setIsActionLoading(false);
-        return toast.error("Please verify your email address before logging in. Check your inbox.");
-      }
-
-      const idToken = await userCredential.user.getIdToken();
-      
-      await authApi.verifyToken(idToken);
-      setIsAuthenticated(true);
-      toast.success("Login successful");
-    } catch (err: any) {
-      console.error("Login Error:", err);
-      if (err.code === 'auth/wrong-password') {
-        toast.error("Incorrect password.");
-      } else if (err.code === 'auth/user-not-found') {
-        toast.error("User account not found.");
-      } else {
-        toast.error(err.message || "Login failed");
-      }
-    } finally {
-      setIsActionLoading(false);
-    }
-  };
-
-  const handleRegister = async () => {
-    if (!username || !email || !password) {
-      return toast.error("Please fill in all fields");
-    }
-    if (password.length < 6) {
-      return toast.error("Password must be at least 6 characters");
-    }
-    
-    setIsActionLoading(true);
-    try {
-      // 1. Check if username is taken
-      const existingUser = await userApi.getByUsername(username);
-      if (existingUser) {
-        setIsActionLoading(false);
-        return toast.error("Username is already taken");
-      }
-
-      // 2. Create Firebase Auth user
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // 3. Send verification email
-      await sendEmailVerification(userCredential.user);
-      
-      // 4. Save username mapping to Firestore
-      await userApi.create(username, email, userCredential.user.uid);
-      
-      // 5. Don't sign out, just show verification screen
-      setNeedsVerification(true);
-      toast.success("Registration successful! Please check your email for verification link.");
-    } catch (err: any) {
-      console.error("Registration Error:", err);
-      toast.error(err.message || "Registration failed");
-    } finally {
-      setIsActionLoading(false);
-    }
-  };
-
-  const handleCheckVerification = async () => {
-    setIsActionLoading(true);
-    try {
-      const user = auth.currentUser;
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        await user.reload();
-        if (user.emailVerified) {
-          const idToken = await user.getIdToken();
-          await authApi.verifyToken(idToken);
-          setIsAuthenticated(true);
-          setNeedsVerification(false);
-          toast.success("Email verified! Welcome to Chaynika.");
-        } else {
-          toast.error("Email not verified yet. Please check your inbox and click the link.");
+        try {
+          const profile = await profileApi.get(user.uid);
+          if (profile) {
+            setIsAuthenticated(true);
+            setFullName(profile.fullName || "");
+          } else {
+            // If profile is not found (e.g. due to permission denied or database not found),
+            // we don't force logout here because it might interrupt a login in progress.
+            // The handleAccess function will set isAuthenticated to true.
+          }
+        } catch (err: any) {
+          // Silently ignore errors here to avoid disrupting the UI
         }
       } else {
-        // If no user is signed in (e.g. after refresh), they must log in
-        setNeedsVerification(false);
-        setIsRegistering(false);
-        toast("Please log in with your credentials to check status.");
+        setIsAuthenticated(false);
       }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to check status");
-    } finally {
-      setIsActionLoading(false);
-    }
-  };
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
-  const handleResendVerification = async () => {
-    if (resendTimer > 0) return;
+  const handleAccess = async () => {
+    if (!fullName || !accessPassword) {
+      return toast.error("Please enter both Full Name and Access Password");
+    }
+    
     setIsActionLoading(true);
     try {
-      // We need to sign in temporarily to resend
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      await sendEmailVerification(userCredential.user);
-      await signOut(auth);
-      setResendTimer(60);
-      toast.success("Verification email resent!");
-    } catch (err: any) {
-      if (err.code === 'auth/too-many-requests') {
-        toast.error("Too many requests. Please wait a minute before trying again.");
-        setResendTimer(60);
-      } else {
-        toast.error(err.message || "Failed to resend email");
+      // Sign in anonymously FIRST to get permissions
+      const userCredential = await signInAnonymously(auth);
+      const uid = userCredential.user.uid;
+
+      // Now check the password
+      const isValid = await settingsApi.verifyAccessPassword(accessPassword);
+      if (!isValid) {
+        await signOut(auth); // Sign out if password is wrong
+        setIsActionLoading(false);
+        return toast.error("Oops! That's not the right access password. Please check and try again.");
       }
+
+      // Save profile only if it doesn't exist or name changed
+      const existingProfile = await profileApi.get(uid);
+      if (!existingProfile || existingProfile.fullName !== fullName) {
+        await profileApi.update(uid, fullName);
+      }
+      
+      setIsAuthenticated(true);
+      setFullName(fullName);
+      toast.success(`Welcome, ${fullName}!`);
+    } catch (err: any) {
+      console.error("Access Error:", err);
+      // If we signed in but something failed, sign out
+      if (auth.currentUser) await signOut(auth);
+      toast.error(err.message || "Access failed");
     } finally {
       setIsActionLoading(false);
     }
   };
   const handleLogout = async () => {
     try {
-      await authApi.logout();
+      await signOut(auth);
       setIsAuthenticated(false);
       toast.success("Logged out successfully");
     } catch (err) {
@@ -263,144 +169,58 @@ export default function App() {
         <div className="min-h-screen bg-primary flex items-center justify-center p-4">
           <div className="w-full max-w-md bg-surface border border-accent/20 rounded-2xl p-8 shadow-2xl">
             <div className="flex flex-col items-center mb-8">
-              <div className="w-20 h-20 rounded-full bg-accent flex items-center justify-center text-primary font-display font-bold text-4xl mb-4">
-                C
-              </div>
-              <h1 className="text-3xl font-display font-bold text-accent">Chaynika</h1>
-              <p className="text-muted mt-2">Business Management App</p>
+              <Logo size={80} showText={false} className="mb-4" />
+              <h1 className="text-3xl font-display font-bold text-accent">Access Chayanika</h1>
+              <p className="text-muted mt-2">Enter details to access the page</p>
             </div>
 
-            {needsVerification ? (
-              <div className="text-center space-y-6">
-                <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto text-accent">
-                  <Mail className="w-8 h-8" />
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-muted mb-2">Full Name</label>
+                <div className="relative">
+                  <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-accent/50" />
+                  <input 
+                    type="text" 
+                    placeholder="Enter ur full name"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="w-full bg-primary border border-accent/10 rounded-xl pl-12 pr-4 py-3 text-text focus:border-accent outline-none transition-all"
+                  />
                 </div>
-                <h2 className="text-xl font-bold text-text">Verify your email</h2>
-                <p className="text-muted text-sm">
-                  We've sent a verification link to <span className="text-accent font-medium">{email}</span>. 
-                  Please check your inbox and click the link to activate your account.
-                </p>
-                <button 
-                  onClick={handleCheckVerification}
-                  disabled={isActionLoading}
-                  className="w-full bg-accent text-primary font-bold py-3 rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {isActionLoading && <Loader2 className="w-5 h-5 animate-spin" />}
-                  I've Verified My Email
-                </button>
-                <button 
-                  onClick={handleResendVerification}
-                  disabled={isActionLoading || resendTimer > 0}
-                  className="w-full bg-surface border border-accent/20 text-text font-bold py-3 rounded-xl hover:bg-accent/5 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {isActionLoading && <Loader2 className="w-5 h-5 animate-spin" />}
-                  {resendTimer > 0 ? `Resend in ${resendTimer}s` : "Resend Email"}
-                </button>
-                <button 
-                  onClick={() => {
-                    setNeedsVerification(false);
-                    setIsRegistering(false);
-                  }}
-                  className="w-full text-muted text-sm hover:text-accent transition-all"
-                >
-                  Back to Login
-                </button>
               </div>
-            ) : (
-              <div className="space-y-6">
-                {isRegistering && (
-                <div>
-                  <label className="block text-sm font-medium text-muted mb-2">Username</label>
-                  <input 
-                    type="text" 
-                    placeholder="Choose a username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
-                  />
-                </div>
-              )}
-              
-              {!isRegistering ? (
-                <div>
-                  <label className="block text-sm font-medium text-muted mb-2">Username</label>
-                  <input 
-                    type="text" 
-                    placeholder="Enter your username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
-                  />
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-sm font-medium text-muted mb-2">Email Address</label>
-                  <input 
-                    type="email" 
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
-                  />
-                </div>
-              )}
 
               <div>
-                <label className="block text-sm font-medium text-muted mb-2">Password</label>
-                <input 
-                  type="password" 
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
-                />
+                <label className="block text-sm font-medium text-muted mb-2">Chayanika Access Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-accent/50" />
+                  <input 
+                    type={showPassword ? "text" : "password"} 
+                    placeholder="Enter access password"
+                    value={accessPassword}
+                    onChange={(e) => setAccessPassword(e.target.value)}
+                    className="w-full bg-primary border border-accent/10 rounded-xl pl-12 pr-12 py-3 text-text focus:border-accent outline-none transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-accent/50 hover:text-accent transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
               </div>
 
-              {!isRegistering ? (
-                <div>
-                  <button 
-                    onClick={handleLogin}
-                    disabled={isActionLoading}
-                    className="w-full bg-accent text-primary font-bold py-3 rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    {isActionLoading && <Loader2 className="w-5 h-5 animate-spin" />}
-                    Login
-                  </button>
-                  <p className="text-center text-muted text-sm mt-4">
-                    Don't have an account?{" "}
-                    <button 
-                      onClick={() => setIsRegistering(true)}
-                      className="text-accent font-medium hover:underline"
-                    >
-                      Register
-                    </button>
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <button 
-                    onClick={handleRegister}
-                    disabled={isActionLoading}
-                    className="w-full bg-accent text-primary font-bold py-3 rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    {isActionLoading && <Loader2 className="w-5 h-5 animate-spin" />}
-                    Register
-                  </button>
-                  <p className="text-center text-muted text-sm mt-4">
-                    Already have an account?{" "}
-                    <button 
-                      onClick={() => setIsRegistering(false)}
-                      className="text-accent font-medium hover:underline"
-                    >
-                      Login
-                    </button>
-                  </p>
-                </div>
-              )}
+              <button 
+                onClick={handleAccess}
+                disabled={isActionLoading}
+                className="w-full bg-accent text-primary font-bold py-3 rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isActionLoading && <Loader2 className="w-5 h-5 animate-spin" />}
+                Access Page
+              </button>
             </div>
-          )}
-        </div>
-        <Toaster position="top-right" />
+          </div>
+          <Toaster position="top-right" />
         </div>
       </ErrorBoundary>
     );

@@ -21,7 +21,8 @@ export default function Due() {
   const filteredDues = dues.filter(
     (d) =>
       d.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      d.customerPhone.includes(searchTerm)
+      d.customerPhone.includes(searchTerm) ||
+      d.additionalPhones?.some(p => p.includes(searchTerm))
   );
 
   const handleMarkPaid = async (phone: string) => {
@@ -73,7 +74,14 @@ export default function Due() {
                 <tr key={due.id} className="border-b border-accent/5 hover:bg-primary/50 transition-colors">
                   <td className="px-4 py-4">{index + 1}</td>
                   <td className="px-4 py-4 font-medium">{due.customerName}</td>
-                  <td className="px-4 py-4 text-muted">{due.customerPhone}</td>
+                  <td className="px-4 py-4 text-muted">
+                    {due.customerPhone}
+                    {due.additionalPhones && due.additionalPhones.length > 0 && (
+                      <div className="text-[10px] opacity-70">
+                        {due.additionalPhones.join(", ")}
+                      </div>
+                    )}
+                  </td>
                   <td className="px-4 py-4 text-muted">{due.customerAddress}</td>
                   <td className="px-4 py-4 text-right font-bold text-red-500">{formatCurrency(due.amount)}</td>
                   <td className="px-4 py-4 text-muted">{formatDate(due.lastBillDate)}</td>

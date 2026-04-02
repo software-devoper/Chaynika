@@ -2,13 +2,24 @@
   "entities": {
     "Group": {
       "title": "Product Group",
-      "description": "A category for products",
+      "description": "A category for products (e.g., Company Name)",
       "type": "object",
       "properties": {
         "name": { "type": "string", "description": "Name of the group" },
         "createdAt": { "type": "number", "description": "Timestamp of creation" }
       },
       "required": ["name", "createdAt"]
+    },
+    "Subgroup": {
+      "title": "Product Subgroup",
+      "description": "A sub-category for products (e.g., Liquid, Soap)",
+      "type": "object",
+      "properties": {
+        "groupId": { "type": "string", "description": "ID of the parent group" },
+        "name": { "type": "string", "description": "Name of the subgroup" },
+        "createdAt": { "type": "number", "description": "Timestamp of creation" }
+      },
+      "required": ["groupId", "name", "createdAt"]
     },
     "Product": {
       "title": "Product",
@@ -18,13 +29,16 @@
         "name": { "type": "string", "description": "Name of the product" },
         "groupId": { "type": "string", "description": "ID of the group it belongs to" },
         "groupName": { "type": "string", "description": "Name of the group it belongs to" },
+        "subgroupId": { "type": "string", "description": "ID of the subgroup it belongs to" },
+        "subgroupName": { "type": "string", "description": "Name of the subgroup it belongs to" },
         "purchaseRate": { "type": "number", "description": "Cost price" },
+        "wholesaleRate": { "type": "number", "description": "Wholesale price" },
         "mrp": { "type": "number", "description": "Selling price" },
         "stock": { "type": "number", "description": "Current stock quantity" },
         "unit": { "type": "string", "description": "Unit of measurement (e.g., Pcs, Kg)" },
         "updatedAt": { "type": "number", "description": "Timestamp of last update" }
       },
-      "required": ["name", "groupId", "purchaseRate", "mrp", "stock", "unit", "updatedAt"]
+      "required": ["name", "groupId", "subgroupId", "purchaseRate", "wholesaleRate", "mrp", "stock", "unit", "updatedAt"]
     },
     "Bill": {
       "title": "Bill",
@@ -34,6 +48,7 @@
         "billNo": { "type": "string", "description": "Unique bill number" },
         "customerName": { "type": "string", "description": "Name of the customer" },
         "customerPhone": { "type": "string", "description": "Phone number of the customer" },
+        "additionalPhones": { "type": "array", "items": { "type": "string" }, "description": "Additional phone numbers" },
         "customerAddress": { "type": "string", "description": "Address of the customer" },
         "items": {
           "type": "array",
@@ -61,6 +76,7 @@
       "type": "object",
       "properties": {
         "customerPhone": { "type": "string" },
+        "additionalPhones": { "type": "array", "items": { "type": "string" }, "description": "Additional phone numbers" },
         "customerName": { "type": "string" },
         "customerAddress": { "type": "string" },
         "totalDue": { "type": "number" },
@@ -69,24 +85,33 @@
       },
       "required": ["customerPhone", "customerName", "totalDue", "lastBillDate", "lastUpdated"]
     },
-    "User": {
-      "title": "User",
-      "description": "User profile with username mapping",
+    "Profile": {
+      "title": "User Profile",
+      "description": "User profile with full name",
       "type": "object",
       "properties": {
-        "username": { "type": "string" },
-        "email": { "type": "string" },
-        "uid": { "type": "string" },
-        "createdAt": { "type": "number" }
+        "fullName": { "type": "string" },
+        "lastAccess": { "type": "number" }
       },
-      "required": ["username", "email", "uid", "createdAt"]
+      "required": ["fullName", "lastAccess"]
+    },
+    "Settings": {
+      "title": "App Settings",
+      "description": "Global application settings",
+      "type": "object",
+      "properties": {
+        "password": { "type": "string" }
+      },
+      "required": ["password"]
     }
   },
   "firestore": {
     "/groups": { "schema": "Group", "description": "Collection of product groups" },
+    "/subgroups": { "schema": "Subgroup", "description": "Collection of product subgroups" },
     "/products": { "schema": "Product", "description": "Collection of products" },
     "/bills": { "schema": "Bill", "description": "Collection of sales bills" },
     "/dues": { "schema": "CustomerDue", "description": "Collection of customer dues" },
-    "/users": { "schema": "User", "description": "Collection of user profiles" }
+    "/profiles": { "schema": "Profile", "description": "Collection of user profiles" },
+    "/settings": { "schema": "Settings", "description": "Collection of app settings" }
   }
 }

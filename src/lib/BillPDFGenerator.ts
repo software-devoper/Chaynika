@@ -42,7 +42,16 @@ export const generateBillPDF = (bill: Bill) => {
   doc.setFontSize(baseFontSize * 0.9);
   doc.setFont("times", "normal");
   doc.text(bill.customerAddress || "N/A", pageWidth - margin, 24, { align: "right" });
-  doc.text(`Ph: ${bill.customerPhone}`, pageWidth - margin, 28, { align: "right" });
+  
+  const phoneText = bill.additionalPhones && bill.additionalPhones.length > 0
+    ? `Ph: ${bill.customerPhone}, ${bill.additionalPhones.join(", ")}`
+    : `Ph: ${bill.customerPhone}`;
+  
+  doc.text(phoneText, pageWidth - margin, 28, { align: "right" });
+
+  if (bill.customerEmail) {
+    doc.text(bill.customerEmail, pageWidth - margin, 32, { align: "right" });
+  }
 
   // Bill No
   doc.setFontSize(baseFontSize);

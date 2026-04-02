@@ -3,8 +3,11 @@ export interface Product {
   name: string;
   groupId: string;
   groupName: string;
+  subgroupId: string;
+  subgroupName: string;
   stock: number;
   purchaseRate: number;
+  wholesaleRate: number;
   mrp: number;
   unit: string;
   updatedAt: number;
@@ -13,13 +16,21 @@ export interface Product {
 export interface Group {
   id: string;
   name: string;
-  description?: string;
+  createdAt: number;
+}
+
+export interface Subgroup {
+  id: string;
+  groupId: string;
+  name: string;
   createdAt: number;
 }
 
 export interface Customer {
+  id: string;
   name: string;
   phone: string;
+  additionalPhones?: string[];
   address?: string;
   email?: string;
 }
@@ -28,6 +39,7 @@ export interface CustomerDue {
   id: string;
   customerName: string;
   customerPhone: string;
+  additionalPhones?: string[];
   customerAddress: string;
   amount: number;
   lastBillDate: number;
@@ -46,7 +58,9 @@ export interface Bill {
   billNo: string;
   customerName: string;
   customerPhone: string;
+  additionalPhones?: string[];
   customerAddress: string;
+  customerEmail?: string;
   items: BillItem[];
   subtotal: number;
   grandTotal: number;

@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import PurchaseGroup from "./PurchaseGroup";
-import PurchaseAdd from "./PurchaseAdd";
 import PurchaseEdit from "./PurchaseEdit";
 import { cn } from "../lib/utils";
 
@@ -9,7 +8,6 @@ export default function Purchase() {
 
   const tabs = [
     { id: "group", label: "Group" },
-    { id: "add", label: "Add" },
     { id: "edit", label: "Edit" },
   ];
 
@@ -34,7 +32,6 @@ export default function Purchase() {
 
       <div className="bg-surface border border-accent/10 rounded-2xl p-6 shadow-xl min-h-[400px]">
         {activeSubTab === "group" && <PurchaseGroup />}
-        {activeSubTab === "add" && <PurchaseAdd />}
         {activeSubTab === "edit" && <PurchaseEdit />}
       </div>
     </div>

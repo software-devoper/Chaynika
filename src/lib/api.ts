@@ -1,4 +1,5 @@
 import axios from "axios";
+import bcrypt from "bcryptjs";
 import { 
   collection, 
   addDoc, 
@@ -16,7 +17,7 @@ import {
   increment
 } from "firebase/firestore";
 import { db, auth } from "./firebase";
-import { Product, Group, Bill, CustomerDue } from "../types";
+import { Product, Group, Subgroup, Bill, CustomerDue, Customer } from "../types";
 
 enum OperationType {
   CREATE = 'create',
@@ -78,6 +79,8 @@ export const authApi = {
   sendOtp: (phone: string) => api.post("/auth/send-otp", { phone }),
   verifyOtp: (phone: string, otp: string) => api.post("/auth/verify-otp", { phone, otp }),
   verifyToken: (idToken: string) => api.post("/auth/verify-token", { idToken }),
+  verifyMasterPassword: (password: string) => api.post("/auth/verify-master-password", { password }),
+  setMasterPassword: (newPassword: string) => api.post("/auth/set-master-password", { newPassword }),
   logout: () => api.post("/auth/logout"),
   me: () => api.get("/auth/me"),
 };
@@ -118,6 +121,75 @@ export const groupApi = {
       handleFirestoreError(error, OperationType.DELETE, path);
     }
   },
+};
+
+export const subgroupApi = {
+  getAll: (callback: (subgroups: Subgroup[]) => void) => {
+    const path = "subgroups";
+    const q = query(collection(db, path), orderBy("createdAt", "desc"));
+    return onSnapshot(q, (snapshot) => {
+      const subgroups = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Subgroup));
+      callback(subgroups);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, path);
+    });
+  },
+  getByGroup: (groupId: string, callback: (subgroups: Subgroup[]) => void) => {
+    const path = "subgroups";
+    const q = query(collection(db, path), where("groupId", "==", groupId), orderBy("createdAt", "desc"));
+    return onSnapshot(q, (snapshot) => {
+      const subgroups = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Subgroup));
+      callback(subgroups);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, path);
+    });
+  },
+  add: async (groupId: string, name: string) => {
+    const path = "subgroups";
+    try {
+      return await addDoc(collection(db, path), { groupId, name, createdAt: Date.now() });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, path);
+    }
+  },
+  update: async (id: string, name: string) => {
+    const path = `subgroups/${id}`;
+    try {
+      return await updateDoc(doc(db, "subgroups", id), { name });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, path);
+    }
+  },
+  delete: async (id: string) => {
+    const path = `subgroups/${id}`;
+    try {
+      return await deleteDoc(doc(db, "subgroups", id));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, path);
+    }
+  },
+};
+
+export const customerApi = {
+  getAll: (callback: (customers: Customer[]) => void) => {
+    const path = "customers";
+    const q = query(collection(db, path));
+    return onSnapshot(q, (snapshot) => {
+      const customers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer));
+      callback(customers);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, path);
+    });
+  },
+  addOrUpdate: async (customer: Omit<Customer, "id">) => {
+    const path = `customers/${customer.phone}`;
+    try {
+      const docRef = doc(db, "customers", customer.phone);
+      await setDoc(docRef, customer, { merge: true });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, path);
+    }
+  }
 };
 
 export const productApi = {
@@ -173,6 +245,17 @@ export const billApi = {
     try {
       const billRef = await addDoc(collection(db, path), { ...bill, date: Date.now() });
       
+      // Save/Update customer details
+      if (bill.customerPhone) {
+        await customerApi.addOrUpdate({
+          name: bill.customerName,
+          phone: bill.customerPhone,
+          address: bill.customerAddress,
+          email: bill.customerEmail,
+          additionalPhones: bill.additionalPhones
+        });
+      }
+
       // Update stock for each item
       for (const item of bill.items) {
         const productPath = `products/${item.productId}`;
@@ -196,7 +279,8 @@ export const billApi = {
           if (dueSnap.exists()) {
             await updateDoc(dueRef, {
               amount: increment(bill.dueAmount),
-              lastBillDate: Date.now()
+              lastBillDate: Date.now(),
+              additionalPhones: bill.additionalPhones || []
             });
           } else {
             await setDoc(dueRef, {
@@ -204,7 +288,8 @@ export const billApi = {
               customerName: bill.customerName,
               customerAddress: bill.customerAddress,
               amount: bill.dueAmount,
-              lastBillDate: Date.now()
+              lastBillDate: Date.now(),
+              additionalPhones: bill.additionalPhones || []
             });
           }
         } catch (error) {
@@ -248,26 +333,92 @@ export const dueApi = {
   },
 };
 
-export const userApi = {
-  getByUsername: async (username: string) => {
-    const path = `users/${username.toLowerCase()}`;
+export const settingsApi = {
+  verifyAccessPassword: async (password: string) => {
+    const defaultPassword = "Chayanika@2026";
     try {
-      const userDoc = await getDoc(doc(db, "users", username.toLowerCase()));
-      return userDoc.exists() ? userDoc.data() : null;
-    } catch (error) {
+      const docRef = doc(db, "settings", "access");
+      const docSnap = await getDoc(docRef);
+      
+      if (!docSnap.exists()) {
+        if (password === defaultPassword) return true;
+        return false;
+      }
+
+      const data = docSnap.data();
+      if (!data || !data.password) {
+        if (password === defaultPassword) return true;
+        return false;
+      }
+
+      const hashedPassword = data.password;
+      
+      if (typeof hashedPassword === "string" && hashedPassword.startsWith("$2")) {
+        return await bcrypt.compare(password, hashedPassword);
+      } else {
+        if (password === hashedPassword) {
+          // Migrate to hashed password
+          const newHash = await bcrypt.hash(password, 10);
+          await setDoc(docRef, { password: newHash }, { merge: true });
+          return true;
+        }
+      }
+      return false;
+    } catch (error: any) {
+      const errorMsg = error.message || String(error);
+      if (errorMsg.includes("NOT_FOUND") || errorMsg.includes("PERMISSION_DENIED") || errorMsg.includes("permission-denied")) {
+        if (password === defaultPassword) return true;
+        return false;
+      }
+      console.error("Error verifying password:", error);
+      return false;
+    }
+  },
+  updateAccessPassword: async (newPassword: string) => {
+    try {
+      const docRef = doc(db, "settings", "access");
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await setDoc(docRef, { password: hashedPassword }, { merge: true });
+    } catch (error: any) {
+      console.error("Error updating password:", error);
+      throw new Error("Failed to update password. Please check your permissions.");
+    }
+  }
+};
+
+export const profileApi = {
+  get: async (uid: string) => {
+    const path = `profiles/${uid}`;
+    try {
+      const docRef = doc(db, "profiles", uid);
+      const docSnap = await getDoc(docRef);
+      return docSnap.exists() ? docSnap.data() : null;
+    } catch (error: any) {
+      const errorMsg = error.message || String(error);
+      if (errorMsg.includes("NOT_FOUND") || error.code === "not-found") {
+        return null;
+      }
+      if (errorMsg.includes("PERMISSION_DENIED") || error.code === "permission-denied" || errorMsg.includes("insufficient permissions")) {
+        return null;
+      }
       handleFirestoreError(error, OperationType.GET, path);
     }
   },
-  create: async (username: string, email: string, uid: string) => {
-    const path = `users/${username.toLowerCase()}`;
+  update: async (uid: string, fullName: string) => {
+    const path = `profiles/${uid}`;
     try {
-      await setDoc(doc(db, "users", username.toLowerCase()), {
-        username: username.toLowerCase(),
-        email,
-        uid,
-        createdAt: Date.now()
-      });
-    } catch (error) {
+      const docRef = doc(db, "profiles", uid);
+      await setDoc(docRef, { fullName, lastAccess: Date.now() }, { merge: true });
+    } catch (error: any) {
+      const errorMsg = error.message || String(error);
+      if (errorMsg.includes("NOT_FOUND") || error.code === "not-found") {
+        // Silently ignore if database is not found so user can still log in
+        return;
+      }
+      if (errorMsg.includes("PERMISSION_DENIED") || error.code === "permission-denied" || errorMsg.includes("insufficient permissions")) {
+        // Silently ignore if permission denied so user can still log in
+        return;
+      }
       handleFirestoreError(error, OperationType.WRITE, path);
     }
   }
