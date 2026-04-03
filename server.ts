@@ -46,11 +46,14 @@ async function startServer() {
         if (firebaseConfig.projectId) {
           console.log("Initializing Firebase Admin with projectId from config:", firebaseConfig.projectId);
           admin.initializeApp({
+            credential: admin.credential.applicationDefault(),
             projectId: firebaseConfig.projectId,
           });
         } else {
           console.log("No projectId in config, initializing with default environment credentials.");
-          admin.initializeApp();
+          admin.initializeApp({
+            credential: admin.credential.applicationDefault(),
+          });
         }
       }
       

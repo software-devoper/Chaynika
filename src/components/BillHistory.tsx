@@ -5,6 +5,7 @@ import { Bill } from "../types";
 import { formatCurrency, formatDate } from "../lib/utils";
 import { generateBillPDF } from "../lib/BillPDFGenerator";
 import { billApi } from "../lib/api";
+import { auth } from "../lib/firebase";
 
 export default function BillHistory() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -32,6 +33,10 @@ export default function BillHistory() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!auth.currentUser) {
+      toast.error("You must be logged in to delete a bill");
+      return;
+    }
     if (window.confirm("Are you sure you want to delete this bill?")) {
       try {
         await billApi.delete(id);
