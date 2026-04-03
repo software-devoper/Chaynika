@@ -42,19 +42,10 @@ async function startServer() {
     let db: admin.firestore.Firestore;
     try {
       if (!admin.apps.length) {
-        // Prefer projectId from config if available to avoid using the default Cloud Run project
-        if (firebaseConfig.projectId) {
-          console.log("Initializing Firebase Admin with projectId from config:", firebaseConfig.projectId);
-          admin.initializeApp({
-            credential: admin.credential.applicationDefault(),
-            projectId: firebaseConfig.projectId,
-          });
-        } else {
-          console.log("No projectId in config, initializing with default environment credentials.");
-          admin.initializeApp({
-            credential: admin.credential.applicationDefault(),
-          });
-        }
+        console.log("Initializing Firebase Admin with projectId:", firebaseConfig.projectId);
+        admin.initializeApp({
+          projectId: firebaseConfig.projectId,
+        });
       }
       
       const dbDefault = getFirestore(admin.app());
