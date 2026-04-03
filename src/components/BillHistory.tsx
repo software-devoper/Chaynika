@@ -34,6 +34,10 @@ export default function BillHistory() {
 
   const handleDelete = async (id: string) => {
     console.log(`Attempting to delete bill with ID: ${id}`);
+    if (!id) {
+      toast.error("Invalid bill ID");
+      return;
+    }
     if (!auth.currentUser) {
       toast.error("You must be logged in to delete a bill");
       return;
