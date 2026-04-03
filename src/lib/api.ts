@@ -249,12 +249,12 @@ export const billApi = {
       let lastBillNo = 0;
       if (!billsSnapshot.empty) {
         const lastBill = billsSnapshot.docs[0].data() as Bill;
-        const match = lastBill.billNo.match(/C(\d+)/);
+        const match = lastBill.billNo.match(/(\d+)/);
         if (match) {
           lastBillNo = parseInt(match[1], 10);
         }
       }
-      const newBillNo = `C${lastBillNo + 1}`;
+      const newBillNo = `${lastBillNo + 1}`;
       
       const billRef = await addDoc(collection(db, path), { ...bill, billNo: newBillNo, date: Date.now() });
       
