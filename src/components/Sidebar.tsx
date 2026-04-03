@@ -64,7 +64,7 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
     <motion.aside
       initial={false}
       animate={{ width: collapsed ? 80 : 220 }}
-      className="fixed left-0 top-16 bottom-0 bg-primary border-r border-accent/10 flex flex-col z-40"
+      className="fixed left-0 top-16 bottom-0 bg-primary border-r border-accent/10 flex flex-col z-40 lg:top-16"
     >
       <div className="p-4 flex items-center justify-between">
         {!collapsed && <Logo size={32} showText={false} />}

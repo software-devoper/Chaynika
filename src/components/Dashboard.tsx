@@ -125,8 +125,8 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
         />
       </div>
 
-      <div className="bg-surface border border-accent/10 rounded-2xl p-6 shadow-xl">
-        <div className="flex items-center justify-between mb-6">
+      <div className="bg-surface border border-accent/10 rounded-2xl p-4 sm:p-6 shadow-xl">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-2">
           <h3 className="text-xl font-display font-bold text-accent">Stock View Panel</h3>
           <div className="text-muted text-sm">Last updated: {new Date().toLocaleTimeString()}</div>
         </div>

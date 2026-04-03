@@ -15,7 +15,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
         </button>
         <Logo size={40} />
       </div>
-      <div className="flex items-center gap-6 text-muted text-sm">
+      <div className="flex items-center gap-4 text-muted text-sm">
         <div className="hidden md:block">Kalindi, Purba Medinipur, 721455</div>
         <div className="flex items-center gap-2 text-accent">
           <Phone size={16} />

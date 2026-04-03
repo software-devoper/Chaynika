@@ -263,7 +263,7 @@ export default function BillForm() {
                 {phones.length > 1 && (
                   <button 
                     onClick={() => removePhoneField(index)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-500/10 rounded-lg"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-red-500 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity p-1 hover:bg-red-500/10 rounded-lg"
                   >
                     <X size={16} />
                   </button>
@@ -326,8 +326,8 @@ export default function BillForm() {
           )}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+        <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
+          <table className="w-full text-left border-collapse whitespace-nowrap md:whitespace-normal">
             <thead>
               <tr className="border-b border-accent/10 text-muted text-xs uppercase tracking-wider">
                 <th className="px-2 py-3 font-medium">Sr.</th>
@@ -384,7 +384,7 @@ export default function BillForm() {
         </div>
 
         <div className="flex flex-col items-end gap-4 border-t border-accent/10 pt-6">
-          <div className="space-y-2 text-right w-full max-w-xs">
+          <div className="space-y-2 text-right w-full md:max-w-xs">
             <div className="flex justify-between text-muted">
               <span>Subtotal:</span>
               <span>{formatCurrency(subtotal)}</span>
@@ -412,10 +412,10 @@ export default function BillForm() {
             </div>
           </div>
           
-          <div className="flex gap-4 w-full max-w-md">
+          <div className="flex flex-col sm:flex-row gap-4 w-full md:max-w-md">
             <button 
               onClick={() => { setBillItems([]); setCustomer({ name: "", address: "", email: "" }); setPhones([""]); }}
-              className="flex-1 bg-primary text-muted font-bold py-3 rounded-xl hover:text-text transition-all"
+              className="flex-1 bg-primary text-muted font-bold py-3 rounded-xl hover:text-text transition-all border border-accent/10 sm:border-none"
             >
               Clear
             </button>

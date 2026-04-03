@@ -250,11 +250,11 @@ export default function App() {
           </div>
           <main 
             className={cn(
-              "flex-1 p-6 transition-all duration-200",
+              "flex-1 p-4 sm:p-6 transition-all duration-200 w-full overflow-x-hidden",
               collapsed ? "lg:ml-20" : "lg:ml-[220px]"
             )}
           >
-            <div className="max-w-7xl mx-auto">
+            <div className="max-w-7xl mx-auto w-full">
               {renderContent()}
             </div>
           </main>

@@ -114,12 +114,12 @@ export default function PurchaseEdit() {
         </div>
       ) : (
         <form onSubmit={handleUpdate} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="md:col-span-2 flex justify-between items-center">
+          <div className="md:col-span-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h4 className="text-lg font-bold text-accent">Editing: {selectedProduct.name}</h4>
             <button
               type="button"
               onClick={() => setSelectedProduct(null)}
-              className="text-muted hover:text-text"
+              className="text-muted hover:text-text w-full sm:w-auto text-left sm:text-right"
             >
               Cancel
             </button>
@@ -213,19 +213,20 @@ export default function PurchaseEdit() {
             />
           </div>
 
-          <div className="md:col-span-2 flex gap-4 pt-4">
+          <div className="md:col-span-2 flex flex-col sm:flex-row gap-4 pt-4">
             <button
               type="submit"
-              className="flex-1 bg-accent text-primary font-bold py-3 rounded-xl hover:opacity-90 transition-all"
+              className="flex-1 bg-accent text-primary font-bold py-3 rounded-xl hover:opacity-90 transition-all order-1 sm:order-none"
             >
               Update
             </button>
             <button
               type="button"
               onClick={handleDelete}
-              className="px-6 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl hover:bg-red-500 hover:text-white transition-all flex items-center justify-center"
+              className="px-6 py-3 sm:py-0 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl hover:bg-red-500 hover:text-white transition-all flex items-center justify-center order-2 sm:order-none"
             >
-              <Trash2 size={20} />
+              <Trash2 size={20} className="mr-2 sm:mr-0" />
+              <span className="sm:hidden">Delete Product</span>
             </button>
           </div>
         </form>

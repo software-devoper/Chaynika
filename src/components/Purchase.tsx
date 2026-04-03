@@ -13,13 +13,13 @@ export default function Purchase() {
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-2 p-1 bg-surface border border-accent/10 rounded-xl w-fit">
+      <div className="flex gap-2 p-1 bg-surface border border-accent/10 rounded-xl w-full sm:w-fit overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveSubTab(tab.id)}
             className={cn(
-              "px-6 py-2 rounded-lg font-medium transition-all duration-200",
+              "flex-1 sm:flex-none px-6 py-2 rounded-lg font-medium transition-all duration-200 whitespace-nowrap",
               activeSubTab === tab.id
                 ? "bg-accent text-primary"
                 : "text-muted hover:text-text hover:bg-primary/50"

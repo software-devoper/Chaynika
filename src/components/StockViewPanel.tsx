@@ -27,7 +27,7 @@ export default function StockViewPanel() {
   const totalQuantity = filteredProducts.reduce((sum, p) => sum + p.stock, 0);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="relative">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" size={18} />
         <input
@@ -35,57 +35,123 @@ export default function StockViewPanel() {
           placeholder="Search by Product, Group or Subgroup..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full bg-primary border border-accent/10 rounded-xl pl-12 pr-4 py-3 text-text focus:border-accent outline-none transition-all"
+          className="w-full bg-primary border border-accent/10 rounded-xl pl-12 pr-4 py-3 text-text focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all shadow-sm"
         />
       </div>
 
-      <div className="overflow-x-auto">
+      {/* Desktop Table View */}
+      <div className="hidden md:block overflow-x-auto rounded-xl border border-accent/10 bg-surface">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="border-b border-accent/10 text-muted text-sm uppercase tracking-wider">
-              <th className="px-4 py-4 font-medium">Sr. No.</th>
-              <th className="px-4 py-4 font-medium">Product Name</th>
-              <th className="px-4 py-4 font-medium">Group/Company</th>
-              <th className="px-4 py-4 font-medium">Subgroup/Category</th>
-              <th className="px-4 py-4 font-medium">Stock</th>
-              <th className="px-4 py-4 font-medium">Purchase Rate</th>
-              <th className="px-4 py-4 font-medium">MRP</th>
+            <tr className="bg-primary/50 border-b border-accent/10 text-muted text-xs uppercase tracking-wider">
+              <th className="px-6 py-4 font-medium">Sr. No.</th>
+              <th className="px-6 py-4 font-medium">Product Name</th>
+              <th className="px-6 py-4 font-medium">Group/Company</th>
+              <th className="px-6 py-4 font-medium">Subgroup/Category</th>
+              <th className="px-6 py-4 font-medium text-right">Stock</th>
+              <th className="px-6 py-4 font-medium text-right">Purchase Rate</th>
+              <th className="px-6 py-4 font-medium text-right">MRP</th>
             </tr>
           </thead>
-          <tbody className="text-text">
+          <tbody className="text-text divide-y divide-accent/5">
             {loading ? (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-muted italic">
+                <td colSpan={7} className="px-6 py-12 text-center text-muted italic">
                   Loading stock data...
                 </td>
               </tr>
             ) : filteredProducts.map((product, index) => (
-              <tr key={product.id} className="border-b border-accent/5 hover:bg-primary/50 transition-colors">
-                <td className="px-4 py-4">{index + 1}</td>
-                <td className="px-4 py-4 font-medium">{product.name}</td>
-                <td className="px-4 py-4 text-muted">{product.groupName}</td>
-                <td className="px-4 py-4 text-xs text-muted uppercase tracking-wider">{product.subgroupName || '-'}</td>
-                <td className="px-4 py-4">{product.stock}</td>
-                <td className="px-4 py-4">{formatCurrency(product.purchaseRate)}</td>
-                <td className="px-4 py-4 text-accent font-medium">{formatCurrency(product.mrp)}</td>
+              <tr key={product.id} className="hover:bg-primary/30 transition-colors group">
+                <td className="px-6 py-4 text-muted">{index + 1}</td>
+                <td className="px-6 py-4 font-medium group-hover:text-accent transition-colors">{product.name}</td>
+                <td className="px-6 py-4 text-muted">{product.groupName}</td>
+                <td className="px-6 py-4">
+                  {product.subgroupName ? (
+                    <span className="px-2.5 py-1 bg-accent/10 text-accent text-xs rounded-md uppercase tracking-wider font-medium">
+                      {product.subgroupName}
+                    </span>
+                  ) : (
+                    <span className="text-muted">-</span>
+                  )}
+                </td>
+                <td className="px-6 py-4 text-right font-medium">{product.stock}</td>
+                <td className="px-6 py-4 text-right text-muted">{formatCurrency(product.purchaseRate)}</td>
+                <td className="px-6 py-4 text-right text-accent font-medium">{formatCurrency(product.mrp)}</td>
               </tr>
             ))}
             {!loading && filteredProducts.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-muted italic">
-                  No products found
+                <td colSpan={7} className="px-6 py-12 text-center text-muted italic">
+                  No products found matching your search.
                 </td>
               </tr>
             )}
           </tbody>
-          <tfoot>
-            <tr className="bg-primary/30 font-bold">
-              <td colSpan={4} className="px-4 py-4 text-right">TOTALS:</td>
-              <td className="px-4 py-4">{totalQuantity}</td>
-              <td colSpan={2} className="px-4 py-4"></td>
+          <tfoot className="bg-primary/50 border-t border-accent/10">
+            <tr className="font-bold text-text">
+              <td colSpan={4} className="px-6 py-4 text-right uppercase tracking-wider text-xs text-muted">Total Stock Quantity:</td>
+              <td className="px-6 py-4 text-right text-lg text-accent">{totalQuantity}</td>
+              <td colSpan={2} className="px-6 py-4"></td>
             </tr>
           </tfoot>
         </table>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="grid grid-cols-1 gap-4 md:hidden">
+        {loading ? (
+          <div className="py-12 text-center text-muted italic bg-surface border border-accent/10 rounded-xl">
+            Loading stock data...
+          </div>
+        ) : filteredProducts.length === 0 ? (
+          <div className="py-12 text-center text-muted italic bg-surface border border-accent/10 rounded-xl">
+            No products found matching your search.
+          </div>
+        ) : (
+          filteredProducts.map((product, index) => (
+            <div key={product.id} className="bg-surface border border-accent/10 rounded-xl p-4 shadow-sm hover:border-accent/30 transition-colors flex flex-col gap-3">
+              <div className="flex justify-between items-start gap-2">
+                <div>
+                  <div className="text-xs text-muted mb-1">#{index + 1}</div>
+                  <h4 className="font-bold text-text text-lg leading-tight">{product.name}</h4>
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="text-xs text-muted uppercase tracking-wider mb-1">Stock</span>
+                  <span className="font-bold text-accent text-xl">{product.stock}</span>
+                </div>
+              </div>
+              
+              <div className="flex flex-wrap gap-2">
+                <span className="px-2.5 py-1 bg-primary text-muted text-xs rounded-md border border-accent/5">
+                  {product.groupName}
+                </span>
+                {product.subgroupName && (
+                  <span className="px-2.5 py-1 bg-accent/10 text-accent text-xs rounded-md font-medium">
+                    {product.subgroupName}
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 pt-3 border-t border-accent/5 mt-1">
+                <div>
+                  <div className="text-xs text-muted mb-1">Purchase Rate</div>
+                  <div className="font-medium text-text">{formatCurrency(product.purchaseRate)}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs text-muted mb-1">MRP</div>
+                  <div className="font-medium text-accent">{formatCurrency(product.mrp)}</div>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+        
+        {!loading && filteredProducts.length > 0 && (
+          <div className="bg-primary/50 border border-accent/10 rounded-xl p-4 flex justify-between items-center mt-2">
+            <span className="text-sm font-medium text-muted uppercase tracking-wider">Total Stock</span>
+            <span className="text-xl font-bold text-accent">{totalQuantity}</span>
+          </div>
+        )}
       </div>
     </div>
   );

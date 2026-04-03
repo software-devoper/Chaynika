@@ -70,8 +70,8 @@ export default function Due() {
         />
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
+      <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
+        <table className="w-full text-left border-collapse whitespace-nowrap md:whitespace-normal">
           <thead>
             <tr className="border-b border-accent/10 text-muted text-xs uppercase tracking-wider">
               <th className="px-4 py-4 font-medium">Sr. No.</th>
@@ -107,16 +107,16 @@ export default function Due() {
                   <td className="px-4 py-4 text-right font-bold text-red-500">{formatCurrency(due.amount)}</td>
                   <td className="px-4 py-4 text-muted">{formatDate(due.lastBillDate)}</td>
                   <td className="px-4 py-4 text-center">
-                    <div className="flex gap-2 justify-center">
+                    <div className="flex flex-col sm:flex-row gap-2 justify-center">
                       <button
                         onClick={() => handleMarkPaid(due)}
-                        className="px-3 py-1.5 bg-green-500/10 text-green-500 rounded-lg hover:bg-green-500 hover:text-white transition-all text-xs font-bold"
+                        className="px-3 py-1.5 bg-green-500/10 text-green-500 rounded-lg hover:bg-green-500 hover:text-white transition-all text-xs font-bold whitespace-nowrap"
                       >
                         Full Paid
                       </button>
                       <button
                         onClick={() => handlePartlyPaid(due)}
-                        className="px-3 py-1.5 bg-accent/10 text-accent rounded-lg hover:bg-accent hover:text-primary transition-all text-xs font-bold"
+                        className="px-3 py-1.5 bg-accent/10 text-accent rounded-lg hover:bg-accent hover:text-primary transition-all text-xs font-bold whitespace-nowrap"
                       >
                         Partly Paid
                       </button>

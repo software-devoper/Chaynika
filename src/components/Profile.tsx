@@ -131,7 +131,7 @@ export default function Profile() {
             </div>
 
             {showPasswordForm && (
-              <div className="flex gap-3 mt-4">
+              <div className="flex flex-col sm:flex-row gap-3 mt-4">
                 <div className="relative flex-1">
                   <input 
                     type={showPassword ? "text" : "password"}
@@ -151,7 +151,7 @@ export default function Profile() {
                 <button 
                   onClick={handleChangePassword}
                   disabled={isChangingPassword}
-                  className="bg-accent text-primary font-bold px-6 py-2 rounded-xl hover:opacity-90 disabled:opacity-50 flex items-center gap-2"
+                  className="bg-accent text-primary font-bold px-6 py-2 rounded-xl hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {isChangingPassword && <Loader2 className="w-4 h-4 animate-spin" />}
                   Update

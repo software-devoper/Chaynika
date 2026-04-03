@@ -69,8 +69,8 @@ export default function BillHistory() {
         />
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
+      <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
+        <table className="w-full text-left border-collapse whitespace-nowrap md:whitespace-normal">
           <thead>
             <tr className="border-b border-accent/10 text-muted text-xs uppercase tracking-wider">
               <th className="px-4 py-4 font-medium">Bill No.</th>
