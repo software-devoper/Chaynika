@@ -32,10 +32,12 @@ export default function BillHistory() {
     await generateBillPDF(bill);
   };
 
-  const handleDelete = async (id: string) => {
-    console.log(`Attempting to delete bill with ID: ${id}`);
+  const handleDelete = async (bill: Bill) => {
+    console.log(`Attempting to delete bill object:`, bill);
+    const id = bill.id;
     if (!id) {
       toast.error("Invalid bill ID");
+      console.error("Bill object missing ID:", bill);
       return;
     }
     if (!auth.currentUser) {
@@ -115,7 +117,7 @@ export default function BillHistory() {
                       <FileText size={18} />
                     </button>
                     <button
-                      onClick={() => handleDelete(bill.id)}
+                      onClick={() => handleDelete(bill)}
                       className="text-muted hover:text-red-500"
                       title="Delete"
                     >
