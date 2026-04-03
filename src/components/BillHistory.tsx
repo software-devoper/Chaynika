@@ -33,11 +33,11 @@ export default function BillHistory() {
   };
 
   const handleDelete = async (bill: Bill) => {
-    console.log(`Attempting to delete bill object:`, bill);
+    console.log(`Attempting to delete bill object:`, JSON.stringify(bill));
     const id = bill.id;
     if (!id) {
       toast.error("Invalid bill ID");
-      console.error("Bill object missing ID:", bill);
+      console.error("Bill object missing ID:", JSON.stringify(bill));
       return;
     }
     if (!auth.currentUser) {
