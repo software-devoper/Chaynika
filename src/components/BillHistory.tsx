@@ -27,8 +27,8 @@ export default function BillHistory() {
       b.additionalPhones?.some(p => p.includes(searchTerm))
   );
 
-  const handleViewPDF = (bill: Bill) => {
-    generateBillPDF(bill);
+  const handleViewPDF = async (bill: Bill) => {
+    await generateBillPDF(bill);
   };
 
   const handleDelete = async (id: string) => {

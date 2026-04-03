@@ -14,7 +14,8 @@ import {
   getDoc,
   setDoc,
   serverTimestamp,
-  increment
+  increment,
+  limit
 } from "firebase/firestore";
 import { db, auth } from "./firebase";
 import { Product, Group, Subgroup, Bill, CustomerDue, Customer } from "../types";
@@ -243,7 +244,18 @@ export const billApi = {
   create: async (bill: Omit<Bill, "id">) => {
     const path = "bills";
     try {
-      const billRef = await addDoc(collection(db, path), { ...bill, date: Date.now() });
+      const billsSnapshot = await getDocs(query(collection(db, path), orderBy("date", "desc"), limit(1)));
+      let lastBillNo = 0;
+      if (!billsSnapshot.empty) {
+        const lastBill = billsSnapshot.docs[0].data() as Bill;
+        const match = lastBill.billNo.match(/C(\d+)/);
+        if (match) {
+          lastBillNo = parseInt(match[1], 10);
+        }
+      }
+      const newBillNo = `C${lastBillNo + 1}`;
+      
+      const billRef = await addDoc(collection(db, path), { ...bill, billNo: newBillNo, date: Date.now() });
       
       // Save/Update customer details
       if (bill.customerPhone) {
@@ -269,8 +281,9 @@ export const billApi = {
         }
       }
 
-      // Update customer dues if any
-      if (bill.dueAmount > 0) {
+      // Update customer dues
+      const dueChange = bill.subtotal - bill.paidAmount;
+      if (dueChange !== 0 || bill.dueAmount > 0) {
         const duePath = `dues/${bill.customerPhone}`;
         try {
           const dueRef = doc(db, "dues", bill.customerPhone);
@@ -278,7 +291,7 @@ export const billApi = {
           
           if (dueSnap.exists()) {
             await updateDoc(dueRef, {
-              amount: increment(bill.dueAmount),
+              amount: increment(dueChange),
               lastBillDate: Date.now(),
               additionalPhones: bill.additionalPhones || []
             });
@@ -287,7 +300,7 @@ export const billApi = {
               customerPhone: bill.customerPhone,
               customerName: bill.customerName,
               customerAddress: bill.customerAddress,
-              amount: bill.dueAmount,
+              amount: Math.max(0, dueChange),
               lastBillDate: Date.now(),
               additionalPhones: bill.additionalPhones || []
             });

@@ -69,21 +69,22 @@ async function startServer() {
           namedSuccess = true;
         } catch (e: any) {
           console.warn(`Named database connection failed (Error ${e.code}): ${e.message}`);
-          if (e.message.includes("NOT_FOUND") || e.code === 5) {
-            console.warn("Database not found. This might mean the database ID is incorrect or the database hasn't been created yet.");
-          }
+          // If it's a permission error, it might be because the rules aren't applied yet or the database is not accessible
         }
       }
 
       db = namedSuccess ? dbNamed : dbDefault;
       console.log(`Using ${namedSuccess ? "named" : "default"} database as primary.`);
 
-      console.log("Testing primary database connection...");
-      try {
-        await db.collection("settings").limit(1).get();
-        console.log("Primary database connection successful.");
-      } catch (e: any) {
-        console.error(`Primary database connection failed (Error ${e.code}): ${e.message}`);
+      // Only test primary if we didn't succeed with named, or if named is not used
+      if (!namedSuccess) {
+        console.log("Testing primary database connection...");
+        try {
+          await db.collection("settings").limit(1).get();
+          console.log("Primary database connection successful.");
+        } catch (e: any) {
+          console.error(`Primary database connection failed (Error ${e.code}): ${e.message}`);
+        }
       }
     } catch (adminError: any) {
       console.error("Failed to initialize Firebase Admin:", adminError.message);

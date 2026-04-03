@@ -110,8 +110,9 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && request.auth.uid == uid;
     }
 
-    match /settings/access {
-      allow read, write: if isAuthenticated();
+    match /settings/{document=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
     }
 
     match /groups/{groupId} {

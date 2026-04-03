@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Search, Plus, Trash2, X } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { getDoc } from "firebase/firestore";
+import { auth } from "../lib/firebase";
 import { Product, BillItem, Customer, Bill } from "../types";
 import { formatCurrency } from "../lib/utils";
 import { generateBillPDF } from "../lib/BillPDFGenerator";
@@ -132,7 +134,8 @@ export default function BillForm() {
   const grandTotal = subtotal + previousDue;
   const currentBillDue = Math.max(0, subtotal - paidAmount);
 
-  const handleGenerateBill = async () => {
+  const handleGenerateBill = async (action: "save" | "print") => {
+    console.log("Auth current user:", auth.currentUser);
     const primaryPhone = phones[0];
     const additionalPhones = phones.slice(1).filter(p => p.length === 10);
 
@@ -141,9 +144,9 @@ export default function BillForm() {
       return;
     }
 
-    const billNo = `BILL-${Date.now()}`;
-    const billData: Omit<Bill, "id"> = {
-      billNo,
+    const billData: Bill = {
+      id: "",
+      billNo: "", // Will be populated by API
       customerName: customer.name,
       customerPhone: primaryPhone,
       additionalPhones,
@@ -158,10 +161,16 @@ export default function BillForm() {
     };
 
     try {
-      await billApi.create(billData);
-      generateBillPDF(billData as Bill);
+      const billRef = await billApi.create(billData);
+      billData.id = billRef.id;
+      // Fetch the generated billNo from the created document
+      const billSnap = await getDoc(billRef);
+      if (billSnap.exists()) {
+        billData.billNo = billSnap.data().billNo;
+      }
+      await generateBillPDF(billData, action);
       
-      toast.success("Bill generated successfully");
+      toast.success(`Bill ${action === "save" ? "saved" : "printed"} successfully`);
       // Reset form
       setCustomer({ name: "", address: "", email: "" });
       setPhones([""]);
@@ -169,7 +178,8 @@ export default function BillForm() {
       setPreviousDue(0);
       setPaidAmount(0);
     } catch (error) {
-      toast.error("Failed to save bill");
+      console.error("Failed to save bill:", error);
+      toast.error(`Failed to save bill: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   };
 
@@ -383,7 +393,7 @@ export default function BillForm() {
             </div>
           </div>
           
-          <div className="flex gap-4 w-full max-w-xs">
+          <div className="flex gap-4 w-full max-w-md">
             <button 
               onClick={() => { setBillItems([]); setCustomer({ name: "", address: "", email: "" }); setPhones([""]); }}
               className="flex-1 bg-primary text-muted font-bold py-3 rounded-xl hover:text-text transition-all"
@@ -391,10 +401,16 @@ export default function BillForm() {
               Clear
             </button>
             <button 
-              onClick={handleGenerateBill}
-              className="flex-2 bg-accent text-primary font-bold py-3 rounded-xl hover:opacity-90 transition-all"
+              onClick={() => handleGenerateBill("save")}
+              className="flex-1 bg-accent/20 text-accent font-bold py-3 rounded-xl hover:bg-accent/30 transition-all"
             >
-              Generate Bill
+              Save as PDF
+            </button>
+            <button 
+              onClick={() => handleGenerateBill("print")}
+              className="flex-1 bg-accent text-primary font-bold py-3 rounded-xl hover:opacity-90 transition-all"
+            >
+              Print Bill
             </button>
           </div>
         </div>

@@ -1,12 +1,10 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import QRCode from "qrcode";
 import { Bill } from "../types";
 import { formatCurrency, formatDate } from "./utils";
 
-// Placeholder QR Code Base64 (A simple black square for now)
-const QR_CODE_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5QYIDhYmXvX5AAAAKklEQVR42u3BAQ0AAADCoPdPbQ43oAAAAAAAAAAAAAAAAAAAAAAAAAAAAB4MvQAAAbK781AAAAAASUVORK5CYII=";
-
-export const generateBillPDF = (bill: Bill) => {
+export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "save") => {
   const doc = new jsPDF({
     orientation: "portrait",
     unit: "mm",
@@ -64,11 +62,15 @@ export const generateBillPDF = (bill: Bill) => {
 
   // TABLE
   const tableData = bill.items.map((item, index) => {
+    // Assuming product info is needed for MRP, but it's not in BillItem.
+    // For now, I'll assume discount is 0 if not available.
+    const discount = 0; // Placeholder
     return [
-      index + 1,
+      (index + 1).toString(),
       item.productName,
       item.price.toFixed(2),
-      item.qty,
+      discount.toFixed(2) + "%",
+      item.qty.toString(),
       item.total.toFixed(2),
     ];
   });
@@ -77,30 +79,38 @@ export const generateBillPDF = (bill: Bill) => {
 
   autoTable(doc, {
     startY: 45,
-    head: [["Sl. No.", "Product", "Rate", "Qty", "Net Amount"]],
+    head: [["Sl. No.", "Product", "Rate", "Disc(%)", "Qty", "Net Amount"]],
     body: tableData,
-    foot: [[`Total Qty: ${totalQty}`, "", "", "", bill.subtotal.toFixed(2)]],
-    theme: "plain",
+    foot: [[`Total Qty: ${totalQty}`, "", "", "", "", bill.subtotal.toFixed(2)]],
+    theme: "grid", // Changed to grid for better structure
     styles: {
       font: "times",
       fontSize: 9,
       cellPadding: 2,
+      lineColor: [200, 200, 200],
+      lineWidth: 0.1,
     },
     headStyles: {
       fontStyle: "bold",
       fillColor: [240, 240, 240],
       textColor: [0, 0, 0],
+      halign: "center",
+      valign: "middle",
     },
     footStyles: {
       fontStyle: "bold",
       fillColor: [240, 240, 240],
       textColor: [0, 0, 0],
+      halign: "right",
+      valign: "middle",
     },
     columnStyles: {
-      0: { cellWidth: 12 },
-      2: { halign: "right" },
-      3: { halign: "center" },
-      4: { halign: "right" },
+      0: { cellWidth: 12, halign: "center" }, // Sl. No.
+      1: { cellWidth: 40, halign: "left" },   // Product
+      2: { cellWidth: 20, halign: "right" },  // Rate
+      3: { cellWidth: 18, halign: "center" }, // Disc(%)
+      4: { cellWidth: 12, halign: "center" }, // Qty
+      5: { cellWidth: 26, halign: "right" },  // Net Amount
     },
     margin: { left: margin, right: margin },
   });
@@ -108,19 +118,26 @@ export const generateBillPDF = (bill: Bill) => {
   const finalY = (doc as any).lastAutoTable.finalY + 10;
 
   // PAYMENT SECTION
-  // LEFT: UPI ID
+  doc.setFontSize(baseFontSize * 0.9);
+  doc.setFont("times", "bold");
+  doc.text("Payment Details:", margin, finalY);
+  
   doc.setFontSize(baseFontSize * 0.8);
   doc.setFont("times", "normal");
-  doc.text("UPI ID: chayanika822@iob", margin, finalY + 15);
+  doc.text("UPI ID: chayanika822@iob", margin, finalY + 5);
 
-  // CENTER: QR CODE
-  const qrSize = 30;
-  const qrX = (pageWidth / 2) - (qrSize / 2);
-  doc.setFont("times", "bold");
-  doc.text("CHAYANIKA", pageWidth / 2, finalY + 5, { align: "center" });
-  doc.addImage(QR_CODE_BASE64, "PNG", qrX, finalY + 7, qrSize, qrSize);
-  doc.setFontSize(baseFontSize * 0.7);
-  doc.text("SCAN & PAY", pageWidth / 2, finalY + qrSize + 11, { align: "center" });
+  // QR CODE
+  const qrSize = 25;
+  try {
+    const qrDataUrl = await QRCode.toDataURL("upi://pay?pa=chayanika822@iob&pn=CHAYANIKA&cu=INR");
+    doc.addImage(qrDataUrl, "PNG", margin, finalY + 8, qrSize, qrSize);
+  } catch (error) {
+    console.error("Failed to generate QR code:", error);
+    doc.rect(margin, finalY + 8, qrSize, qrSize);
+    doc.text("QR", margin + qrSize / 2, finalY + 8 + qrSize / 2, { align: "center" });
+    doc.text("CODE", margin + qrSize / 2, finalY + 8 + qrSize / 2 + 3, { align: "center" });
+  }
+  doc.text("SCAN & PAY", margin + qrSize / 2, finalY + qrSize + 12, { align: "center" });
 
   // RIGHT: TOTALS
   doc.setFontSize(baseFontSize * 0.9);
@@ -155,7 +172,14 @@ export const generateBillPDF = (bill: Bill) => {
   doc.text("(Customer Signature)", pageWidth - margin, footerY + 4, { align: "right" });
   doc.line(pageWidth - margin - 30, footerY + 8, pageWidth - margin, footerY + 8);
 
-  // Save PDF
+  // Save or Print PDF
   const filename = `bill_${bill.billNo}_${bill.customerName.replace(/\s+/g, "_")}_${new Date(bill.date).toISOString().split("T")[0]}.pdf`;
-  doc.save(filename);
+  
+  if (action === "print") {
+    doc.autoPrint();
+    const pdfBlobUrl = doc.output("bloburl");
+    window.open(pdfBlobUrl, "_blank");
+  } else {
+    doc.save(filename);
+  }
 };

@@ -7,24 +7,25 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
 // Use named database if provided, otherwise default
+console.log("Initializing Firestore with database ID:", firebaseConfig.firestoreDatabaseId);
 export const db = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== "(default)"
   ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
   : getFirestore(app);
 
 // Test connection to Firestore
 import { getDocFromServer, doc } from "firebase/firestore";
-async function testConnection() {
-  try {
-    await getDocFromServer(doc(db, 'settings', 'connection_test'));
-    console.log("Firestore connection test successful.");
-  } catch (error: any) {
-    if (error.message?.includes('client is offline') || error.code === 'unavailable') {
-      console.error("Firestore connection failed: The client is offline or the database is unavailable.");
-    } else if (error.message?.includes('NOT_FOUND') || error.code === 'not-found') {
-      console.warn("Firestore database not found. Please ensure the database ID in firebase-applet-config.json is correct.");
-    }
-  }
-}
-testConnection();
+// async function testConnection() {
+//   try {
+//     await getDocFromServer(doc(db, 'settings', 'access'));
+//     console.log("Firestore connection test successful.");
+//   } catch (error: any) {
+//     if (error.message?.includes('client is offline') || error.code === 'unavailable') {
+//       console.error("Firestore connection failed: The client is offline or the database is unavailable.");
+//     } else if (error.message?.includes('NOT_FOUND') || error.code === 'not-found') {
+//       console.log("Firestore connection test: Document not found, but connection is established.");
+//     }
+//   }
+// }
+// testConnection();
 
 export default app;

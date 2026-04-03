@@ -10,6 +10,9 @@ export default function PurchaseGroup() {
   const [products, setProducts] = useState<Product[]>([]);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showGroupDropdown, setShowGroupDropdown] = useState(false);
+  const [showSubgroupDropdown, setShowSubgroupDropdown] = useState(false);
+  const [showProductDropdown, setShowProductDropdown] = useState(false);
   
   const [formData, setFormData] = useState({
     groupName: "",
@@ -74,21 +77,55 @@ export default function PurchaseGroup() {
       if (!subgroupId) throw new Error("Failed to create subgroup");
 
       // 3. Handle Product
-      await productApi.add({
-        name: productName.trim(),
-        groupId,
-        groupName: groupName.trim(),
-        subgroupId,
-        subgroupName: subgroupName.trim(),
-        stock,
-        purchaseRate,
-        wholesaleRate: formData.wholesaleRate,
-        mrp,
-        unit: "Pcs",
-        updatedAt: Date.now(),
-      });
+      let existingProduct = products.find(p => 
+        p.name.toLowerCase() === productName.trim().toLowerCase() &&
+        p.groupId === groupId &&
+        p.subgroupId === subgroupId
+      );
 
-      toast.success("Product added successfully with Group and Subgroup");
+      if (existingProduct) {
+        if (stock < existingProduct.stock) {
+          toast.error(`Stock cannot be decreased. Current stock is ${existingProduct.stock}`);
+          return;
+        }
+        if (purchaseRate < existingProduct.purchaseRate) {
+          toast.error(`Purchase rate cannot be decreased. Current is ${existingProduct.purchaseRate}`);
+          return;
+        }
+        if (wholesaleRate < existingProduct.wholesaleRate) {
+          toast.error(`Wholesale rate cannot be decreased. Current is ${existingProduct.wholesaleRate}`);
+          return;
+        }
+        if (mrp < existingProduct.mrp) {
+          toast.error(`MRP cannot be decreased. Current is ${existingProduct.mrp}`);
+          return;
+        }
+
+        await productApi.update(existingProduct.id, {
+          stock,
+          purchaseRate,
+          wholesaleRate,
+          mrp,
+          updatedAt: Date.now(),
+        });
+        toast.success("Product updated successfully");
+      } else {
+        await productApi.add({
+          name: productName.trim(),
+          groupId,
+          groupName: groupName.trim(),
+          subgroupId,
+          subgroupName: subgroupName.trim(),
+          stock,
+          purchaseRate,
+          wholesaleRate,
+          mrp,
+          unit: "Pcs",
+          updatedAt: Date.now(),
+        });
+        toast.success("Product added successfully with Group and Subgroup");
+      }
+
       setFormData({
         groupName: "",
         subgroupName: "",
@@ -134,72 +171,124 @@ export default function PurchaseGroup() {
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
         <div className="space-y-4">
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-muted mb-2">Group / Company Name *</label>
             <input
               required
               type="text"
               name="groupName"
-              list="group-list"
               value={formData.groupName}
-              onChange={handleChange}
+              onChange={(e) => {
+                handleChange(e);
+                setShowGroupDropdown(true);
+              }}
+              onFocus={() => setShowGroupDropdown(true)}
+              onBlur={() => setTimeout(() => setShowGroupDropdown(false), 200)}
               className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
               placeholder="Select or type group name"
+              autoComplete="off"
             />
-            <datalist id="group-list">
-              {groups.map(g => (
-                <option key={g.id} value={g.name} />
-              ))}
-            </datalist>
+            {showGroupDropdown && formData.groupName && (
+              <div className="absolute z-10 w-full mt-1 bg-surface border border-accent/10 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                {groups
+                  .filter(g => g.name.toLowerCase().includes(formData.groupName.toLowerCase()))
+                  .map(g => (
+                    <div
+                      key={g.id}
+                      className="px-4 py-2 hover:bg-primary/50 cursor-pointer text-text"
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, groupName: g.name }));
+                        setShowGroupDropdown(false);
+                      }}
+                    >
+                      {g.name}
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
 
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-muted mb-2">Subgroup / Category *</label>
             <input
               required
               type="text"
               name="subgroupName"
-              list="subgroup-list"
               value={formData.subgroupName}
-              onChange={handleChange}
+              onChange={(e) => {
+                handleChange(e);
+                setShowSubgroupDropdown(true);
+              }}
+              onFocus={() => setShowSubgroupDropdown(true)}
+              onBlur={() => setTimeout(() => setShowSubgroupDropdown(false), 200)}
               className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
               placeholder="Select or type subgroup"
+              autoComplete="off"
             />
-            <datalist id="subgroup-list">
-              {subgroups
-                .filter(sg => {
-                  if (!formData.groupName) return true;
-                  const group = groups.find(g => g.name.toLowerCase() === formData.groupName.toLowerCase());
-                  return group ? sg.groupId === group.id : true;
-                })
-                .map(sg => (
-                  <option key={sg.id} value={sg.name} />
-                ))}
-            </datalist>
+            {showSubgroupDropdown && formData.subgroupName && (
+              <div className="absolute z-10 w-full mt-1 bg-surface border border-accent/10 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                {subgroups
+                  .filter(sg => {
+                    const matchesName = sg.name.toLowerCase().includes(formData.subgroupName.toLowerCase());
+                    if (!formData.groupName) return matchesName;
+                    const group = groups.find(g => g.name.toLowerCase() === formData.groupName.toLowerCase());
+                    return group ? (sg.groupId === group.id && matchesName) : matchesName;
+                  })
+                  .map(sg => (
+                    <div
+                      key={sg.id}
+                      className="px-4 py-2 hover:bg-primary/50 cursor-pointer text-text"
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, subgroupName: sg.name }));
+                        setShowSubgroupDropdown(false);
+                      }}
+                    >
+                      {sg.name}
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
 
-          <div>
+          <div className="relative">
             <label className="block text-sm font-medium text-muted mb-2">Product Name *</label>
             <input
               required
               type="text"
               name="productName"
-              list="product-list"
               value={formData.productName}
-              onChange={handleChange}
+              onChange={(e) => {
+                handleChange(e);
+                setShowProductDropdown(true);
+              }}
+              onFocus={() => setShowProductDropdown(true)}
+              onBlur={() => setTimeout(() => setShowProductDropdown(false), 200)}
               className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
               placeholder="Select or type product name"
+              autoComplete="off"
             />
-            <datalist id="product-list">
-              {products
-                .filter(p => {
-                  if (!formData.subgroupName) return true;
-                  return p.subgroupName?.toLowerCase() === formData.subgroupName.toLowerCase();
-                })
-                .map(p => (
-                  <option key={p.id} value={p.name} />
-                ))}
-            </datalist>
+            {showProductDropdown && formData.productName && (
+              <div className="absolute z-10 w-full mt-1 bg-surface border border-accent/10 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                {products
+                  .filter(p => {
+                    const matchesName = p.name.toLowerCase().includes(formData.productName.toLowerCase());
+                    if (!formData.subgroupName) return matchesName;
+                    return p.subgroupName?.toLowerCase() === formData.subgroupName.toLowerCase() && matchesName;
+                  })
+                  .map(p => (
+                    <div
+                      key={p.id}
+                      className="px-4 py-2 hover:bg-primary/50 cursor-pointer text-text"
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, productName: p.name }));
+                        setShowProductDropdown(false);
+                      }}
+                    >
+                      {p.name}
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
         </div>
 
