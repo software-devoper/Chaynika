@@ -236,7 +236,11 @@ export const billApi = {
     const path = "bills";
     const q = query(collection(db, path), orderBy("date", "desc"));
     return onSnapshot(q, (snapshot) => {
-      const bills = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Bill));
+      const bills = snapshot.docs.map(doc => {
+        const data = doc.data();
+        console.log("Doc ID:", doc.id, "Data:", data);
+        return { id: doc.id, ...data } as Bill;
+      });
       callback(bills);
     }, (error) => {
       handleFirestoreError(error, OperationType.GET, path);
