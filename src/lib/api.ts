@@ -256,6 +256,7 @@ export const billApi = {
       }
       const newBillNo = `${lastBillNo + 1}`;
       
+      // Create a new document reference with an auto-generated ID
       const billRef = await addDoc(collection(db, path), { ...bill, billNo: newBillNo, date: Date.now() });
       
       // Save/Update customer details
