@@ -14,6 +14,7 @@ export default function BillHistory() {
 
   useEffect(() => {
     const unsubscribe = billApi.getAll((data) => {
+      console.log("Bills received from API:", data);
       setBills(data);
       setLoading(false);
     });
