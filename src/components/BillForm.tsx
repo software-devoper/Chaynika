@@ -177,6 +177,8 @@ export default function BillForm() {
       setBillItems([]);
       setPreviousDue(0);
       setPaidAmount(0);
+      setSearchTerm("");
+      setSearchResults([]);
     } catch (error) {
       console.error("Failed to save bill:", error);
       toast.error(`Failed to save bill: ${error instanceof Error ? error.message : "Unknown error"}`);
@@ -207,9 +209,9 @@ export default function BillForm() {
               <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl z-20 max-h-48 overflow-y-auto">
                 {customers
                   .filter(c => c.name.toLowerCase().includes((customer.name || "").toLowerCase()))
-                  .map(c => (
+                  .map((c, index) => (
                     <div
-                      key={c.id}
+                      key={`${c.id}-${index}`}
                       className="px-4 py-2 hover:bg-primary cursor-pointer text-sm"
                       onClick={() => handleCustomerSelect(c)}
                     >
@@ -245,7 +247,7 @@ export default function BillForm() {
               )}
             </div>
             {phones.map((phone, index) => (
-              <div key={index} className="relative group">
+              <div key={`phone-${index}`} className="relative group">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted text-xs font-bold">
                   {index === 0 ? "PRI" : `ALT ${index}`}
                 </div>
@@ -304,9 +306,9 @@ export default function BillForm() {
           
           {searchResults.length > 0 && (
             <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-accent/20 rounded-xl shadow-2xl z-10 overflow-hidden divide-y divide-accent/5">
-              {searchResults.map((p) => (
+              {searchResults.map((p, index) => (
                 <button
-                  key={p.id}
+                  key={`${p.id}-${index}`}
                   onClick={() => addProductToBill(p)}
                   className="w-full text-left px-4 py-3 hover:bg-primary transition-colors flex justify-between items-center"
                 >

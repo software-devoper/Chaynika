@@ -70,8 +70,8 @@ export default function BillHistory() {
             </tr>
           </thead>
           <tbody className="text-sm">
-            {filteredBills.map((bill) => (
-              <tr key={bill.id} className="border-b border-accent/5 hover:bg-primary/50 transition-colors">
+            {filteredBills.map((bill, index) => (
+              <tr key={`${bill.id}-${index}`} className="border-b border-accent/5 hover:bg-primary/50 transition-colors">
                 <td className="px-4 py-4 font-bold text-accent">{bill.billNo}</td>
                 <td className="px-4 py-4 font-medium">{bill.customerName}</td>
                 <td className="px-4 py-4 text-muted">

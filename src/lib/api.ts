@@ -15,7 +15,8 @@ import {
   setDoc,
   serverTimestamp,
   increment,
-  limit
+  limit,
+  writeBatch
 } from "firebase/firestore";
 import { db, auth } from "./firebase";
 import { Product, Group, Subgroup, Bill, CustomerDue, Customer } from "../types";
@@ -336,10 +337,24 @@ export const dueApi = {
       handleFirestoreError(error, OperationType.GET, path);
     });
   },
-  markPaid: async (phone: string) => {
+  markPaid: async (phone: string, additionalPhones: string[]) => {
     const path = `dues/${phone}`;
     try {
-      return await deleteDoc(doc(db, "dues", phone));
+      // 1. Delete the due document
+      await deleteDoc(doc(db, "dues", phone));
+      
+      // 2. Update all bills for this phone number and additional phone numbers to set dueAmount to 0
+      const allPhones = [phone, ...additionalPhones];
+      const billsQuery = query(collection(db, "bills"), where("customerPhone", "in", allPhones));
+      const billsSnapshot = await getDocs(billsQuery);
+      
+      const batch = writeBatch(db);
+      billsSnapshot.forEach((doc) => {
+        batch.update(doc.ref, { dueAmount: 0 });
+      });
+      await batch.commit();
+      
+      return;
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, path);
     }

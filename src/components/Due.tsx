@@ -25,10 +25,10 @@ export default function Due() {
       d.additionalPhones?.some(p => p.includes(searchTerm))
   );
 
-  const handleMarkPaid = async (phone: string) => {
+  const handleMarkPaid = async (due: CustomerDue) => {
     if (window.confirm("Mark all dues as paid for this customer?")) {
       try {
-        await dueApi.markPaid(phone);
+        await dueApi.markPaid(due.customerPhone, due.additionalPhones || []);
         toast.success("Dues cleared successfully");
       } catch (err) {
         toast.error("Failed to clear dues");
@@ -87,7 +87,7 @@ export default function Due() {
                   <td className="px-4 py-4 text-muted">{formatDate(due.lastBillDate)}</td>
                   <td className="px-4 py-4 text-center">
                     <button
-                      onClick={() => handleMarkPaid(due.customerPhone)}
+                      onClick={() => handleMarkPaid(due)}
                       className="flex items-center gap-2 px-4 py-2 bg-green-500/10 text-green-500 rounded-lg hover:bg-green-500 hover:text-white transition-all mx-auto"
                     >
                       <CheckCircle size={16} /> Mark Paid
