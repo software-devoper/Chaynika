@@ -42,10 +42,8 @@ async function startServer() {
     let db: admin.firestore.Firestore;
     try {
       if (!admin.apps.length) {
-        console.log("Initializing Firebase Admin with projectId:", firebaseConfig.projectId);
-        admin.initializeApp({
-          projectId: firebaseConfig.projectId,
-        });
+        console.log("Initializing Firebase Admin with default credentials...");
+        admin.initializeApp();
       }
       
       const dbDefault = getFirestore(admin.app());
