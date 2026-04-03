@@ -173,6 +173,7 @@ export default function PurchaseEdit() {
             <label className="block text-sm font-medium text-muted mb-2">Stock Quantity</label>
             <input
               type="number"
+              min="0"
               value={selectedProduct.stock}
               onChange={(e) => setSelectedProduct({ ...selectedProduct, stock: Number(e.target.value) })}
               className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
@@ -183,6 +184,7 @@ export default function PurchaseEdit() {
             <label className="block text-sm font-medium text-muted mb-2">Purchase Rate</label>
             <input
               type="number"
+              min="0"
               value={selectedProduct.purchaseRate}
               onChange={(e) => setSelectedProduct({ ...selectedProduct, purchaseRate: Number(e.target.value) })}
               className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
@@ -193,6 +195,7 @@ export default function PurchaseEdit() {
             <label className="block text-sm font-medium text-muted mb-2">Wholesale Rate</label>
             <input
               type="number"
+              min="0"
               value={selectedProduct.wholesaleRate}
               onChange={(e) => setSelectedProduct({ ...selectedProduct, wholesaleRate: Number(e.target.value) })}
               className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
@@ -203,6 +206,7 @@ export default function PurchaseEdit() {
             <label className="block text-sm font-medium text-muted mb-2">MRP</label>
             <input
               type="number"
+              min="0"
               value={selectedProduct.mrp}
               onChange={(e) => setSelectedProduct({ ...selectedProduct, mrp: Number(e.target.value) })}
               className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"

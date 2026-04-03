@@ -238,15 +238,15 @@ export const billApi = {
     return onSnapshot(q, (snapshot) => {
       const bills = snapshot.docs.map(doc => {
         const data = doc.data();
-        console.log("Doc ID:", doc.id, "Data:", data);
-        return { id: doc.id, ...data } as Bill;
+        // Ensure id is set from Firestore document ID, overriding any potential id field in data
+        return { ...data, id: doc.id } as Bill;
       });
       callback(bills);
     }, (error) => {
       handleFirestoreError(error, OperationType.GET, path);
     });
   },
-  create: async (bill: Omit<Bill, "id">) => {
+  create: async (bill: Bill) => {
     const path = "bills";
     try {
       const billsSnapshot = await getDocs(query(collection(db, path), orderBy("date", "desc"), limit(1)));
@@ -260,8 +260,11 @@ export const billApi = {
       }
       const newBillNo = `${lastBillNo + 1}`;
       
+      // Remove 'id' from bill object before saving to Firestore
+      const { id, ...billWithoutId } = bill;
+      
       // Create a new document reference with an auto-generated ID
-      const billRef = await addDoc(collection(db, path), { ...bill, billNo: newBillNo, date: Date.now() });
+      const billRef = await addDoc(collection(db, path), { ...billWithoutId, billNo: newBillNo, date: Date.now() });
       
       // Save/Update customer details
       if (bill.customerPhone) {
@@ -366,6 +369,50 @@ export const dueApi = {
       return;
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, path);
+    }
+  },
+  updateDueAmount: async (phone: string, additionalPhones: string[], amountPaid: number) => {
+    const path = `dues/${phone}`;
+    try {
+      const dueRef = doc(db, "dues", phone);
+      const dueSnap = await getDoc(dueRef);
+      
+      if (!dueSnap.exists()) {
+        throw new Error("Due document not found");
+      }
+      
+      const currentDue = dueSnap.data().amount;
+      const newDue = Math.max(0, currentDue - amountPaid);
+      
+      // 1. Update the due document
+      await updateDoc(dueRef, {
+        amount: newDue
+      });
+      
+      // 2. Update bills to reflect the payment
+      const allPhones = [phone, ...additionalPhones];
+      const billsQuery = query(collection(db, "bills"), where("customerPhone", "in", allPhones), orderBy("date", "desc"));
+      const billsSnapshot = await getDocs(billsQuery);
+      
+      const batch = writeBatch(db);
+      let remainingPayment = amountPaid;
+      
+      billsSnapshot.forEach((doc) => {
+        if (remainingPayment <= 0) return;
+        
+        const bill = doc.data() as Bill;
+        if (bill.dueAmount > 0) {
+          const paymentForThisBill = Math.min(remainingPayment, bill.dueAmount);
+          batch.update(doc.ref, { dueAmount: increment(-paymentForThisBill) });
+          remainingPayment -= paymentForThisBill;
+        }
+      });
+      
+      await batch.commit();
+      
+      return;
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, path);
     }
   },
 };

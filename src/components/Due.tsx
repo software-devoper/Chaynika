@@ -36,6 +36,27 @@ export default function Due() {
     }
   };
 
+  const handlePartlyPaid = async (due: CustomerDue) => {
+    const amount = prompt("Enter amount to pay:");
+    if (amount) {
+      const parsedAmount = parseFloat(amount);
+      if (isNaN(parsedAmount) || parsedAmount <= 0) {
+        toast.error("Invalid amount");
+        return;
+      }
+      if (parsedAmount > due.amount) {
+        toast.error("Amount exceeds due amount");
+        return;
+      }
+      try {
+        await dueApi.updateDueAmount(due.customerPhone, due.additionalPhones || [], parsedAmount);
+        toast.success("Partial payment recorded");
+      } catch (err) {
+        toast.error("Failed to record partial payment");
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="relative">
@@ -86,12 +107,20 @@ export default function Due() {
                   <td className="px-4 py-4 text-right font-bold text-red-500">{formatCurrency(due.amount)}</td>
                   <td className="px-4 py-4 text-muted">{formatDate(due.lastBillDate)}</td>
                   <td className="px-4 py-4 text-center">
-                    <button
-                      onClick={() => handleMarkPaid(due)}
-                      className="flex items-center gap-2 px-4 py-2 bg-green-500/10 text-green-500 rounded-lg hover:bg-green-500 hover:text-white transition-all mx-auto"
-                    >
-                      <CheckCircle size={16} /> Mark Paid
-                    </button>
+                    <div className="flex gap-2 justify-center">
+                      <button
+                        onClick={() => handleMarkPaid(due)}
+                        className="px-3 py-1.5 bg-green-500/10 text-green-500 rounded-lg hover:bg-green-500 hover:text-white transition-all text-xs font-bold"
+                      >
+                        Full Paid
+                      </button>
+                      <button
+                        onClick={() => handlePartlyPaid(due)}
+                        className="px-3 py-1.5 bg-accent/10 text-accent rounded-lg hover:bg-accent hover:text-primary transition-all text-xs font-bold"
+                      >
+                        Partly Paid
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))

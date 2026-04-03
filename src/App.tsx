@@ -23,6 +23,7 @@ import { Loader2, Lock, User as UserIcon, Eye, EyeOff } from "lucide-react";
 export default function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
@@ -229,19 +230,28 @@ export default function App() {
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-primary">
-        <Navbar />
+        <Navbar onMenuClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)} />
         <div className="flex pt-16">
-          <Sidebar 
-            activeTab={activeTab} 
-            setActiveTab={setActiveTab} 
-            collapsed={collapsed} 
-            setCollapsed={setCollapsed}
-            onLogout={handleLogout}
-          />
+          <div className={cn(
+            "fixed inset-0 z-40 bg-primary/80 lg:hidden",
+            isMobileSidebarOpen ? "block" : "hidden"
+          )} onClick={() => setIsMobileSidebarOpen(false)} />
+          <div className={cn(
+            "fixed inset-y-0 left-0 z-50 w-[220px] bg-primary border-r border-accent/10 lg:static lg:block lg:w-auto lg:border-none",
+            isMobileSidebarOpen ? "block" : "hidden"
+          )}>
+            <Sidebar 
+              activeTab={activeTab} 
+              setActiveTab={(tab) => { setActiveTab(tab); setIsMobileSidebarOpen(false); }}
+              collapsed={collapsed} 
+              setCollapsed={setCollapsed}
+              onLogout={handleLogout}
+            />
+          </div>
           <main 
             className={cn(
               "flex-1 p-6 transition-all duration-200",
-              collapsed ? "ml-20" : "ml-[220px]"
+              collapsed ? "lg:ml-20" : "lg:ml-[220px]"
             )}
           >
             <div className="max-w-7xl mx-auto">

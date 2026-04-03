@@ -23,6 +23,7 @@ export default function BillForm() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [paidAmount, setPaidAmount] = useState(0);
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const [showPurchasePrice, setShowPurchasePrice] = useState(false);
 
   useEffect(() => {
     const unsubscribeProducts = productApi.getAll(setProducts);
@@ -104,8 +105,8 @@ export default function BillForm() {
         productId: product.id,
         productName: product.name,
         qty: 1,
-        price: product.mrp,
-        total: product.mrp,
+        price: product.wholesaleRate,
+        total: product.wholesaleRate,
       };
       setBillItems([...billItems, newItem]);
     }
@@ -273,7 +274,7 @@ export default function BillForm() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-muted mb-2">Email</label>
+            <label className="block text-sm font-medium text-muted mb-2">Email (Optional)</label>
             <input
               type="email"
               value={customer.email}
@@ -314,7 +315,9 @@ export default function BillForm() {
                 >
                   <div>
                     <div className="font-medium">{p.name}</div>
-                    <div className="text-xs text-muted">Stock: {p.stock} | MRP: {formatCurrency(p.mrp)}</div>
+                    <div className="text-xs text-muted">
+                      Stock: {p.stock} | MRP: {formatCurrency(p.mrp)} | Purchase: {formatCurrency(p.purchaseRate)}
+                    </div>
                   </div>
                   <Plus size={18} className="text-accent" />
                 </button>
@@ -329,6 +332,17 @@ export default function BillForm() {
               <tr className="border-b border-accent/10 text-muted text-xs uppercase tracking-wider">
                 <th className="px-2 py-3 font-medium">Sr.</th>
                 <th className="px-2 py-3 font-medium">Particular</th>
+                <th className="px-2 py-3 font-medium text-right">
+                  <div className="flex items-center justify-end gap-2">
+                    {showPurchasePrice && "Preview"}
+                    <button
+                      onClick={() => setShowPurchasePrice(!showPurchasePrice)}
+                      className="text-[10px] bg-accent/10 text-accent px-2 py-0.5 rounded hover:bg-accent/20 transition-all"
+                    >
+                      {showPurchasePrice ? "Hide" : "View Preview"}
+                    </button>
+                  </div>
+                </th>
                 <th className="px-2 py-3 font-medium text-right">Rate</th>
                 <th className="px-2 py-3 font-medium text-center">Qty</th>
                 <th className="px-2 py-3 font-medium text-right">Total</th>
@@ -340,6 +354,9 @@ export default function BillForm() {
                 <tr key={item.productId} className="border-b border-accent/5">
                   <td className="px-2 py-4">{index + 1}</td>
                   <td className="px-2 py-4 font-medium">{item.productName}</td>
+                  <td className="px-2 py-4 text-right text-muted">
+                    {showPurchasePrice ? formatCurrency(products.find(p => p.id === item.productId)?.purchaseRate || 0) : ""}
+                  </td>
                   <td className="px-2 py-4 text-right">{formatCurrency(item.price)}</td>
                   <td className="px-2 py-4">
                     <input
@@ -359,7 +376,7 @@ export default function BillForm() {
               ))}
               {billItems.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-2 py-8 text-center text-muted italic">No products added to bill</td>
+                  <td colSpan={7} className="px-2 py-8 text-center text-muted italic">No products added to bill</td>
                 </tr>
               )}
             </tbody>

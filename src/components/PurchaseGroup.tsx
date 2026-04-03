@@ -297,6 +297,7 @@ export default function PurchaseGroup() {
             <label className="block text-sm font-medium text-muted mb-2">Stock Quantity</label>
             <input
               type="number"
+              min="0"
               name="stock"
               value={formData.stock}
               onChange={handleChange}
@@ -308,6 +309,7 @@ export default function PurchaseGroup() {
             <label className="block text-sm font-medium text-muted mb-2">Purchase Rate</label>
             <input
               type="number"
+              min="0"
               name="purchaseRate"
               value={formData.purchaseRate}
               onChange={handleChange}
@@ -319,6 +321,7 @@ export default function PurchaseGroup() {
             <label className="block text-sm font-medium text-muted mb-2">Wholesale Rate</label>
             <input
               type="number"
+              min="0"
               name="wholesaleRate"
               value={formData.wholesaleRate}
               onChange={handleChange}
@@ -330,6 +333,7 @@ export default function PurchaseGroup() {
             <label className="block text-sm font-medium text-muted mb-2">MRP</label>
             <input
               type="number"
+              min="0"
               name="mrp"
               value={formData.mrp}
               onChange={handleChange}
