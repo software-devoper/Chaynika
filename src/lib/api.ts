@@ -318,9 +318,13 @@ export const billApi = {
   },
   delete: async (id: string) => {
     const path = `bills/${id}`;
+    console.log(`Attempting to delete bill at path: ${path}`);
     try {
-      return await deleteDoc(doc(db, "bills", id));
+      const result = await deleteDoc(doc(db, "bills", id));
+      console.log(`Successfully deleted bill: ${id}`);
+      return result;
     } catch (error) {
+      console.error(`Failed to delete bill: ${id}`, error);
       handleFirestoreError(error, OperationType.DELETE, path);
     }
   },
