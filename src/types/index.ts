@@ -41,6 +41,7 @@ export interface CustomerDue {
   customerPhone: string;
   additionalPhones?: string[];
   customerAddress: string;
+  productNames?: string;
   amount: number;
   lastBillDate: number;
 }
@@ -48,6 +49,7 @@ export interface CustomerDue {
 export interface PartyDue {
   id: string;
   partyName: string;
+  productNames?: string;
   amount: number;
   lastPurchaseDate: number;
 }
@@ -57,7 +59,6 @@ export interface BillItem {
   productName: string;
   qty: number;
   price: number;
-  mrp?: number;
   total: number;
 }
 

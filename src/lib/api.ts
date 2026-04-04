@@ -292,6 +292,7 @@ export const billApi = {
 
       // Update customer dues
       const dueChange = bill.subtotal - bill.paidAmount;
+      const productNamesStr = bill.items.map(item => item.productName).join(", ");
       if (dueChange !== 0 || bill.dueAmount > 0) {
         const duePath = `dues/${bill.customerPhone}`;
         try {
@@ -299,10 +300,18 @@ export const billApi = {
           const dueSnap = await getDoc(dueRef);
           
           if (dueSnap.exists()) {
+            const data = dueSnap.data();
+            let updatedProductNames = data.productNames || "";
+            const existingNames = updatedProductNames.split(", ").filter(Boolean);
+            const newNames = productNamesStr.split(", ").filter(Boolean);
+            const combined = Array.from(new Set([...existingNames, ...newNames]));
+            updatedProductNames = combined.join(", ");
+
             await updateDoc(dueRef, {
               amount: increment(dueChange),
               lastBillDate: Date.now(),
-              additionalPhones: bill.additionalPhones || []
+              additionalPhones: bill.additionalPhones || [],
+              productNames: updatedProductNames
             });
           } else {
             await setDoc(dueRef, {
@@ -311,7 +320,8 @@ export const billApi = {
               customerAddress: bill.customerAddress,
               amount: Math.max(0, dueChange),
               lastBillDate: Date.now(),
-              additionalPhones: bill.additionalPhones || []
+              additionalPhones: bill.additionalPhones || [],
+              productNames: productNamesStr
             });
           }
         } catch (error) {
@@ -428,22 +438,33 @@ export const partyDueApi = {
       handleFirestoreError(error, OperationType.GET, path);
     });
   },
-  addOrUpdate: async (partyName: string, dueChange: number) => {
+  addOrUpdate: async (partyName: string, dueChange: number, productNames?: string) => {
     const path = `partyDues/${partyName}`;
     try {
       const dueRef = doc(db, "partyDues", partyName);
       const dueSnap = await getDoc(dueRef);
       
       if (dueSnap.exists()) {
+        const data = dueSnap.data();
+        let updatedProductNames = data.productNames || "";
+        if (productNames) {
+          const existingNames = updatedProductNames.split(", ").filter(Boolean);
+          const newNames = productNames.split(", ").filter(Boolean);
+          const combined = Array.from(new Set([...existingNames, ...newNames]));
+          updatedProductNames = combined.join(", ");
+        }
+
         await updateDoc(dueRef, {
           amount: increment(dueChange),
-          lastPurchaseDate: Date.now()
+          lastPurchaseDate: Date.now(),
+          ...(productNames ? { productNames: updatedProductNames } : {})
         });
       } else {
         await setDoc(dueRef, {
           partyName,
           amount: Math.max(0, dueChange),
-          lastPurchaseDate: Date.now()
+          lastPurchaseDate: Date.now(),
+          productNames: productNames || ""
         });
       }
     } catch (error) {

@@ -255,7 +255,8 @@ export default function PurchaseGroup() {
       // 3. Handle Party Due
       const dueChange = totalPurchaseAmount - (Number(payableAmount) || 0);
       if (dueChange !== 0) {
-        await partyDueApi.addOrUpdate(partyName.trim(), dueChange);
+        const productNamesStr = itemsToProcess.map(item => item.productName.trim()).join(", ");
+        await partyDueApi.addOrUpdate(partyName.trim(), dueChange, productNamesStr);
       }
 
       toast.success("Products saved successfully");

@@ -183,6 +183,7 @@ export default function Due() {
               <th className="px-4 py-4 font-medium">{activeTab === "sales" ? "Customer Name" : "Party Name"}</th>
               {activeTab === "sales" && <th className="px-4 py-4 font-medium">Phone</th>}
               {activeTab === "sales" && <th className="px-4 py-4 font-medium">Address</th>}
+              <th className="px-4 py-4 font-medium">Product Name</th>
               <th className="px-4 py-4 font-medium text-right">Amount</th>
               <th className="px-4 py-4 font-medium">{activeTab === "sales" ? "Last Bill Date" : "Last Purchase Date"}</th>
               <th className="px-4 py-4 font-medium text-center">Action</th>
@@ -191,7 +192,7 @@ export default function Due() {
           <tbody className="text-sm">
             {loading ? (
               <tr>
-                <td colSpan={activeTab === "sales" ? 7 : 5} className="px-4 py-12 text-center text-muted italic">
+                <td colSpan={activeTab === "sales" ? 8 : 6} className="px-4 py-12 text-center text-muted italic">
                   Loading dues...
                 </td>
               </tr>
@@ -215,6 +216,9 @@ export default function Due() {
                     )}
                   </td>
                   <td className="px-4 py-4 text-muted">{due.customerAddress}</td>
+                  <td className="px-4 py-4 text-muted max-w-[150px] truncate" title={due.productNames}>
+                    {due.productNames || "N/A"}
+                  </td>
                   <td className="px-4 py-4 text-right font-bold text-green-500">{formatCurrency(due.amount)}</td>
                   <td className="px-4 py-4 text-muted">{formatDate(due.lastBillDate)}</td>
                   <td className="px-4 py-4 text-center">
@@ -252,6 +256,9 @@ export default function Due() {
                 >
                   <td className="px-4 py-4">{index + 1}</td>
                   <td className="px-4 py-4 font-medium">{due.partyName}</td>
+                  <td className="px-4 py-4 text-muted max-w-[200px] truncate" title={due.productNames}>
+                    {due.productNames || "N/A"}
+                  </td>
                   <td className="px-4 py-4 text-right font-bold text-red-500">{formatCurrency(due.amount)}</td>
                   <td className="px-4 py-4 text-muted">{formatDate(due.lastPurchaseDate)}</td>
                   <td className="px-4 py-4 text-center">
@@ -281,14 +288,14 @@ export default function Due() {
             )}
             {!loading && activeTab === "sales" && filteredCustomerDues.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-muted italic">
+                <td colSpan={8} className="px-4 py-12 text-center text-muted italic">
                   No pending sales dues found
                 </td>
               </tr>
             )}
             {!loading && activeTab === "purchase" && filteredPartyDues.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-muted italic">
+                <td colSpan={6} className="px-4 py-12 text-center text-muted italic">
                   No pending purchase dues found
                 </td>
               </tr>
