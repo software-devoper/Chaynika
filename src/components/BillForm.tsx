@@ -150,6 +150,9 @@ export default function BillForm() {
     if (action === "save") setIsSaving(true);
     if (action === "print") setIsPrinting(true);
 
+    // Allow UI to update and show the spinner before heavy processing
+    await new Promise(resolve => setTimeout(resolve, 50));
+
     const billData: Bill = {
       id: "",
       billNo: "", // Will be populated by API
