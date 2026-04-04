@@ -48,6 +48,23 @@ export default function PurchaseEdit() {
     }
   };
 
+  const handleDelete = useCallback(async () => {
+    if (!selectedProduct) return;
+    if (window.confirm("Are you sure you want to delete this product?")) {
+      setIsDeleting(true);
+      try {
+        await productApi.delete(selectedProduct.id);
+        toast.success("Product deleted");
+        setSelectedProduct(null);
+        setSearchTerm("");
+      } catch (err) {
+        toast.error("Failed to delete product");
+      } finally {
+        setIsDeleting(false);
+      }
+    }
+  }, [selectedProduct]);
+
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Delete' && (e.target as HTMLElement).tagName !== 'INPUT') {
@@ -89,23 +106,6 @@ export default function PurchaseEdit() {
       setIsUpdating(false);
     }
   };
-
-  const handleDelete = useCallback(async () => {
-    if (!selectedProduct) return;
-    if (window.confirm("Are you sure you want to delete this product?")) {
-      setIsDeleting(true);
-      try {
-        await productApi.delete(selectedProduct.id);
-        toast.success("Product deleted");
-        setSelectedProduct(null);
-        setSearchTerm("");
-      } catch (err) {
-        toast.error("Failed to delete product");
-      } finally {
-        setIsDeleting(false);
-      }
-    }
-  }, [selectedProduct]);
 
   return (
     <motion.div 
