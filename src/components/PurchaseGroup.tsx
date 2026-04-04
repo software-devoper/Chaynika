@@ -4,7 +4,7 @@ import { toast } from "react-hot-toast";
 import { Group, Product } from "../types";
 import { groupApi, productApi, partyDueApi } from "../lib/api";
 import { motion, AnimatePresence } from "motion/react";
-import { formatCurrency } from "../lib/utils";
+import { formatCurrency, capitalizeFirstLetter } from "../lib/utils";
 
 interface PurchaseItem {
   rowId: string;
@@ -287,7 +287,7 @@ export default function PurchaseGroup() {
               type="text"
               value={partyName}
               onChange={(e) => {
-                setPartyName(e.target.value);
+                setPartyName(capitalizeFirstLetter(e.target.value));
                 setShowGroupDropdown(true);
                 setActiveSuggestionIndex(-1);
               }}
@@ -402,7 +402,7 @@ export default function PurchaseGroup() {
                         type="text"
                         value={item.productName}
                         onChange={(e) => {
-                          updateRow(item.rowId, "productName", e.target.value);
+                          updateRow(item.rowId, "productName", capitalizeFirstLetter(e.target.value));
                           setActiveDropdownRowId(item.rowId);
                           setActiveSuggestionIndex(-1);
                         }}

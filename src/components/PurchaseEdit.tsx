@@ -4,6 +4,7 @@ import { toast } from "react-hot-toast";
 import { Group, Product } from "../types";
 import { productApi, groupApi } from "../lib/api";
 import { motion } from "motion/react";
+import { capitalizeFirstLetter } from "../lib/utils";
 
 export default function PurchaseEdit() {
   const [groups, setGroups] = useState<Group[]>([]);
@@ -110,7 +111,7 @@ export default function PurchaseEdit() {
               type="text"
               placeholder="Search product or party..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => setSearchTerm(capitalizeFirstLetter(e.target.value))}
               onKeyDown={handleKeyDown}
               className="w-full bg-primary border border-accent/10 rounded-xl pl-12 pr-4 py-3 text-text focus:border-accent outline-none transition-all shadow-sm"
             />
@@ -168,7 +169,7 @@ export default function PurchaseEdit() {
               required
               type="text"
               value={selectedProduct.name}
-              onChange={(e) => setSelectedProduct({ ...selectedProduct, name: e.target.value })}
+              onChange={(e) => setSelectedProduct({ ...selectedProduct, name: capitalizeFirstLetter(e.target.value) })}
               className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
             />
           </div>

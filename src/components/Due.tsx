@@ -17,6 +17,7 @@ export default function Due() {
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [processingType, setProcessingType] = useState<"full" | "partly" | null>(null);
+  const [selectedDueDetails, setSelectedDueDetails] = useState<{name: string, products: Product[]} | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -190,7 +191,7 @@ export default function Due() {
               {activeTab === "sales" && <th className="px-4 py-4 font-medium text-center">Phone</th>}
               {activeTab === "sales" && <th className="px-4 py-4 font-medium text-center">Address</th>}
               <th className="px-4 py-4 font-medium text-center">{activeTab === "sales" ? "Product Name" : "Products"}</th>
-              {activeTab === "purchase" && <th className="px-4 py-4 font-medium text-center">View Party's Details</th>}
+              <th className="px-4 py-4 font-medium text-center">View Details</th>
               <th className="px-4 py-4 font-medium text-center">Amount</th>
               <th className="px-4 py-4 font-medium text-center">{activeTab === "sales" ? "Last Bill Date" : "Last Purchase Date"}</th>
               <th className="px-4 py-4 font-medium text-center">Action</th>
@@ -235,6 +236,14 @@ export default function Due() {
                         <div className="text-muted text-xs italic text-center">N/A</div>
                       )}
                     </div>
+                  </td>
+                  <td className="px-4 py-4 text-center">
+                    <button 
+                      onClick={() => setSelectedDueDetails({ name: due.customerName, products: products.filter(p => due.productNames?.includes(p.name)) })}
+                      className="text-accent hover:text-accent/80 text-xs font-bold"
+                    >
+                      View Details
+                    </button>
                   </td>
                   <td className="px-4 py-4 text-center font-bold text-green-500">{formatCurrency(due.amount)}</td>
                   <td className="px-4 py-4 text-muted text-center">{formatDate(due.lastBillDate)}</td>
@@ -288,11 +297,14 @@ export default function Due() {
                       )}
                     </div>
                   </td>
-                  {activeTab === "purchase" && (
-                    <td className="px-4 py-4 text-center">
-                      <button className="text-accent hover:text-accent/80 text-xs font-bold">View Details</button>
-                    </td>
-                  )}
+                  <td className="px-4 py-4 text-center">
+                    <button 
+                      onClick={() => setSelectedDueDetails({ name: due.partyName, products: products.filter(p => p.groupName.toLowerCase() === due.partyName.toLowerCase()) })}
+                      className="text-accent hover:text-accent/80 text-xs font-bold"
+                    >
+                      View Details
+                    </button>
+                  </td>
                   <td className="px-4 py-4 text-center font-bold text-red-500">{formatCurrency(due.amount)}</td>
                   <td className="px-4 py-4 text-muted text-center">{formatDate(due.lastPurchaseDate)}</td>
                   <td className="px-4 py-4 text-center">
@@ -329,7 +341,7 @@ export default function Due() {
             )}
             {!loading && activeTab === "purchase" && filteredPartyDues.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-muted italic">
+                <td colSpan={7} className="px-4 py-12 text-center text-muted italic">
                   No pending purchase dues found
                 </td>
               </tr>
@@ -337,6 +349,59 @@ export default function Due() {
           </tbody>
         </table>
       </div>
+
+      {/* Details Modal */}
+      <AnimatePresence>
+        {selectedDueDetails && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-primary/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setSelectedDueDetails(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className="bg-surface border border-accent/20 p-6 rounded-2xl w-full max-w-2xl shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-xl font-bold text-accent mb-4">Details for {selectedDueDetails.name}</h3>
+              <div className="max-h-[60vh] overflow-y-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-primary/50 sticky top-0">
+                    <tr className="text-muted uppercase tracking-wider">
+                      <th className="px-3 py-2 font-medium">Product</th>
+                      <th className="px-3 py-2 font-medium text-center">Stock</th>
+                      <th className="px-3 py-2 font-medium text-center">P.Rate</th>
+                      <th className="px-3 py-2 font-medium text-center">W.Rate</th>
+                      <th className="px-3 py-2 font-medium text-center">MRP</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-accent/5">
+                    {selectedDueDetails.products.map(p => (
+                      <tr key={p.id}>
+                        <td className="px-3 py-2 font-medium text-text">{p.name}</td>
+                        <td className="px-3 py-2 text-center text-accent font-bold">{p.stock}</td>
+                        <td className="px-3 py-2 text-center text-muted">{formatCurrency(p.purchaseRate)}</td>
+                        <td className="px-3 py-2 text-center text-muted">{formatCurrency(p.wholesaleRate)}</td>
+                        <td className="px-3 py-2 text-center text-muted">{formatCurrency(p.mrp)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <button
+                onClick={() => setSelectedDueDetails(null)}
+                className="mt-6 w-full bg-accent text-primary font-bold py-2 rounded-xl hover:opacity-90 transition-all"
+              >
+                Close
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

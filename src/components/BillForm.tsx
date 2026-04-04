@@ -4,7 +4,7 @@ import { toast } from "react-hot-toast";
 import { getDoc } from "firebase/firestore";
 import { auth } from "../lib/firebase";
 import { Product, BillItem, Customer, Bill } from "../types";
-import { formatCurrency } from "../lib/utils";
+import { formatCurrency, capitalizeFirstLetter } from "../lib/utils";
 import { generateBillPDF } from "../lib/BillPDFGenerator";
 import { productApi, billApi, dueApi, customerApi } from "../lib/api";
 import { motion, AnimatePresence } from "motion/react";
@@ -277,7 +277,7 @@ export default function BillForm() {
               type="text"
               value={customer.name}
               onChange={(e) => {
-                setCustomer({ ...customer, name: e.target.value });
+                setCustomer({ ...customer, name: capitalizeFirstLetter(e.target.value) });
                 setShowCustomerDropdown(true);
                 setActiveCustomerSuggestionIndex(-1);
               }}
@@ -310,7 +310,7 @@ export default function BillForm() {
             <input
               type="text"
               value={customer.address}
-              onChange={(e) => setCustomer({ ...customer, address: e.target.value })}
+              onChange={(e) => setCustomer({ ...customer, address: capitalizeFirstLetter(e.target.value) })}
               className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
               placeholder="Enter address"
             />
@@ -414,7 +414,7 @@ export default function BillForm() {
             placeholder="Search product to add..."
             value={searchTerm}
             onChange={(e) => {
-              setSearchTerm(e.target.value);
+              setSearchTerm(capitalizeFirstLetter(e.target.value));
               setActiveProductSuggestionIndex(-1);
             }}
             onKeyDown={handleProductSearchKeyDown}
