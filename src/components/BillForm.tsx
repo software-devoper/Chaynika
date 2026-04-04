@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, Plus, Trash2, X } from "lucide-react";
+import { Search, Plus, Trash2, X, Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { getDoc } from "firebase/firestore";
 import { auth } from "../lib/firebase";
@@ -24,6 +24,8 @@ export default function BillForm() {
   const [paidAmount, setPaidAmount] = useState(0);
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [showPurchasePrice, setShowPurchasePrice] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   useEffect(() => {
     const unsubscribeProducts = productApi.getAll(setProducts);
@@ -145,6 +147,9 @@ export default function BillForm() {
       return;
     }
 
+    if (action === "save") setIsSaving(true);
+    if (action === "print") setIsPrinting(true);
+
     const billData: Bill = {
       id: "",
       billNo: "", // Will be populated by API
@@ -183,6 +188,9 @@ export default function BillForm() {
     } catch (error) {
       console.error("Failed to save bill:", error);
       toast.error(`Failed to save bill: ${error instanceof Error ? error.message : "Unknown error"}`);
+    } finally {
+      setIsSaving(false);
+      setIsPrinting(false);
     }
   };
 
@@ -415,20 +423,25 @@ export default function BillForm() {
           <div className="flex flex-col sm:flex-row gap-4 w-full md:max-w-md">
             <button 
               onClick={() => { setBillItems([]); setCustomer({ name: "", address: "", email: "" }); setPhones([""]); }}
-              className="flex-1 bg-primary text-muted font-bold py-3 rounded-xl hover:text-text transition-all border border-accent/10 sm:border-none"
+              disabled={isSaving || isPrinting}
+              className="flex-1 bg-primary text-muted font-bold py-3 rounded-xl hover:text-text transition-all border border-accent/10 sm:border-none disabled:opacity-50"
             >
               Clear
             </button>
             <button 
               onClick={() => handleGenerateBill("save")}
-              className="flex-1 bg-accent/20 text-accent font-bold py-3 rounded-xl hover:bg-accent/30 transition-all"
+              disabled={isSaving || isPrinting}
+              className="flex-1 bg-accent/20 text-accent font-bold py-3 rounded-xl hover:bg-accent/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
+              {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
               Save as PDF
             </button>
             <button 
               onClick={() => handleGenerateBill("print")}
-              className="flex-1 bg-accent text-primary font-bold py-3 rounded-xl hover:opacity-90 transition-all"
+              disabled={isSaving || isPrinting}
+              className="flex-1 bg-accent text-primary font-bold py-3 rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
+              {isPrinting && <Loader2 className="w-4 h-4 animate-spin" />}
               Print Bill
             </button>
           </div>

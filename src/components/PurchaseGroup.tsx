@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { Group, Subgroup, Product } from "../types";
 import { groupApi, subgroupApi, productApi } from "../lib/api";
@@ -348,7 +348,7 @@ export default function PurchaseGroup() {
             disabled={isSubmitting}
             className="bg-accent text-primary font-bold px-12 py-3 rounded-xl hover:opacity-90 transition-all w-full md:w-auto flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            {isSubmitting && <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>}
+            {isSubmitting && <Loader2 className="w-5 h-5 animate-spin" />}
             {isSubmitting ? "Submitting..." : "Submit"}
           </button>
         </div>

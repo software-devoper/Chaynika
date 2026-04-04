@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, Trash2 } from "lucide-react";
+import { Search, Trash2, Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { Group, Subgroup, Product } from "../types";
 import { productApi, groupApi, subgroupApi } from "../lib/api";
@@ -12,6 +12,8 @@ export default function PurchaseEdit() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const unsubProducts = productApi.getAll((data) => {
@@ -45,6 +47,7 @@ export default function PurchaseEdit() {
     e.preventDefault();
     if (!selectedProduct) return;
     
+    setIsUpdating(true);
     try {
       const selectedGroup = groups.find(g => g.id === selectedProduct.groupId);
       const selectedSubgroup = allSubgroups.find(sg => sg.id === selectedProduct.subgroupId);
@@ -59,12 +62,15 @@ export default function PurchaseEdit() {
       setSearchTerm("");
     } catch (err) {
       toast.error("Failed to update product");
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   const handleDelete = async () => {
     if (!selectedProduct) return;
     if (window.confirm("Are you sure you want to delete this product?")) {
+      setIsDeleting(true);
       try {
         await productApi.delete(selectedProduct.id);
         toast.success("Product deleted");
@@ -72,6 +78,8 @@ export default function PurchaseEdit() {
         setSearchTerm("");
       } catch (err) {
         toast.error("Failed to delete product");
+      } finally {
+        setIsDeleting(false);
       }
     }
   };
@@ -216,17 +224,24 @@ export default function PurchaseEdit() {
           <div className="md:col-span-2 flex flex-col sm:flex-row gap-4 pt-4">
             <button
               type="submit"
-              className="flex-1 bg-accent text-primary font-bold py-3 rounded-xl hover:opacity-90 transition-all order-1 sm:order-none"
+              disabled={isUpdating || isDeleting}
+              className="flex-1 bg-accent text-primary font-bold py-3 rounded-xl hover:opacity-90 transition-all order-1 sm:order-none flex items-center justify-center gap-2 disabled:opacity-50"
             >
+              {isUpdating && <Loader2 className="w-5 h-5 animate-spin" />}
               Update
             </button>
             <button
               type="button"
               onClick={handleDelete}
-              className="px-6 py-3 sm:py-0 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl hover:bg-red-500 hover:text-white transition-all flex items-center justify-center order-2 sm:order-none"
+              disabled={isUpdating || isDeleting}
+              className="px-6 py-3 sm:py-0 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl hover:bg-red-500 hover:text-white transition-all flex items-center justify-center order-2 sm:order-none disabled:opacity-50"
             >
-              <Trash2 size={20} className="mr-2 sm:mr-0" />
-              <span className="sm:hidden">Delete Product</span>
+              {isDeleting ? (
+                <Loader2 className="w-5 h-5 animate-spin mr-2 sm:mr-0" />
+              ) : (
+                <Trash2 size={20} className="mr-2 sm:mr-0" />
+              )}
+              <span className="sm:hidden">{isDeleting ? "Deleting..." : "Delete Product"}</span>
             </button>
           </div>
         </form>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, CheckCircle } from "lucide-react";
+import { Search, CheckCircle, Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { CustomerDue } from "../types";
 import { formatCurrency, formatDate } from "../lib/utils";
@@ -9,6 +9,8 @@ export default function Due() {
   const [searchTerm, setSearchTerm] = useState("");
   const [dues, setDues] = useState<CustomerDue[]>([]);
   const [loading, setLoading] = useState(true);
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [processingType, setProcessingType] = useState<"full" | "partly" | null>(null);
 
   useEffect(() => {
     const unsubscribe = dueApi.getAll((data) => {
@@ -27,11 +29,16 @@ export default function Due() {
 
   const handleMarkPaid = async (due: CustomerDue) => {
     if (window.confirm("Mark all dues as paid for this customer?")) {
+      setProcessingId(due.id);
+      setProcessingType("full");
       try {
         await dueApi.markPaid(due.customerPhone, due.additionalPhones || []);
         toast.success("Dues cleared successfully");
       } catch (err) {
         toast.error("Failed to clear dues");
+      } finally {
+        setProcessingId(null);
+        setProcessingType(null);
       }
     }
   };
@@ -48,11 +55,17 @@ export default function Due() {
         toast.error("Amount exceeds due amount");
         return;
       }
+      
+      setProcessingId(due.id);
+      setProcessingType("partly");
       try {
         await dueApi.updateDueAmount(due.customerPhone, due.additionalPhones || [], parsedAmount);
         toast.success("Partial payment recorded");
       } catch (err) {
         toast.error("Failed to record partial payment");
+      } finally {
+        setProcessingId(null);
+        setProcessingType(null);
       }
     }
   };
@@ -110,14 +123,18 @@ export default function Due() {
                     <div className="flex flex-col sm:flex-row gap-2 justify-center">
                       <button
                         onClick={() => handleMarkPaid(due)}
-                        className="px-3 py-1.5 bg-green-500/10 text-green-500 rounded-lg hover:bg-green-500 hover:text-white transition-all text-xs font-bold whitespace-nowrap"
+                        disabled={processingId === due.id}
+                        className="px-3 py-1.5 bg-green-500/10 text-green-500 rounded-lg hover:bg-green-500 hover:text-white transition-all text-xs font-bold whitespace-nowrap flex items-center justify-center gap-1 disabled:opacity-50"
                       >
+                        {processingId === due.id && processingType === "full" && <Loader2 className="w-3 h-3 animate-spin" />}
                         Full Paid
                       </button>
                       <button
                         onClick={() => handlePartlyPaid(due)}
-                        className="px-3 py-1.5 bg-accent/10 text-accent rounded-lg hover:bg-accent hover:text-primary transition-all text-xs font-bold whitespace-nowrap"
+                        disabled={processingId === due.id}
+                        className="px-3 py-1.5 bg-accent/10 text-accent rounded-lg hover:bg-accent hover:text-primary transition-all text-xs font-bold whitespace-nowrap flex items-center justify-center gap-1 disabled:opacity-50"
                       >
+                        {processingId === due.id && processingType === "partly" && <Loader2 className="w-3 h-3 animate-spin" />}
                         Partly Paid
                       </button>
                     </div>
