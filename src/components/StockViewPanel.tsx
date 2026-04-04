@@ -41,21 +41,22 @@ export default function StockViewPanel() {
 
       {/* Desktop Table View */}
       <div className="hidden md:block overflow-x-auto rounded-xl border border-accent/10 bg-surface">
-        <table className="w-full text-left border-collapse">
+        <table className="w-full text-center border-collapse">
           <thead>
             <tr className="bg-primary/50 border-b border-accent/10 text-muted text-xs uppercase tracking-wider">
-              <th className="px-6 py-4 font-medium">Sr. No.</th>
-              <th className="px-6 py-4 font-medium">Product Name</th>
-              <th className="px-6 py-4 font-medium">Party Name</th>
-              <th className="px-6 py-4 font-medium text-right">Stock</th>
-              <th className="px-6 py-4 font-medium text-right">Purchase Rate</th>
-              <th className="px-6 py-4 font-medium text-right">MRP</th>
+              <th className="px-6 py-4 font-medium text-center">Sr. No.</th>
+              <th className="px-6 py-4 font-medium text-center">Product Name</th>
+              <th className="px-6 py-4 font-medium text-center">Party Name</th>
+              <th className="px-6 py-4 font-medium text-center">Stock</th>
+              <th className="px-6 py-4 font-medium text-center">Purchase Rate</th>
+              <th className="px-6 py-4 font-medium text-center">Wholesale Rate</th>
+              <th className="px-6 py-4 font-medium text-center">MRP</th>
             </tr>
           </thead>
           <tbody className="text-text divide-y divide-accent/5">
             {loading ? (
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-muted italic">
+                <td colSpan={7} className="px-6 py-12 text-center text-muted italic">
                   Loading stock data...
                 </td>
               </tr>
@@ -67,17 +68,18 @@ export default function StockViewPanel() {
                 transition={{ duration: 0.3, delay: index * 0.05 }}
                 className="hover:bg-primary/30 transition-colors group"
               >
-                <td className="px-6 py-4 text-muted">{index + 1}</td>
-                <td className="px-6 py-4 font-medium group-hover:text-accent transition-colors">{product.name}</td>
-                <td className="px-6 py-4 text-muted">{product.groupName}</td>
-                <td className="px-6 py-4 text-right font-medium">{product.stock}</td>
-                <td className="px-6 py-4 text-right text-muted">{formatCurrency(product.purchaseRate)}</td>
-                <td className="px-6 py-4 text-right text-accent font-medium">{formatCurrency(product.mrp)}</td>
+                <td className="px-6 py-4 text-muted text-center">{index + 1}</td>
+                <td className="px-6 py-4 font-medium group-hover:text-accent transition-colors text-center">{product.name}</td>
+                <td className="px-6 py-4 text-muted text-center">{product.groupName}</td>
+                <td className="px-6 py-4 text-center font-medium">{product.stock}</td>
+                <td className="px-6 py-4 text-center text-muted">{formatCurrency(product.purchaseRate)}</td>
+                <td className="px-6 py-4 text-center text-muted">{formatCurrency(product.wholesaleRate)}</td>
+                <td className="px-6 py-4 text-center text-accent font-medium">{formatCurrency(product.mrp)}</td>
               </motion.tr>
             ))}
             {!loading && filteredProducts.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-muted italic">
+                <td colSpan={7} className="px-6 py-12 text-center text-muted italic">
                   No products found matching your search.
                 </td>
               </tr>
@@ -86,8 +88,8 @@ export default function StockViewPanel() {
           <tfoot className="bg-primary/50 border-t border-accent/10">
             <tr className="font-bold text-text">
               <td colSpan={3} className="px-6 py-4 text-right uppercase tracking-wider text-xs text-muted">Total Stock Quantity:</td>
-              <td className="px-6 py-4 text-right text-lg text-accent">{totalQuantity}</td>
-              <td colSpan={2} className="px-6 py-4"></td>
+              <td className="px-6 py-4 text-center text-lg text-accent">{totalQuantity}</td>
+              <td colSpan={3} className="px-6 py-4"></td>
             </tr>
           </tfoot>
         </table>
@@ -129,10 +131,14 @@ export default function StockViewPanel() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-3 border-t border-accent/5 mt-1">
+              <div className="grid grid-cols-3 gap-4 pt-3 border-t border-accent/5 mt-1">
                 <div>
                   <div className="text-xs text-muted mb-1">Purchase Rate</div>
                   <div className="font-medium text-text">{formatCurrency(product.purchaseRate)}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted mb-1">Wholesale Rate</div>
+                  <div className="font-medium text-text">{formatCurrency(product.wholesaleRate)}</div>
                 </div>
                 <div className="text-right">
                   <div className="text-xs text-muted mb-1">MRP</div>

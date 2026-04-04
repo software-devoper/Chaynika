@@ -315,6 +315,48 @@ export default function PurchaseGroup() {
             )}
           </div>
         </div>
+
+        {/* Party Products Summary */}
+        {partyName && groups.find(g => g.name.toLowerCase() === partyName.toLowerCase()) && (
+          <div className="mt-6 border-t border-accent/10 pt-6">
+            <h5 className="text-sm font-bold text-accent mb-3">Party's Existing Products</h5>
+            <div className="bg-primary/30 rounded-xl border border-accent/10 overflow-hidden">
+              <div className="w-full">
+                <table className="w-full text-center text-xs">
+                  <thead className="bg-primary/50 sticky top-0">
+                    <tr className="text-muted uppercase tracking-wider">
+                      <th className="px-3 py-2 font-medium text-center">Product</th>
+                      <th className="px-3 py-2 font-medium text-center">Stock</th>
+                      <th className="px-3 py-2 font-medium text-center">P.Rate</th>
+                      <th className="px-3 py-2 font-medium text-center">W.Rate</th>
+                      <th className="px-3 py-2 font-medium text-center">MRP</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-accent/5">
+                    {products
+                      .filter(p => p.groupName.toLowerCase() === partyName.toLowerCase())
+                      .map(p => (
+                        <tr key={p.id} className="hover:bg-primary/50">
+                          <td className="px-3 py-2 font-medium text-text text-center">{p.name}</td>
+                          <td className="px-3 py-2 text-center text-accent font-bold">{p.stock}</td>
+                          <td className="px-3 py-2 text-center text-muted">{p.purchaseRate}</td>
+                          <td className="px-3 py-2 text-center text-muted">{p.wholesaleRate}</td>
+                          <td className="px-3 py-2 text-center text-muted">{p.mrp}</td>
+                        </tr>
+                      ))}
+                    {products.filter(p => p.groupName.toLowerCase() === partyName.toLowerCase()).length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="px-3 py-4 text-center text-muted italic">
+                          No products found for this party.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Right Panel: Products Table */}
@@ -331,14 +373,14 @@ export default function PurchaseGroup() {
         </div>
 
         <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0 pb-48">
-          <table className="w-full text-left border-collapse whitespace-nowrap md:whitespace-normal">
+          <table className="w-full text-center border-collapse whitespace-nowrap md:whitespace-normal">
             <thead>
               <tr className="border-b border-accent/10 text-muted text-xs uppercase tracking-wider">
-                <th className="px-2 py-3 font-medium">Product Name</th>
+                <th className="px-2 py-3 font-medium text-center">Product Name</th>
                 <th className="px-2 py-3 font-medium text-center">Quantity</th>
-                <th className="px-2 py-3 font-medium text-right">Purchase Rate</th>
-                <th className="px-2 py-3 font-medium text-right">Wholesale Rate</th>
-                <th className="px-2 py-3 font-medium text-right">MRP</th>
+                <th className="px-2 py-3 font-medium text-center">Purchase Rate</th>
+                <th className="px-2 py-3 font-medium text-center">Wholesale Rate</th>
+                <th className="px-2 py-3 font-medium text-center">MRP</th>
                 <th className="px-2 py-3 font-medium text-center"></th>
               </tr>
             </thead>
@@ -355,7 +397,7 @@ export default function PurchaseGroup() {
                     key={item.rowId} 
                     className="border-b border-accent/5 group"
                   >
-                    <td className="px-2 py-3 relative">
+                    <td className="px-2 py-3 relative text-center">
                       <input
                         type="text"
                         value={item.productName}
@@ -394,7 +436,7 @@ export default function PurchaseGroup() {
                         <div className="text-[10px] text-muted mt-1">Current Stock: {item.currentStock}</div>
                       )}
                     </td>
-                    <td className="px-2 py-3">
+                    <td className="px-2 py-3 text-center">
                       <input
                         type="number"
                         min="0"
@@ -405,7 +447,7 @@ export default function PurchaseGroup() {
                         className="w-20 mx-auto block bg-primary border border-accent/10 rounded px-2 py-2 text-center outline-none focus:border-accent"
                       />
                     </td>
-                    <td className="px-2 py-3">
+                    <td className="px-2 py-3 text-center">
                       <input
                         type="number"
                         min="0"
@@ -413,10 +455,10 @@ export default function PurchaseGroup() {
                         onChange={(e) => updateRow(item.rowId, "purchaseRate", e.target.value)}
                         onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
                         placeholder="0"
-                        className="w-24 ml-auto block bg-primary border border-accent/10 rounded px-2 py-2 text-right outline-none focus:border-accent"
+                        className="w-24 mx-auto block bg-primary border border-accent/10 rounded px-2 py-2 text-center outline-none focus:border-accent"
                       />
                     </td>
-                    <td className="px-2 py-3">
+                    <td className="px-2 py-3 text-center">
                       <input
                         type="number"
                         min="0"
@@ -424,10 +466,10 @@ export default function PurchaseGroup() {
                         onChange={(e) => updateRow(item.rowId, "wholesaleRate", e.target.value)}
                         onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
                         placeholder="0"
-                        className="w-24 ml-auto block bg-primary border border-accent/10 rounded px-2 py-2 text-right outline-none focus:border-accent"
+                        className="w-24 mx-auto block bg-primary border border-accent/10 rounded px-2 py-2 text-center outline-none focus:border-accent"
                       />
                     </td>
-                    <td className="px-2 py-3">
+                    <td className="px-2 py-3 text-center">
                       <input
                         type="number"
                         min="0"
@@ -435,16 +477,16 @@ export default function PurchaseGroup() {
                         onChange={(e) => updateRow(item.rowId, "mrp", e.target.value)}
                         onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
                         placeholder="0"
-                        className="w-24 ml-auto block bg-primary border border-accent/10 rounded px-2 py-2 text-right outline-none focus:border-accent"
+                        className="w-24 mx-auto block bg-primary border border-accent/10 rounded px-2 py-2 text-center outline-none focus:border-accent"
                       />
                     </td>
                     <td className="px-2 py-3 text-center">
                       <button 
                         type="button"
                         onClick={() => removeRow(item.rowId)} 
-                        className="text-muted hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-500/10"
+                        className="text-muted hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-500/10 mx-auto block"
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={16} className="mx-auto" />
                       </button>
                     </td>
                   </motion.tr>

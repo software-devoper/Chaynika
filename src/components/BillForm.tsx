@@ -29,6 +29,7 @@ export default function BillForm() {
   const [isPrinting, setIsPrinting] = useState(false);
   const [activeCustomerSuggestionIndex, setActiveCustomerSuggestionIndex] = useState(-1);
   const [activeProductSuggestionIndex, setActiveProductSuggestionIndex] = useState(-1);
+  const [customerHistory, setCustomerHistory] = useState<{date: number, productName: string, qty: number, price: number}[]>([]);
 
   useEffect(() => {
     const unsubscribeProducts = productApi.getAll(setProducts);
@@ -49,17 +50,40 @@ export default function BillForm() {
     }
   }, [searchTerm, products]);
 
-  // Fetch previous due when primary phone changes
+  // Fetch previous due and history when primary phone changes
   useEffect(() => {
     const primaryPhone = phones[0];
     if (primaryPhone && primaryPhone.length === 10) {
-      const unsubscribe = dueApi.getAll((dues) => {
+      const unsubscribeDues = dueApi.getAll((dues) => {
         const due = dues.find(d => d.customerPhone === primaryPhone);
         setPreviousDue(due ? due.amount : 0);
       });
-      return () => unsubscribe();
+      
+      const unsubscribeBills = billApi.getAll((bills) => {
+        const customerBills = bills.filter(b => b.customerPhone === primaryPhone || (b.additionalPhones && b.additionalPhones.includes(primaryPhone)));
+        const historyItems: {date: number, productName: string, qty: number, price: number}[] = [];
+        customerBills.forEach(bill => {
+          bill.items.forEach(item => {
+            historyItems.push({
+              date: bill.date,
+              productName: item.productName,
+              qty: item.qty,
+              price: item.price
+            });
+          });
+        });
+        // Sort by date descending
+        historyItems.sort((a, b) => b.date - a.date);
+        setCustomerHistory(historyItems);
+      });
+
+      return () => {
+        unsubscribeDues();
+        unsubscribeBills();
+      };
     } else {
       setPreviousDue(0);
+      setCustomerHistory([]);
     }
   }, [phones[0]]);
 
@@ -347,6 +371,37 @@ export default function BillForm() {
               <span className="text-accent font-bold">{formatCurrency(previousDue)}</span>
             </div>
           </div>
+
+          {/* Customer History Summary */}
+          {customerHistory.length > 0 && (
+            <div className="mt-6 border-t border-accent/10 pt-6">
+              <h5 className="text-sm font-bold text-accent mb-3">Customer's Past Purchases</h5>
+              <div className="bg-primary/30 rounded-xl border border-accent/10 overflow-hidden">
+                <div className="w-full">
+                  <table className="w-full text-center text-xs">
+                    <thead className="bg-primary/50 sticky top-0">
+                      <tr className="text-muted uppercase tracking-wider">
+                        <th className="px-3 py-2 font-medium text-center">Date</th>
+                        <th className="px-3 py-2 font-medium text-center">Product</th>
+                        <th className="px-3 py-2 font-medium text-center">Qty</th>
+                        <th className="px-3 py-2 font-medium text-center">Rate</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-accent/5">
+                      {customerHistory.map((item, idx) => (
+                        <tr key={idx} className="hover:bg-primary/50">
+                          <td className="px-3 py-2 text-muted whitespace-nowrap text-center">{new Date(item.date).toLocaleDateString()}</td>
+                          <td className="px-3 py-2 font-medium text-text text-center">{item.productName}</td>
+                          <td className="px-3 py-2 text-center text-accent font-bold">{item.qty}</td>
+                          <td className="px-3 py-2 text-center text-muted">{formatCurrency(item.price)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -378,8 +433,11 @@ export default function BillForm() {
                 >
                   <div>
                     <div className="font-medium">{p.name}</div>
-                    <div className="text-xs text-muted">
-                      Stock: {p.stock} | MRP: {formatCurrency(p.mrp)} | Purchase: {formatCurrency(p.purchaseRate)}
+                    <div className="text-xs text-muted mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                      <span className="text-accent font-bold">Stock: {p.stock}</span>
+                      <span>MRP: {formatCurrency(p.mrp)}</span>
+                      <span>W.Rate: {formatCurrency(p.wholesaleRate)}</span>
+                      <span>P.Rate: {formatCurrency(p.purchaseRate)}</span>
                     </div>
                   </div>
                   <Plus size={18} className="text-accent" />
@@ -390,13 +448,13 @@ export default function BillForm() {
         </div>
 
         <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
-          <table className="w-full text-left border-collapse whitespace-nowrap md:whitespace-normal">
+          <table className="w-full text-center border-collapse whitespace-nowrap md:whitespace-normal">
             <thead>
               <tr className="border-b border-accent/10 text-muted text-xs uppercase tracking-wider">
-                <th className="px-2 py-3 font-medium">Sr.</th>
-                <th className="px-2 py-3 font-medium">Particular</th>
-                <th className="px-2 py-3 font-medium text-right">
-                  <div className="flex items-center justify-end gap-2">
+                <th className="px-2 py-3 font-medium text-center">Sr.</th>
+                <th className="px-2 py-3 font-medium text-center">Particular</th>
+                <th className="px-2 py-3 font-medium text-center">
+                  <div className="flex items-center justify-center gap-2">
                     {showPurchasePrice && "Preview"}
                     <button
                       onClick={() => setShowPurchasePrice(!showPurchasePrice)}
@@ -406,9 +464,9 @@ export default function BillForm() {
                     </button>
                   </div>
                 </th>
-                <th className="px-2 py-3 font-medium text-right">Rate</th>
+                <th className="px-2 py-3 font-medium text-center">Rate</th>
                 <th className="px-2 py-3 font-medium text-center">Qty</th>
-                <th className="px-2 py-3 font-medium text-right">Total</th>
+                <th className="px-2 py-3 font-medium text-center">Total</th>
                 <th className="px-2 py-3 font-medium text-center"></th>
               </tr>
             </thead>
@@ -423,24 +481,24 @@ export default function BillForm() {
                     key={item.productId} 
                     className="border-b border-accent/5"
                   >
-                    <td className="px-2 py-4">{index + 1}</td>
-                    <td className="px-2 py-4 font-medium">{item.productName}</td>
-                    <td className="px-2 py-4 text-right text-muted">
+                    <td className="px-2 py-4 text-center">{index + 1}</td>
+                    <td className="px-2 py-4 font-medium text-center">{item.productName}</td>
+                    <td className="px-2 py-4 text-center text-muted">
                       {showPurchasePrice ? formatCurrency(products.find(p => p.id === item.productId)?.purchaseRate || 0) : ""}
                     </td>
-                    <td className="px-2 py-4 text-right">{formatCurrency(item.price)}</td>
-                    <td className="px-2 py-4">
+                    <td className="px-2 py-4 text-center">{formatCurrency(item.price)}</td>
+                    <td className="px-2 py-4 text-center">
                       <input
                         type="number"
                         value={item.qty}
                         onChange={(e) => updateQuantity(item.productId, Number(e.target.value))}
-                        className="w-16 bg-primary border border-accent/10 rounded px-2 py-1 text-center outline-none focus:border-accent"
+                        className="w-16 bg-primary border border-accent/10 rounded px-2 py-1 text-center outline-none focus:border-accent mx-auto"
                       />
                     </td>
-                    <td className="px-2 py-4 text-right font-medium">{formatCurrency(item.total)}</td>
+                    <td className="px-2 py-4 text-center font-medium">{formatCurrency(item.total)}</td>
                     <td className="px-2 py-4 text-center">
-                      <button onClick={() => removeProductFromBill(item.productId)} className="text-muted hover:text-red-500 transition-colors">
-                        <X size={16} />
+                      <button onClick={() => removeProductFromBill(item.productId)} className="text-muted hover:text-red-500 transition-colors mx-auto block">
+                        <X size={16} className="mx-auto" />
                       </button>
                     </td>
                   </motion.tr>

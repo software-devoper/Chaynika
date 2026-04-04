@@ -183,11 +183,30 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
   // Save or Print PDF
   const filename = `bill_${bill.billNo}_${bill.customerName.replace(/\s+/g, "_")}_${new Date(bill.date).toISOString().split("T")[0]}.pdf`;
   
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
   if (action === "print") {
     doc.autoPrint();
     const pdfBlobUrl = doc.output("bloburl");
     window.open(pdfBlobUrl, "_blank");
   } else {
+    if (isMobile && navigator.share) {
+      try {
+        const pdfBlob = doc.output("blob");
+        const file = new File([pdfBlob], filename, { type: "application/pdf" });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: filename,
+          });
+          return;
+        }
+      } catch (e) {
+        console.error("Share failed", e);
+      }
+    }
+    
+    // Fallback to default save
     doc.save(filename);
   }
 };
