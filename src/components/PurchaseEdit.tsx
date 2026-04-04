@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Search, Trash2, Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { Group, Product } from "../types";
@@ -45,14 +45,22 @@ export default function PurchaseEdit() {
       if (activeIndex >= 0 && activeIndex < filteredProducts.length) {
         setSelectedProduct(filteredProducts[activeIndex]);
       }
-    } else if (e.altKey && e.key === 'd') {
-      e.preventDefault();
-      handleDelete();
-    } else if (e.key === 'Delete' && (e.target as HTMLElement).tagName !== 'INPUT') {
-      e.preventDefault();
-      handleDelete();
     }
   };
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Delete' && (e.target as HTMLElement).tagName !== 'INPUT') {
+        e.preventDefault();
+        handleDelete();
+      } else if (e.altKey && e.key === 'd') {
+        e.preventDefault();
+        handleDelete();
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [handleDelete]);
 
   useEffect(() => {
     setActiveIndex(-1);
@@ -82,7 +90,7 @@ export default function PurchaseEdit() {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (!selectedProduct) return;
     if (window.confirm("Are you sure you want to delete this product?")) {
       setIsDeleting(true);
@@ -97,7 +105,7 @@ export default function PurchaseEdit() {
         setIsDeleting(false);
       }
     }
-  };
+  }, [selectedProduct]);
 
   return (
     <motion.div 
@@ -152,7 +160,6 @@ export default function PurchaseEdit() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
           onSubmit={handleUpdate}
-          onKeyDown={handleKeyDown}
           className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-surface p-6 rounded-2xl border border-accent/10 shadow-xl"
         >
           <div className="md:col-span-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-accent/10 pb-4">
