@@ -48,6 +48,9 @@ export default function PurchaseEdit() {
     } else if (e.altKey && e.key === 'd') {
       e.preventDefault();
       handleDelete();
+    } else if (e.key === 'Delete' && (e.target as HTMLElement).tagName !== 'INPUT') {
+      e.preventDefault();
+      handleDelete();
     }
   };
 
