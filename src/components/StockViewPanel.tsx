@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Search } from "lucide-react";
+import { motion } from "motion/react";
 import { formatCurrency } from "../lib/utils";
 import { Product } from "../types";
 import { productApi } from "../lib/api";
@@ -61,7 +62,13 @@ export default function StockViewPanel() {
                 </td>
               </tr>
             ) : filteredProducts.map((product, index) => (
-              <tr key={product.id} className="hover:bg-primary/30 transition-colors group">
+              <motion.tr 
+                key={product.id} 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
+                className="hover:bg-primary/30 transition-colors group"
+              >
                 <td className="px-6 py-4 text-muted">{index + 1}</td>
                 <td className="px-6 py-4 font-medium group-hover:text-accent transition-colors">{product.name}</td>
                 <td className="px-6 py-4 text-muted">{product.groupName}</td>
@@ -77,7 +84,7 @@ export default function StockViewPanel() {
                 <td className="px-6 py-4 text-right font-medium">{product.stock}</td>
                 <td className="px-6 py-4 text-right text-muted">{formatCurrency(product.purchaseRate)}</td>
                 <td className="px-6 py-4 text-right text-accent font-medium">{formatCurrency(product.mrp)}</td>
-              </tr>
+              </motion.tr>
             ))}
             {!loading && filteredProducts.length === 0 && (
               <tr>
@@ -109,7 +116,13 @@ export default function StockViewPanel() {
           </div>
         ) : (
           filteredProducts.map((product, index) => (
-            <div key={product.id} className="bg-surface border border-accent/10 rounded-xl p-4 shadow-sm hover:border-accent/30 transition-colors flex flex-col gap-3">
+            <motion.div 
+              key={product.id} 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: index * 0.05 }}
+              className="bg-surface border border-accent/10 rounded-xl p-4 shadow-sm hover:border-accent/30 transition-colors flex flex-col gap-3"
+            >
               <div className="flex justify-between items-start gap-2">
                 <div>
                   <div className="text-xs text-muted mb-1">#{index + 1}</div>
@@ -142,7 +155,7 @@ export default function StockViewPanel() {
                   <div className="font-medium text-accent">{formatCurrency(product.mrp)}</div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))
         )}
         

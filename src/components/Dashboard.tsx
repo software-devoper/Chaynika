@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Package, CircleDollarSign, ReceiptText, Hourglass, TrendingUp, ShoppingBag, CreditCard } from "lucide-react";
+import { motion } from "motion/react";
 import StockViewPanel from "./StockViewPanel";
 import { formatCurrency, formatDate } from "../lib/utils";
 import { billApi, productApi, dueApi } from "../lib/api";
@@ -9,10 +10,14 @@ interface NavButtonProps {
   icon: React.ElementType;
   label: string;
   onClick: () => void;
+  delay?: number;
 }
 
-const NavButton = ({ icon: Icon, label, onClick }: NavButtonProps) => (
-  <button
+const NavButton = ({ icon: Icon, label, onClick, delay = 0 }: NavButtonProps) => (
+  <motion.button
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.4, delay }}
     onClick={onClick}
     className="flex flex-col items-center justify-center gap-4 p-8 bg-surface border border-accent/10 rounded-2xl hover:border-accent transition-all duration-300 group shadow-lg"
   >
@@ -22,7 +27,7 @@ const NavButton = ({ icon: Icon, label, onClick }: NavButtonProps) => (
     <span className="text-xl font-display font-bold text-text group-hover:text-accent transition-colors">
       {label}
     </span>
-  </button>
+  </motion.button>
 );
 
 interface DashboardProps {
@@ -81,7 +86,13 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
     <div className="space-y-8">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, index) => (
-          <div key={index} className="bg-surface border border-accent/10 rounded-2xl p-6 shadow-lg flex flex-col">
+          <motion.div 
+            key={index} 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: index * 0.1 }}
+            className="bg-surface border border-accent/10 rounded-2xl p-6 shadow-lg flex flex-col"
+          >
             <div className="flex items-center justify-between mb-4">
               <div className={`p-3 rounded-xl bg-primary/50 ${stat.color}`}>
                 <stat.icon size={24} />
@@ -98,7 +109,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
                 {stat.action.label}
               </button>
             )}
-          </div>
+          </motion.div>
         ))}
       </div>
 
@@ -107,31 +118,40 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           icon={Package} 
           label="Purchase" 
           onClick={() => setActiveTab("purchase")} 
+          delay={0.1}
         />
         <NavButton 
           icon={CircleDollarSign} 
           label="Revenue" 
           onClick={() => setActiveTab("revenue")} 
+          delay={0.2}
         />
         <NavButton 
           icon={ReceiptText} 
           label="New Bill" 
           onClick={() => setActiveTab("bill")} 
+          delay={0.3}
         />
         <NavButton 
           icon={Hourglass} 
           label="Due" 
           onClick={() => setActiveTab("due")} 
+          delay={0.4}
         />
       </div>
 
-      <div className="bg-surface border border-accent/10 rounded-2xl p-4 sm:p-6 shadow-xl">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.5 }}
+        className="bg-surface border border-accent/10 rounded-2xl p-4 sm:p-6 shadow-xl"
+      >
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-2">
           <h3 className="text-xl font-display font-bold text-accent">Stock View Panel</h3>
           <div className="text-muted text-sm">Last updated: {new Date().toLocaleTimeString()}</div>
         </div>
         <StockViewPanel />
-      </div>
+      </motion.div>
     </div>
   );
 }

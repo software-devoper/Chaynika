@@ -20,6 +20,8 @@ import { auth } from "./lib/firebase";
 import Logo from "./components/Logo";
 import { Loader2, Lock, User as UserIcon, Eye, EyeOff } from "lucide-react";
 
+import { AnimatePresence, motion } from "motion/react";
+
 export default function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);
@@ -237,7 +239,7 @@ export default function App() {
             isMobileSidebarOpen ? "block" : "hidden"
           )} onClick={() => setIsMobileSidebarOpen(false)} />
           <div className={cn(
-            "fixed inset-y-0 left-0 z-50 w-[220px] bg-primary border-r border-accent/10 lg:static lg:block lg:w-auto lg:border-none",
+            "lg:block z-50",
             isMobileSidebarOpen ? "block" : "hidden"
           )}>
             <Sidebar 
@@ -255,7 +257,17 @@ export default function App() {
             )}
           >
             <div className="max-w-7xl mx-auto w-full">
-              {renderContent()}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {renderContent()}
+                </motion.div>
+              </AnimatePresence>
             </div>
           </main>
         </div>
