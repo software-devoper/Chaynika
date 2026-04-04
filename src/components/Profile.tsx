@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Logo from "./Logo";
-import { User, Mail, Phone, MapPin, Shield, Lock, Loader2, Eye, EyeOff } from "lucide-react";
+import { User, Mail, Phone, MapPin, Shield, Lock, Loader2, Eye, EyeOff, Moon, Sun, Palette } from "lucide-react";
 import { auth } from "../lib/firebase";
 import { profileApi, settingsApi } from "../lib/api";
 import { toast } from "react-hot-toast";
@@ -12,6 +12,7 @@ export default function Profile() {
   const [newPassword, setNewPassword] = useState("");
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isLightMode, setIsLightMode] = useState(false);
 
   const businessInfo = {
     name: "M/s CHAYANIKA (KALINDI)",
@@ -30,7 +31,28 @@ export default function Profile() {
       setLoading(false);
     };
     fetchProfile();
+    
+    // Check initial theme
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'light') {
+      document.documentElement.classList.add('light');
+      setIsLightMode(true);
+    } else {
+      setIsLightMode(document.documentElement.classList.contains('light'));
+    }
   }, []);
+
+  const toggleTheme = () => {
+    if (isLightMode) {
+      document.documentElement.classList.remove('light');
+      localStorage.setItem('theme', 'dark');
+      setIsLightMode(false);
+    } else {
+      document.documentElement.classList.add('light');
+      localStorage.setItem('theme', 'light');
+      setIsLightMode(true);
+    }
+  };
 
   const handleChangePassword = async () => {
     if (!newPassword) return toast.error("Please enter a new password");
@@ -173,6 +195,39 @@ export default function Profile() {
             <div className="px-3 py-1 bg-green-500/10 text-green-500 text-xs font-bold rounded-full uppercase tracking-wider">
               Active
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-surface border border-accent/10 rounded-3xl p-8 shadow-xl">
+        <h3 className="text-xl font-display font-bold text-accent mb-6">Preferences</h3>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 bg-primary/30 rounded-2xl border border-accent/5">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-accent/10 text-accent">
+                <Palette size={18} />
+              </div>
+              <div>
+                <div className="text-text font-medium">Appearance</div>
+                <div className="text-xs text-muted">Toggle between light and dark mode</div>
+              </div>
+            </div>
+            <button 
+              onClick={toggleTheme}
+              className="flex items-center gap-2 px-4 py-2 bg-surface border border-accent/20 rounded-xl hover:border-accent transition-all text-sm font-medium text-text"
+            >
+              {isLightMode ? (
+                <>
+                  <Moon size={16} className="text-accent" />
+                  <span>Dark Mode</span>
+                </>
+              ) : (
+                <>
+                  <Sun size={16} className="text-accent" />
+                  <span>Light Mode</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>

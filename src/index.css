@@ -4,16 +4,32 @@
   --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Playfair Display", serif;
 
-  --color-primary: #0f172a;
-  --color-surface: #1e293b;
-  --color-accent: #f59e0b;
-  --color-text: #f8fafc;
-  --color-muted: #94a3b8;
+  --color-primary: var(--theme-primary);
+  --color-surface: var(--theme-surface);
+  --color-accent: var(--theme-accent);
+  --color-text: var(--theme-text);
+  --color-muted: var(--theme-muted);
 }
 
 @layer base {
+  :root {
+    --theme-primary: #0f172a;
+    --theme-surface: #1e293b;
+    --theme-accent: #f59e0b;
+    --theme-text: #f8fafc;
+    --theme-muted: #94a3b8;
+  }
+
+  :root.light {
+    --theme-primary: #f1f5f9;
+    --theme-surface: #ffffff;
+    --theme-accent: #d97706;
+    --theme-text: #0f172a;
+    --theme-muted: #64748b;
+  }
+
   body {
-    @apply bg-primary text-text font-sans;
+    @apply bg-primary text-text font-sans transition-colors duration-300;
   }
 
   h1, h2, h3, h4, h5, h6 {

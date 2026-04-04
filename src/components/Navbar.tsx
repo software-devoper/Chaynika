@@ -15,11 +15,13 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
         </button>
         <Logo size={40} />
       </div>
-      <div className="flex items-center gap-4 text-muted text-sm">
-        <div className="hidden md:block">Kalindi, Purba Medinipur, 721455</div>
-        <div className="flex items-center gap-2 text-accent">
+      <div className="flex flex-col items-end justify-center md:flex-row md:items-center md:gap-6">
+        <div className="text-[10px] sm:text-xs md:text-sm text-muted font-medium order-2 md:order-1 mt-0.5 md:mt-0">
+          Kalindi, Purba Medinipur, 721455
+        </div>
+        <div className="flex items-center gap-1.5 text-accent order-1 md:order-2">
           <Phone size={16} />
-          <span className="font-medium">9832116317</span>
+          <span className="font-bold text-sm md:text-base tracking-wide">9832116317</span>
         </div>
       </div>
     </nav>

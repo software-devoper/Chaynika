@@ -34,6 +34,12 @@ export default function App() {
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
+    // Apply saved theme on initial load
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'light') {
+      document.documentElement.classList.add('light');
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
