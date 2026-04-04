@@ -138,5 +138,9 @@ service cloud.firestore {
     match /dues/{dueId} {
       allow read, write: if isAuthenticated();
     }
+
+    match /partyDues/{dueId} {
+      allow read, write: if isAuthenticated();
+    }
   }
 }

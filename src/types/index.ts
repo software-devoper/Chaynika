@@ -45,11 +45,19 @@ export interface CustomerDue {
   lastBillDate: number;
 }
 
+export interface PartyDue {
+  id: string;
+  partyName: string;
+  amount: number;
+  lastPurchaseDate: number;
+}
+
 export interface BillItem {
   productId: string;
   productName: string;
   qty: number;
   price: number;
+  mrp?: number;
   total: number;
 }
 

@@ -136,14 +136,14 @@ export default function App() {
       case "bill":
         return (
           <>
-            <h2 className="text-2xl font-display font-bold text-accent mb-6">New Bill</h2>
+            <h2 className="text-2xl font-display font-bold text-accent mb-6">Sales</h2>
             <Bill />
           </>
         );
       case "due":
         return (
           <>
-            <h2 className="text-2xl font-display font-bold text-accent mb-6">Due</h2>
+            <h2 className="text-2xl font-display font-bold text-accent mb-6">Dues</h2>
             <Due />
           </>
         );

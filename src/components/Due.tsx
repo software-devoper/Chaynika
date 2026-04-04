@@ -1,30 +1,49 @@
 import React, { useState, useEffect } from "react";
-import { Search, CheckCircle, Loader2 } from "lucide-react";
+import { Search, CheckCircle, Loader2, TrendingDown, TrendingUp } from "lucide-react";
 import { toast } from "react-hot-toast";
-import { CustomerDue } from "../types";
+import { CustomerDue, PartyDue } from "../types";
 import { formatCurrency, formatDate } from "../lib/utils";
-import { dueApi } from "../lib/api";
+import { dueApi, partyDueApi } from "../lib/api";
+import { motion, AnimatePresence } from "motion/react";
 
 export default function Due() {
+  const [activeTab, setActiveTab] = useState<"sales" | "purchase">("sales");
   const [searchTerm, setSearchTerm] = useState("");
-  const [dues, setDues] = useState<CustomerDue[]>([]);
+  
+  const [customerDues, setCustomerDues] = useState<CustomerDue[]>([]);
+  const [partyDues, setPartyDues] = useState<PartyDue[]>([]);
+  
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [processingType, setProcessingType] = useState<"full" | "partly" | null>(null);
 
   useEffect(() => {
-    const unsubscribe = dueApi.getAll((data) => {
-      setDues(data);
-      setLoading(false);
+    setLoading(true);
+    const unsubscribeCustomer = dueApi.getAll((data) => {
+      setCustomerDues(data);
+      if (activeTab === "sales") setLoading(false);
     });
-    return () => unsubscribe();
-  }, []);
+    
+    const unsubscribeParty = partyDueApi.getAll((data) => {
+      setPartyDues(data);
+      if (activeTab === "purchase") setLoading(false);
+    });
 
-  const filteredDues = dues.filter(
+    return () => {
+      unsubscribeCustomer();
+      unsubscribeParty();
+    };
+  }, [activeTab]);
+
+  const filteredCustomerDues = customerDues.filter(
     (d) =>
       d.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       d.customerPhone.includes(searchTerm) ||
       d.additionalPhones?.some(p => p.includes(searchTerm))
+  );
+
+  const filteredPartyDues = partyDues.filter(
+    (d) => d.partyName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleMarkPaid = async (due: CustomerDue) => {
@@ -70,16 +89,89 @@ export default function Due() {
     }
   };
 
+  const handlePartyMarkPaid = async (due: PartyDue) => {
+    if (window.confirm(`Mark all dues as paid for ${due.partyName}?`)) {
+      setProcessingId(due.id);
+      setProcessingType("full");
+      try {
+        await partyDueApi.addOrUpdate(due.partyName, -due.amount);
+        toast.success("Party dues cleared successfully");
+      } catch (err) {
+        toast.error("Failed to clear party dues");
+      } finally {
+        setProcessingId(null);
+        setProcessingType(null);
+      }
+    }
+  };
+
+  const handlePartyPartlyPaid = async (due: PartyDue) => {
+    const amount = prompt("Enter amount paid to party:");
+    if (amount) {
+      const parsedAmount = parseFloat(amount);
+      if (isNaN(parsedAmount) || parsedAmount <= 0) {
+        toast.error("Invalid amount");
+        return;
+      }
+      if (parsedAmount > due.amount) {
+        toast.error("Amount exceeds due amount");
+        return;
+      }
+      
+      setProcessingId(due.id);
+      setProcessingType("partly");
+      try {
+        await partyDueApi.addOrUpdate(due.partyName, -parsedAmount);
+        toast.success("Partial payment recorded");
+      } catch (err) {
+        toast.error("Failed to record partial payment");
+      } finally {
+        setProcessingId(null);
+        setProcessingType(null);
+      }
+    }
+  };
+
   return (
-    <div className="space-y-6">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="space-y-6"
+    >
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <button
+          onClick={() => { setActiveTab("sales"); setSearchTerm(""); }}
+          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold transition-all ${
+            activeTab === "sales" 
+              ? "bg-green-500 text-white shadow-lg shadow-green-500/20" 
+              : "bg-primary border border-accent/10 text-muted hover:text-text"
+          }`}
+        >
+          <TrendingUp size={20} />
+          Sales Due
+        </button>
+        <button
+          onClick={() => { setActiveTab("purchase"); setSearchTerm(""); }}
+          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold transition-all ${
+            activeTab === "purchase" 
+              ? "bg-red-500 text-white shadow-lg shadow-red-500/20" 
+              : "bg-primary border border-accent/10 text-muted hover:text-text"
+          }`}
+        >
+          <TrendingDown size={20} />
+          Purchase Due
+        </button>
+      </div>
+
       <div className="relative">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" size={18} />
         <input
           type="text"
-          placeholder="Search by Customer Name or Phone..."
+          placeholder={activeTab === "sales" ? "Search by Customer Name or Phone..." : "Search by Party Name..."}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full bg-primary border border-accent/10 rounded-xl pl-12 pr-4 py-3 text-text focus:border-accent outline-none transition-all"
+          className="w-full bg-primary border border-accent/10 rounded-xl pl-12 pr-4 py-3 text-text focus:border-accent outline-none transition-all shadow-sm"
         />
       </div>
 
@@ -88,24 +180,30 @@ export default function Due() {
           <thead>
             <tr className="border-b border-accent/10 text-muted text-xs uppercase tracking-wider">
               <th className="px-4 py-4 font-medium">Sr. No.</th>
-              <th className="px-4 py-4 font-medium">Customer Name</th>
-              <th className="px-4 py-4 font-medium">Phone</th>
-              <th className="px-4 py-4 font-medium">Address</th>
+              <th className="px-4 py-4 font-medium">{activeTab === "sales" ? "Customer Name" : "Party Name"}</th>
+              {activeTab === "sales" && <th className="px-4 py-4 font-medium">Phone</th>}
+              {activeTab === "sales" && <th className="px-4 py-4 font-medium">Address</th>}
               <th className="px-4 py-4 font-medium text-right">Amount</th>
-              <th className="px-4 py-4 font-medium">Last Bill Date</th>
+              <th className="px-4 py-4 font-medium">{activeTab === "sales" ? "Last Bill Date" : "Last Purchase Date"}</th>
               <th className="px-4 py-4 font-medium text-center">Action</th>
             </tr>
           </thead>
           <tbody className="text-sm">
             {loading ? (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-muted italic">
+                <td colSpan={activeTab === "sales" ? 7 : 5} className="px-4 py-12 text-center text-muted italic">
                   Loading dues...
                 </td>
               </tr>
-            ) : (
-              filteredDues.map((due, index) => (
-                <tr key={due.id} className="border-b border-accent/5 hover:bg-primary/50 transition-colors">
+            ) : activeTab === "sales" ? (
+              filteredCustomerDues.map((due, index) => (
+                <motion.tr 
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  key={due.id} 
+                  className="border-b border-accent/5 hover:bg-primary/50 transition-colors"
+                >
                   <td className="px-4 py-4">{index + 1}</td>
                   <td className="px-4 py-4 font-medium">{due.customerName}</td>
                   <td className="px-4 py-4 text-muted">
@@ -117,41 +215,87 @@ export default function Due() {
                     )}
                   </td>
                   <td className="px-4 py-4 text-muted">{due.customerAddress}</td>
-                  <td className="px-4 py-4 text-right font-bold text-red-500">{formatCurrency(due.amount)}</td>
+                  <td className="px-4 py-4 text-right font-bold text-green-500">{formatCurrency(due.amount)}</td>
                   <td className="px-4 py-4 text-muted">{formatDate(due.lastBillDate)}</td>
                   <td className="px-4 py-4 text-center">
                     <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                      <button
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
                         onClick={() => handleMarkPaid(due)}
                         disabled={processingId === due.id}
                         className="px-3 py-1.5 bg-green-500/10 text-green-500 rounded-lg hover:bg-green-500 hover:text-white transition-all text-xs font-bold whitespace-nowrap flex items-center justify-center gap-1 disabled:opacity-50"
                       >
                         {processingId === due.id && processingType === "full" && <Loader2 className="w-3 h-3 animate-spin" />}
                         Full Paid
-                      </button>
-                      <button
+                      </motion.button>
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
                         onClick={() => handlePartlyPaid(due)}
                         disabled={processingId === due.id}
                         className="px-3 py-1.5 bg-accent/10 text-accent rounded-lg hover:bg-accent hover:text-primary transition-all text-xs font-bold whitespace-nowrap flex items-center justify-center gap-1 disabled:opacity-50"
                       >
                         {processingId === due.id && processingType === "partly" && <Loader2 className="w-3 h-3 animate-spin" />}
                         Partly Paid
-                      </button>
+                      </motion.button>
                     </div>
                   </td>
-                </tr>
+                </motion.tr>
+              ))
+            ) : (
+              filteredPartyDues.map((due, index) => (
+                <motion.tr 
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  key={due.id} 
+                  className="border-b border-accent/5 hover:bg-primary/50 transition-colors"
+                >
+                  <td className="px-4 py-4">{index + 1}</td>
+                  <td className="px-4 py-4 font-medium">{due.partyName}</td>
+                  <td className="px-4 py-4 text-right font-bold text-red-500">{formatCurrency(due.amount)}</td>
+                  <td className="px-4 py-4 text-muted">{formatDate(due.lastPurchaseDate)}</td>
+                  <td className="px-4 py-4 text-center">
+                    <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => handlePartyMarkPaid(due)}
+                        disabled={processingId === due.id}
+                        className="px-3 py-1.5 bg-green-500/10 text-green-500 rounded-lg hover:bg-green-500 hover:text-white transition-all text-xs font-bold whitespace-nowrap flex items-center justify-center gap-1 disabled:opacity-50"
+                      >
+                        {processingId === due.id && processingType === "full" && <Loader2 className="w-3 h-3 animate-spin" />}
+                        Full Paid
+                      </motion.button>
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => handlePartyPartlyPaid(due)}
+                        disabled={processingId === due.id}
+                        className="px-3 py-1.5 bg-accent/10 text-accent rounded-lg hover:bg-accent hover:text-primary transition-all text-xs font-bold whitespace-nowrap flex items-center justify-center gap-1 disabled:opacity-50"
+                      >
+                        {processingId === due.id && processingType === "partly" && <Loader2 className="w-3 h-3 animate-spin" />}
+                        Partly Paid
+                      </motion.button>
+                    </div>
+                  </td>
+                </motion.tr>
               ))
             )}
-            {!loading && filteredDues.length === 0 && (
+            {!loading && activeTab === "sales" && filteredCustomerDues.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-4 py-12 text-center text-muted italic">
-                  No pending dues found
+                  No pending sales dues found
+                </td>
+              </tr>
+            )}
+            {!loading && activeTab === "purchase" && filteredPartyDues.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-4 py-12 text-center text-muted italic">
+                  No pending purchase dues found
                 </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
-    </div>
+    </motion.div>
   );
 }

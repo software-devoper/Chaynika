@@ -55,9 +55,9 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
     { id: "purchase", label: "Purchase", icon: <Package size={20} /> },
+    { id: "bill", label: "Sales", icon: <ReceiptText size={20} /> },
+    { id: "due", label: "Dues", icon: <Hourglass size={20} /> },
     { id: "revenue", label: "Revenue", icon: <CircleDollarSign size={20} /> },
-    { id: "bill", label: "New Bill", icon: <ReceiptText size={20} /> },
-    { id: "due", label: "Due", icon: <Hourglass size={20} /> },
   ];
 
   return (

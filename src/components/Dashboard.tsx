@@ -17,6 +17,8 @@ const NavButton = ({ icon: Icon, label, onClick, delay = 0 }: NavButtonProps) =>
   <motion.button
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
+    whileHover={{ y: -4 }}
+    whileTap={{ scale: 0.95 }}
     transition={{ duration: 0.4, delay }}
     onClick={onClick}
     className="flex flex-col items-center justify-center gap-4 p-8 bg-surface border border-accent/10 rounded-2xl hover:border-accent transition-all duration-300 group shadow-lg"
@@ -90,6 +92,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
             key={index} 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            whileHover={{ y: -4, boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)" }}
             transition={{ duration: 0.4, delay: index * 0.1 }}
             className="bg-surface border border-accent/10 rounded-2xl p-6 shadow-lg flex flex-col"
           >
@@ -121,21 +124,21 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           delay={0.1}
         />
         <NavButton 
-          icon={CircleDollarSign} 
-          label="Revenue" 
-          onClick={() => setActiveTab("revenue")} 
+          icon={ReceiptText} 
+          label="Sales" 
+          onClick={() => setActiveTab("bill")} 
           delay={0.2}
         />
         <NavButton 
-          icon={ReceiptText} 
-          label="New Bill" 
-          onClick={() => setActiveTab("bill")} 
+          icon={Hourglass} 
+          label="Dues" 
+          onClick={() => setActiveTab("due")} 
           delay={0.3}
         />
         <NavButton 
-          icon={Hourglass} 
-          label="Due" 
-          onClick={() => setActiveTab("due")} 
+          icon={CircleDollarSign} 
+          label="Revenue" 
+          onClick={() => setActiveTab("revenue")} 
           delay={0.4}
         />
       </div>

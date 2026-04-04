@@ -21,8 +21,7 @@ export default function StockViewPanel() {
   const filteredProducts = products.filter(
     (p) =>
       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.groupName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (p.subgroupName && p.subgroupName.toLowerCase().includes(searchTerm.toLowerCase()))
+      p.groupName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const totalQuantity = filteredProducts.reduce((sum, p) => sum + p.stock, 0);
@@ -33,7 +32,7 @@ export default function StockViewPanel() {
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" size={18} />
         <input
           type="text"
-          placeholder="Search by Product, Group or Subgroup..."
+          placeholder="Search by Product or Party..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full bg-primary border border-accent/10 rounded-xl pl-12 pr-4 py-3 text-text focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all shadow-sm"
@@ -47,8 +46,7 @@ export default function StockViewPanel() {
             <tr className="bg-primary/50 border-b border-accent/10 text-muted text-xs uppercase tracking-wider">
               <th className="px-6 py-4 font-medium">Sr. No.</th>
               <th className="px-6 py-4 font-medium">Product Name</th>
-              <th className="px-6 py-4 font-medium">Group/Company</th>
-              <th className="px-6 py-4 font-medium">Subgroup/Category</th>
+              <th className="px-6 py-4 font-medium">Party Name</th>
               <th className="px-6 py-4 font-medium text-right">Stock</th>
               <th className="px-6 py-4 font-medium text-right">Purchase Rate</th>
               <th className="px-6 py-4 font-medium text-right">MRP</th>
@@ -57,7 +55,7 @@ export default function StockViewPanel() {
           <tbody className="text-text divide-y divide-accent/5">
             {loading ? (
               <tr>
-                <td colSpan={7} className="px-6 py-12 text-center text-muted italic">
+                <td colSpan={6} className="px-6 py-12 text-center text-muted italic">
                   Loading stock data...
                 </td>
               </tr>
@@ -72,15 +70,6 @@ export default function StockViewPanel() {
                 <td className="px-6 py-4 text-muted">{index + 1}</td>
                 <td className="px-6 py-4 font-medium group-hover:text-accent transition-colors">{product.name}</td>
                 <td className="px-6 py-4 text-muted">{product.groupName}</td>
-                <td className="px-6 py-4">
-                  {product.subgroupName ? (
-                    <span className="px-2.5 py-1 bg-accent/10 text-accent text-xs rounded-md uppercase tracking-wider font-medium">
-                      {product.subgroupName}
-                    </span>
-                  ) : (
-                    <span className="text-muted">-</span>
-                  )}
-                </td>
                 <td className="px-6 py-4 text-right font-medium">{product.stock}</td>
                 <td className="px-6 py-4 text-right text-muted">{formatCurrency(product.purchaseRate)}</td>
                 <td className="px-6 py-4 text-right text-accent font-medium">{formatCurrency(product.mrp)}</td>
@@ -88,7 +77,7 @@ export default function StockViewPanel() {
             ))}
             {!loading && filteredProducts.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-6 py-12 text-center text-muted italic">
+                <td colSpan={6} className="px-6 py-12 text-center text-muted italic">
                   No products found matching your search.
                 </td>
               </tr>
@@ -96,7 +85,7 @@ export default function StockViewPanel() {
           </tbody>
           <tfoot className="bg-primary/50 border-t border-accent/10">
             <tr className="font-bold text-text">
-              <td colSpan={4} className="px-6 py-4 text-right uppercase tracking-wider text-xs text-muted">Total Stock Quantity:</td>
+              <td colSpan={3} className="px-6 py-4 text-right uppercase tracking-wider text-xs text-muted">Total Stock Quantity:</td>
               <td className="px-6 py-4 text-right text-lg text-accent">{totalQuantity}</td>
               <td colSpan={2} className="px-6 py-4"></td>
             </tr>
@@ -138,11 +127,6 @@ export default function StockViewPanel() {
                 <span className="px-2.5 py-1 bg-primary text-muted text-xs rounded-md border border-accent/5">
                   {product.groupName}
                 </span>
-                {product.subgroupName && (
-                  <span className="px-2.5 py-1 bg-accent/10 text-accent text-xs rounded-md font-medium">
-                    {product.subgroupName}
-                  </span>
-                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4 pt-3 border-t border-accent/5 mt-1">

@@ -7,7 +7,7 @@ export default function Purchase() {
   const [activeSubTab, setActiveSubTab] = useState("group");
 
   const tabs = [
-    { id: "group", label: "Group" },
+    { id: "group", label: "Party & Product" },
     { id: "edit", label: "Edit" },
   ];
 

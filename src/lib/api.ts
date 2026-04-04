@@ -19,7 +19,7 @@ import {
   writeBatch
 } from "firebase/firestore";
 import { db, auth } from "./firebase";
-import { Product, Group, Subgroup, Bill, CustomerDue, Customer } from "../types";
+import { Product, Group, Subgroup, Bill, CustomerDue, Customer, PartyDue } from "../types";
 
 enum OperationType {
   CREATE = 'create',
@@ -415,6 +415,41 @@ export const dueApi = {
       handleFirestoreError(error, OperationType.UPDATE, path);
     }
   },
+};
+
+export const partyDueApi = {
+  getAll: (callback: (dues: PartyDue[]) => void) => {
+    const path = "partyDues";
+    const q = query(collection(db, path), orderBy("lastPurchaseDate", "desc"));
+    return onSnapshot(q, (snapshot) => {
+      const dues = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PartyDue));
+      callback(dues);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, path);
+    });
+  },
+  addOrUpdate: async (partyName: string, dueChange: number) => {
+    const path = `partyDues/${partyName}`;
+    try {
+      const dueRef = doc(db, "partyDues", partyName);
+      const dueSnap = await getDoc(dueRef);
+      
+      if (dueSnap.exists()) {
+        await updateDoc(dueRef, {
+          amount: increment(dueChange),
+          lastPurchaseDate: Date.now()
+        });
+      } else {
+        await setDoc(dueRef, {
+          partyName,
+          amount: Math.max(0, dueChange),
+          lastPurchaseDate: Date.now()
+        });
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, path);
+    }
+  }
 };
 
 export const settingsApi = {

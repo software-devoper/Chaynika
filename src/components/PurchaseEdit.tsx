@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Search, Trash2, Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
-import { Group, Subgroup, Product } from "../types";
-import { productApi, groupApi, subgroupApi } from "../lib/api";
+import { Group, Product } from "../types";
+import { productApi, groupApi } from "../lib/api";
+import { motion } from "motion/react";
 
 export default function PurchaseEdit() {
   const [groups, setGroups] = useState<Group[]>([]);
-  const [allSubgroups, setAllSubgroups] = useState<Subgroup[]>([]);
-  const [filteredSubgroups, setFilteredSubgroups] = useState<Subgroup[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -21,26 +20,15 @@ export default function PurchaseEdit() {
       setLoading(false);
     });
     const unsubGroups = groupApi.getAll(setGroups);
-    const unsubSubgroups = subgroupApi.getAll(setAllSubgroups);
     return () => {
       unsubProducts();
       unsubGroups();
-      unsubSubgroups();
     };
   }, []);
 
-  useEffect(() => {
-    if (selectedProduct?.groupId) {
-      setFilteredSubgroups(allSubgroups.filter(sg => sg.groupId === selectedProduct.groupId));
-    } else {
-      setFilteredSubgroups([]);
-    }
-  }, [selectedProduct?.groupId, allSubgroups]);
-
   const filteredProducts = products.filter((p) =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.groupName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.subgroupName && p.subgroupName.toLowerCase().includes(searchTerm.toLowerCase()))
+    p.groupName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -50,12 +38,12 @@ export default function PurchaseEdit() {
     setIsUpdating(true);
     try {
       const selectedGroup = groups.find(g => g.id === selectedProduct.groupId);
-      const selectedSubgroup = allSubgroups.find(sg => sg.id === selectedProduct.subgroupId);
       
       await productApi.update(selectedProduct.id, {
         ...selectedProduct,
         groupName: selectedGroup?.name || selectedProduct.groupName,
-        subgroupName: selectedSubgroup?.name || selectedProduct.subgroupName || ""
+        subgroupId: "",
+        subgroupName: ""
       });
       toast.success("Product updated successfully");
       setSelectedProduct(null);
@@ -85,22 +73,31 @@ export default function PurchaseEdit() {
   };
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="max-w-2xl space-y-6"
+    >
       {!selectedProduct ? (
         <div className="space-y-4">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" size={18} />
             <input
               type="text"
-              placeholder="Search product, group or subgroup..."
+              placeholder="Search product or party..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-primary border border-accent/10 rounded-xl pl-12 pr-4 py-3 text-text focus:border-accent outline-none transition-all"
+              className="w-full bg-primary border border-accent/10 rounded-xl pl-12 pr-4 py-3 text-text focus:border-accent outline-none transition-all shadow-sm"
             />
           </div>
           
           {searchTerm && (
-            <div className="bg-primary border border-accent/10 rounded-xl overflow-hidden divide-y divide-accent/5">
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-primary border border-accent/10 rounded-xl overflow-hidden divide-y divide-accent/5 shadow-lg"
+            >
               {filteredProducts.map((p) => (
                 <button
                   key={p.id}
@@ -109,7 +106,6 @@ export default function PurchaseEdit() {
                 >
                   <div className="flex flex-col">
                     <span className="font-medium">{p.name}</span>
-                    <span className="text-[10px] text-muted uppercase tracking-wider">{p.subgroupName || 'No Subgroup'}</span>
                   </div>
                   <span className="text-xs text-muted">{p.groupName}</span>
                 </button>
@@ -117,17 +113,23 @@ export default function PurchaseEdit() {
               {filteredProducts.length === 0 && (
                 <div className="px-4 py-3 text-muted text-center">No products found</div>
               )}
-            </div>
+            </motion.div>
           )}
         </div>
       ) : (
-        <form onSubmit={handleUpdate} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="md:col-span-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <motion.form 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: "spring", stiffness: 300, damping: 25 }}
+          onSubmit={handleUpdate} 
+          className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-surface p-6 rounded-2xl border border-accent/10 shadow-xl"
+        >
+          <div className="md:col-span-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-accent/10 pb-4">
             <h4 className="text-lg font-bold text-accent">Editing: {selectedProduct.name}</h4>
             <button
               type="button"
               onClick={() => setSelectedProduct(null)}
-              className="text-muted hover:text-text w-full sm:w-auto text-left sm:text-right"
+              className="text-muted hover:text-text w-full sm:w-auto text-left sm:text-right font-medium"
             >
               Cancel
             </button>
@@ -145,7 +147,7 @@ export default function PurchaseEdit() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-muted mb-2">Group/Company</label>
+            <label className="block text-sm font-medium text-muted mb-2">Party Name</label>
             <select
               required
               value={selectedProduct.groupId}
@@ -155,23 +157,6 @@ export default function PurchaseEdit() {
               {groups.map((group) => (
                 <option key={group.id} value={group.id}>
                   {group.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-muted mb-2">Subgroup/Category</label>
-            <select
-              required
-              value={selectedProduct.subgroupId}
-              onChange={(e) => setSelectedProduct({ ...selectedProduct, subgroupId: e.target.value })}
-              className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
-            >
-              <option value="">Select Subgroup</option>
-              {filteredSubgroups.map((sg) => (
-                <option key={sg.id} value={sg.id}>
-                  {sg.name}
                 </option>
               ))}
             </select>
@@ -221,16 +206,18 @@ export default function PurchaseEdit() {
             />
           </div>
 
-          <div className="md:col-span-2 flex flex-col sm:flex-row gap-4 pt-4">
-            <button
+          <div className="md:col-span-2 flex flex-col sm:flex-row gap-4 pt-4 border-t border-accent/10 mt-2">
+            <motion.button
+              whileTap={{ scale: 0.97 }}
               type="submit"
               disabled={isUpdating || isDeleting}
-              className="flex-1 bg-accent text-primary font-bold py-3 rounded-xl hover:opacity-90 transition-all order-1 sm:order-none flex items-center justify-center gap-2 disabled:opacity-50"
+              className="flex-1 bg-accent text-primary font-bold py-3 rounded-xl hover:opacity-90 transition-all order-1 sm:order-none flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-accent/20"
             >
               {isUpdating && <Loader2 className="w-5 h-5 animate-spin" />}
               Update
-            </button>
-            <button
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
               type="button"
               onClick={handleDelete}
               disabled={isUpdating || isDeleting}
@@ -242,10 +229,10 @@ export default function PurchaseEdit() {
                 <Trash2 size={20} className="mr-2 sm:mr-0" />
               )}
               <span className="sm:hidden">{isDeleting ? "Deleting..." : "Delete Product"}</span>
-            </button>
+            </motion.button>
           </div>
-        </form>
+        </motion.form>
       )}
-    </div>
+    </motion.div>
   );
 }

@@ -4,6 +4,7 @@ import { User, Mail, Phone, MapPin, Shield, Lock, Loader2, Eye, EyeOff, Moon, Su
 import { auth } from "../lib/firebase";
 import { profileApi, settingsApi } from "../lib/api";
 import { toast } from "react-hot-toast";
+import { motion } from "motion/react";
 
 export default function Profile() {
   const [profile, setProfile] = useState<any>(null);
@@ -77,9 +78,27 @@ export default function Profile() {
     );
   }
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.15 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+  };
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <div className="bg-surface border border-accent/10 rounded-3xl p-8 shadow-xl">
+    <motion.div 
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+      className="max-w-4xl mx-auto space-y-8"
+    >
+      <motion.div variants={itemVariants} className="bg-surface border border-accent/10 rounded-3xl p-8 shadow-xl">
         <div className="flex flex-col md:flex-row items-center gap-8">
           <Logo size={128} showText={false} />
           <div className="flex-1 text-center md:text-left">
@@ -128,9 +147,9 @@ export default function Profile() {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="bg-surface border border-accent/10 rounded-3xl p-8 shadow-xl">
+      <motion.div variants={itemVariants} className="bg-surface border border-accent/10 rounded-3xl p-8 shadow-xl">
         <h3 className="text-xl font-display font-bold text-accent mb-6">Security Settings</h3>
         <div className="space-y-4">
           <div className="p-4 bg-primary/30 rounded-2xl border border-accent/5">
@@ -197,9 +216,9 @@ export default function Profile() {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="bg-surface border border-accent/10 rounded-3xl p-8 shadow-xl">
+      <motion.div variants={itemVariants} className="bg-surface border border-accent/10 rounded-3xl p-8 shadow-xl">
         <h3 className="text-xl font-display font-bold text-accent mb-6">Preferences</h3>
         <div className="space-y-4">
           <div className="flex items-center justify-between p-4 bg-primary/30 rounded-2xl border border-accent/5">
@@ -230,7 +249,7 @@ export default function Profile() {
             </button>
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

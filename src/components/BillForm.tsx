@@ -7,6 +7,7 @@ import { Product, BillItem, Customer, Bill } from "../types";
 import { formatCurrency } from "../lib/utils";
 import { generateBillPDF } from "../lib/BillPDFGenerator";
 import { productApi, billApi, dueApi, customerApi } from "../lib/api";
+import { motion, AnimatePresence } from "motion/react";
 
 export default function BillForm() {
   const [customer, setCustomer] = useState<Partial<Customer>>({
@@ -26,6 +27,8 @@ export default function BillForm() {
   const [showPurchasePrice, setShowPurchasePrice] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [activeCustomerSuggestionIndex, setActiveCustomerSuggestionIndex] = useState(-1);
+  const [activeProductSuggestionIndex, setActiveProductSuggestionIndex] = useState(-1);
 
   useEffect(() => {
     const unsubscribeProducts = productApi.getAll(setProducts);
@@ -68,6 +71,7 @@ export default function BillForm() {
     });
     setPhones([selectedCustomer.phone, ...(selectedCustomer.additionalPhones || [])]);
     setShowCustomerDropdown(false);
+    setActiveCustomerSuggestionIndex(-1);
   };
 
   const handlePhoneChange = (index: number, value: string) => {
@@ -108,6 +112,7 @@ export default function BillForm() {
         productName: product.name,
         qty: 1,
         price: product.wholesaleRate,
+        mrp: product.mrp,
         total: product.wholesaleRate,
       };
       setBillItems([...billItems, newItem]);
@@ -136,6 +141,45 @@ export default function BillForm() {
   const subtotal = billItems.reduce((sum, item) => sum + item.total, 0);
   const grandTotal = subtotal + previousDue;
   const currentBillDue = Math.max(0, subtotal - paidAmount);
+
+  const filteredCustomers = customers.filter(c => c.name.toLowerCase().includes((customer.name || "").toLowerCase()));
+
+  const handleCustomerKeyDown = (e: React.KeyboardEvent) => {
+    if (!showCustomerDropdown) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveCustomerSuggestionIndex(prev => (prev < filteredCustomers.length - 1 ? prev + 1 : prev));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveCustomerSuggestionIndex(prev => (prev > 0 ? prev - 1 : prev));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (activeCustomerSuggestionIndex >= 0 && activeCustomerSuggestionIndex < filteredCustomers.length) {
+        handleCustomerSelect(filteredCustomers[activeCustomerSuggestionIndex]);
+      } else if (filteredCustomers.length > 0) {
+        handleCustomerSelect(filteredCustomers[0]);
+      }
+    }
+  };
+
+  const handleProductSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (searchResults.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveProductSuggestionIndex(prev => (prev < searchResults.length - 1 ? prev + 1 : prev));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveProductSuggestionIndex(prev => (prev > 0 ? prev - 1 : prev));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (activeProductSuggestionIndex >= 0 && activeProductSuggestionIndex < searchResults.length) {
+        addProductToBill(searchResults[activeProductSuggestionIndex]);
+      } else if (searchResults.length > 0) {
+        addProductToBill(searchResults[0]);
+      }
+      setActiveProductSuggestionIndex(-1);
+    }
+  };
 
   const handleGenerateBill = async (action: "save" | "print") => {
     console.log("Auth current user:", auth.currentUser);
@@ -211,20 +255,22 @@ export default function BillForm() {
               onChange={(e) => {
                 setCustomer({ ...customer, name: e.target.value });
                 setShowCustomerDropdown(true);
+                setActiveCustomerSuggestionIndex(-1);
               }}
               onFocus={() => setShowCustomerDropdown(true)}
               onBlur={() => setTimeout(() => setShowCustomerDropdown(false), 200)}
+              onKeyDown={handleCustomerKeyDown}
               className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
               placeholder="Enter name"
             />
             {showCustomerDropdown && customers.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl z-20 max-h-48 overflow-y-auto">
-                {customers
-                  .filter(c => c.name.toLowerCase().includes((customer.name || "").toLowerCase()))
-                  .map((c, index) => (
+                {filteredCustomers.map((c, index) => (
                     <div
                       key={`${c.id}-${index}`}
-                      className="px-4 py-2 hover:bg-primary cursor-pointer text-sm"
+                      className={`px-4 py-2 cursor-pointer text-sm ${
+                        index === activeCustomerSuggestionIndex ? 'bg-accent/10' : 'hover:bg-primary'
+                      }`}
                       onClick={() => handleCustomerSelect(c)}
                     >
                       <div className="font-medium">{c.name}</div>
@@ -312,7 +358,11 @@ export default function BillForm() {
             type="text"
             placeholder="Search product to add..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setActiveProductSuggestionIndex(-1);
+            }}
+            onKeyDown={handleProductSearchKeyDown}
             className="w-full bg-primary border border-accent/10 rounded-xl pl-12 pr-4 py-3 text-text focus:border-accent outline-none transition-all"
           />
           
@@ -322,7 +372,9 @@ export default function BillForm() {
                 <button
                   key={`${p.id}-${index}`}
                   onClick={() => addProductToBill(p)}
-                  className="w-full text-left px-4 py-3 hover:bg-primary transition-colors flex justify-between items-center"
+                  className={`w-full text-left px-4 py-3 transition-colors flex justify-between items-center ${
+                    index === activeProductSuggestionIndex ? 'bg-accent/10' : 'hover:bg-primary'
+                  }`}
                 >
                   <div>
                     <div className="font-medium">{p.name}</div>
@@ -361,30 +413,39 @@ export default function BillForm() {
               </tr>
             </thead>
             <tbody className="text-sm">
-              {billItems.map((item, index) => (
-                <tr key={item.productId} className="border-b border-accent/5">
-                  <td className="px-2 py-4">{index + 1}</td>
-                  <td className="px-2 py-4 font-medium">{item.productName}</td>
-                  <td className="px-2 py-4 text-right text-muted">
-                    {showPurchasePrice ? formatCurrency(products.find(p => p.id === item.productId)?.purchaseRate || 0) : ""}
-                  </td>
-                  <td className="px-2 py-4 text-right">{formatCurrency(item.price)}</td>
-                  <td className="px-2 py-4">
-                    <input
-                      type="number"
-                      value={item.qty}
-                      onChange={(e) => updateQuantity(item.productId, Number(e.target.value))}
-                      className="w-16 bg-primary border border-accent/10 rounded px-2 py-1 text-center outline-none focus:border-accent"
-                    />
-                  </td>
-                  <td className="px-2 py-4 text-right font-medium">{formatCurrency(item.total)}</td>
-                  <td className="px-2 py-4 text-center">
-                    <button onClick={() => removeProductFromBill(item.productId)} className="text-muted hover:text-red-500">
-                      <X size={16} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              <AnimatePresence mode="popLayout">
+                {billItems.map((item, index) => (
+                  <motion.tr 
+                    layout
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
+                    key={item.productId} 
+                    className="border-b border-accent/5"
+                  >
+                    <td className="px-2 py-4">{index + 1}</td>
+                    <td className="px-2 py-4 font-medium">{item.productName}</td>
+                    <td className="px-2 py-4 text-right text-muted">
+                      {showPurchasePrice ? formatCurrency(products.find(p => p.id === item.productId)?.purchaseRate || 0) : ""}
+                    </td>
+                    <td className="px-2 py-4 text-right">{formatCurrency(item.price)}</td>
+                    <td className="px-2 py-4">
+                      <input
+                        type="number"
+                        value={item.qty}
+                        onChange={(e) => updateQuantity(item.productId, Number(e.target.value))}
+                        className="w-16 bg-primary border border-accent/10 rounded px-2 py-1 text-center outline-none focus:border-accent"
+                      />
+                    </td>
+                    <td className="px-2 py-4 text-right font-medium">{formatCurrency(item.total)}</td>
+                    <td className="px-2 py-4 text-center">
+                      <button onClick={() => removeProductFromBill(item.productId)} className="text-muted hover:text-red-500 transition-colors">
+                        <X size={16} />
+                      </button>
+                    </td>
+                  </motion.tr>
+                ))}
+              </AnimatePresence>
               {billItems.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-2 py-8 text-center text-muted italic">No products added to bill</td>
@@ -397,7 +458,7 @@ export default function BillForm() {
         <div className="flex flex-col items-end gap-4 border-t border-accent/10 pt-6">
           <div className="space-y-2 text-right w-full md:max-w-xs">
             <div className="flex justify-between text-muted">
-              <span>Subtotal:</span>
+              <span>Sub Total:</span>
               <span>{formatCurrency(subtotal)}</span>
             </div>
             <div className="flex justify-between text-muted">
@@ -424,29 +485,32 @@ export default function BillForm() {
           </div>
           
           <div className="flex flex-col sm:flex-row gap-4 w-full md:max-w-md">
-            <button 
+            <motion.button 
+              whileTap={{ scale: 0.97 }}
               onClick={() => { setBillItems([]); setCustomer({ name: "", address: "", email: "" }); setPhones([""]); }}
               disabled={isSaving || isPrinting}
               className="flex-1 bg-primary text-muted font-bold py-3 rounded-xl hover:text-text transition-all border border-accent/10 sm:border-none disabled:opacity-50"
             >
               Clear
-            </button>
-            <button 
+            </motion.button>
+            <motion.button 
+              whileTap={{ scale: 0.97 }}
               onClick={() => handleGenerateBill("save")}
               disabled={isSaving || isPrinting}
               className="flex-1 bg-accent/20 text-accent font-bold py-3 rounded-xl hover:bg-accent/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
               Save as PDF
-            </button>
-            <button 
+            </motion.button>
+            <motion.button 
+              whileTap={{ scale: 0.97 }}
               onClick={() => handleGenerateBill("print")}
               disabled={isSaving || isPrinting}
-              className="flex-1 bg-accent text-primary font-bold py-3 rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              className="flex-1 bg-accent text-primary font-bold py-3 rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-accent/20"
             >
               {isPrinting && <Loader2 className="w-4 h-4 animate-spin" />}
               Print Bill
-            </button>
+            </motion.button>
           </div>
         </div>
       </div>
