@@ -13,6 +13,7 @@ export default function PurchaseEdit() {
   const [loading, setLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
 
   useEffect(() => {
     const unsubProducts = productApi.getAll((data) => {
@@ -30,6 +31,28 @@ export default function PurchaseEdit() {
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.groupName.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIndex(prev => (prev < filteredProducts.length - 1 ? prev + 1 : prev));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex(prev => (prev > 0 ? prev - 1 : prev));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (activeIndex >= 0 && activeIndex < filteredProducts.length) {
+        setSelectedProduct(filteredProducts[activeIndex]);
+      }
+    } else if (e.altKey && e.key === 'd') {
+      e.preventDefault();
+      handleDelete();
+    }
+  };
+
+  useEffect(() => {
+    setActiveIndex(-1);
+  }, [searchTerm]);
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,6 +111,7 @@ export default function PurchaseEdit() {
               placeholder="Search product or party..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={handleKeyDown}
               className="w-full bg-primary border border-accent/10 rounded-xl pl-12 pr-4 py-3 text-text focus:border-accent outline-none transition-all shadow-sm"
             />
           </div>
@@ -98,11 +122,13 @@ export default function PurchaseEdit() {
               animate={{ opacity: 1, y: 0 }}
               className="bg-primary border border-accent/10 rounded-xl overflow-hidden divide-y divide-accent/5 shadow-lg"
             >
-              {filteredProducts.map((p) => (
+              {filteredProducts.map((p, index) => (
                 <button
                   key={p.id}
                   onClick={() => setSelectedProduct(p)}
-                  className="w-full text-left px-4 py-3 hover:bg-surface transition-colors flex justify-between items-center"
+                  className={`w-full text-left px-4 py-3 transition-colors flex justify-between items-center ${
+                    index === activeIndex ? 'bg-accent/10' : 'hover:bg-surface'
+                  }`}
                 >
                   <div className="flex flex-col">
                     <span className="font-medium">{p.name}</span>
@@ -121,7 +147,8 @@ export default function PurchaseEdit() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
-          onSubmit={handleUpdate} 
+          onSubmit={handleUpdate}
+          onKeyDown={handleKeyDown}
           className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-surface p-6 rounded-2xl border border-accent/10 shadow-xl"
         >
           <div className="md:col-span-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-accent/10 pb-4">

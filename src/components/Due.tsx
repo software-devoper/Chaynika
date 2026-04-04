@@ -100,7 +100,7 @@ export default function Due() {
       setProcessingId(due.id);
       setProcessingType("full");
       try {
-        await partyDueApi.addOrUpdate(due.partyName, -due.amount);
+        await partyDueApi.markPaid(due.partyName);
         toast.success("Party dues cleared successfully");
       } catch (err) {
         toast.error("Failed to clear party dues");
@@ -189,7 +189,8 @@ export default function Due() {
               <th className="px-4 py-4 font-medium text-center">{activeTab === "sales" ? "Customer Name" : "Party Name"}</th>
               {activeTab === "sales" && <th className="px-4 py-4 font-medium text-center">Phone</th>}
               {activeTab === "sales" && <th className="px-4 py-4 font-medium text-center">Address</th>}
-              <th className="px-4 py-4 font-medium text-center">{activeTab === "sales" ? "Product Name" : "Products & Rates"}</th>
+              <th className="px-4 py-4 font-medium text-center">{activeTab === "sales" ? "Product Name" : "Products"}</th>
+              {activeTab === "purchase" && <th className="px-4 py-4 font-medium text-center">View Party's Details</th>}
               <th className="px-4 py-4 font-medium text-center">Amount</th>
               <th className="px-4 py-4 font-medium text-center">{activeTab === "sales" ? "Last Bill Date" : "Last Purchase Date"}</th>
               <th className="px-4 py-4 font-medium text-center">Action</th>
@@ -222,8 +223,18 @@ export default function Due() {
                     )}
                   </td>
                   <td className="px-4 py-4 text-muted text-center">{due.customerAddress}</td>
-                  <td className="px-4 py-4 text-muted max-w-[150px] truncate text-center mx-auto" title={due.productNames}>
-                    {due.productNames || "N/A"}
+                  <td className="px-4 py-4 text-center">
+                    <div className="space-y-2 max-h-[85px] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden mx-auto">
+                      {due.productNames ? (
+                        due.productNames.split(',').map((name, idx) => (
+                          <div key={idx} className="text-xs border-b border-accent/10 pb-1 last:border-0 last:pb-0">
+                            <div className="font-bold text-text truncate text-center" title={name.trim()}>{name.trim()}</div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-muted text-xs italic text-center">N/A</div>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-4 text-center font-bold text-green-500">{formatCurrency(due.amount)}</td>
                   <td className="px-4 py-4 text-muted text-center">{formatDate(due.lastBillDate)}</td>
@@ -268,11 +279,6 @@ export default function Due() {
                         products.filter(p => p.groupName.toLowerCase() === due.partyName.toLowerCase()).map(p => (
                           <div key={p.id} className="text-xs border-b border-accent/10 pb-1 last:border-0 last:pb-0">
                             <div className="font-bold text-text truncate text-center" title={p.name}>{p.name}</div>
-                            <div className="text-[10px] text-muted flex flex-wrap justify-center gap-x-2 mt-0.5">
-                              <span>PR: {formatCurrency(p.purchaseRate)}</span>
-                              <span>WR: {formatCurrency(p.wholesaleRate)}</span>
-                              <span>MRP: {formatCurrency(p.mrp)}</span>
-                            </div>
                           </div>
                         ))
                       ) : (
@@ -282,6 +288,11 @@ export default function Due() {
                       )}
                     </div>
                   </td>
+                  {activeTab === "purchase" && (
+                    <td className="px-4 py-4 text-center">
+                      <button className="text-accent hover:text-accent/80 text-xs font-bold">View Details</button>
+                    </td>
+                  )}
                   <td className="px-4 py-4 text-center font-bold text-red-500">{formatCurrency(due.amount)}</td>
                   <td className="px-4 py-4 text-muted text-center">{formatDate(due.lastPurchaseDate)}</td>
                   <td className="px-4 py-4 text-center">

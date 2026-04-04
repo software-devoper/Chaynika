@@ -60,6 +60,7 @@ export interface BillItem {
   qty: number;
   price: number;
   total: number;
+  mrp: number;
 }
 
 export interface Bill {

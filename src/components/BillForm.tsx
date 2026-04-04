@@ -24,7 +24,7 @@ export default function BillForm() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [paidAmount, setPaidAmount] = useState(0);
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
-  const [showPurchasePrice, setShowPurchasePrice] = useState(false);
+  const [showPurchasePrice, setShowPurchasePrice] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [activeCustomerSuggestionIndex, setActiveCustomerSuggestionIndex] = useState(-1);
@@ -464,6 +464,7 @@ export default function BillForm() {
                     </button>
                   </div>
                 </th>
+                <th className="px-2 py-3 font-medium text-center">MRP</th>
                 <th className="px-2 py-3 font-medium text-center">Rate</th>
                 <th className="px-2 py-3 font-medium text-center">Qty</th>
                 <th className="px-2 py-3 font-medium text-center">Total</th>
@@ -486,6 +487,7 @@ export default function BillForm() {
                     <td className="px-2 py-4 text-center text-muted">
                       {showPurchasePrice ? formatCurrency(products.find(p => p.id === item.productId)?.purchaseRate || 0) : ""}
                     </td>
+                    <td className="px-2 py-4 text-center">{formatCurrency(item.mrp)}</td>
                     <td className="px-2 py-4 text-center">{formatCurrency(item.price)}</td>
                     <td className="px-2 py-4 text-center">
                       <input

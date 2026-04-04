@@ -438,6 +438,14 @@ export const partyDueApi = {
       handleFirestoreError(error, OperationType.GET, path);
     });
   },
+  markPaid: async (partyName: string) => {
+    const path = `partyDues/${partyName}`;
+    try {
+      await deleteDoc(doc(db, "partyDues", partyName));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, path);
+    }
+  },
   addOrUpdate: async (partyName: string, dueChange: number, productNames?: string) => {
     const path = `partyDues/${partyName}`;
     try {
