@@ -195,38 +195,54 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
   // Save or Print PDF
   const filename = `CHAYANIKA_BILL_${bill.billNo}_${bill.customerName.replace(/\s+/g, "_")}.pdf`;
   
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  // More robust mobile/touch detection
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                   (window.innerWidth <= 800) ||
+                   (navigator.maxTouchPoints > 0);
 
-  // Prepare file for sharing (most reliable on mobile apps/WebViews like Applix)
+  // Prepare file for sharing
   const pdfBlob = doc.output("blob");
   const file = new File([pdfBlob], filename, { type: "application/pdf" });
 
-  if (isMobile && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+  // Try Web Share API if available (most reliable for mobile apps/WebViews)
+  if (navigator.share) {
     try {
-      await navigator.share({
+      const shareData: any = {
         files: [file],
         title: filename,
-        text: action === "print" ? "Print Bill" : "Download Bill",
-      });
-      toast.dismiss(loadingToast);
-      return;
-    } catch (e) {
-      console.error("Mobile share failed, falling back to standard methods", e);
+        text: `Invoice from M/s CHAYANIKA (KALINDI) - Bill No: ${bill.billNo}`,
+      };
+
+      // Check if sharing files is actually supported in this specific browser/WebView
+      if (navigator.canShare && navigator.canShare(shareData)) {
+        toast.loading("Opening share menu...", { id: loadingToast });
+        await navigator.share(shareData);
+        toast.dismiss(loadingToast);
+        return;
+      } else {
+        console.warn("Share API exists but doesn't support file sharing in this environment.");
+      }
+    } catch (e: any) {
+      // If user cancelled, just stop. Otherwise log and fallback.
+      if (e.name === 'AbortError') {
+        toast.dismiss(loadingToast);
+        return;
+      }
+      console.error("Mobile share failed", e);
     }
   }
 
+  // Fallback for environments where navigator.share is missing or fails (like some Applix versions)
   if (action === "print") {
     doc.autoPrint();
     if (isMobile) {
-      // On mobile, printing is unreliable via window.open. Use save as fallback.
       try {
         doc.save(filename);
         toast.dismiss(loadingToast);
-        toast.success("Bill downloaded. You can print it from your downloads.");
+        toast.success("Bill saved to downloads. You can print it from there.");
       } catch (e) {
-        console.error("Mobile print-save failed", e);
         toast.dismiss(loadingToast);
-        toast.error("Download failed");
+        toast.error("Failed to save bill");
       }
     } else {
       try {
@@ -235,7 +251,7 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
         toast.dismiss(loadingToast);
         if (!printWindow) {
           doc.save(filename);
-          toast.success("PDF saved (popup was blocked)");
+          toast.success("Bill saved (popup was blocked)");
         }
       } catch (e) {
         doc.save(filename);
@@ -246,10 +262,14 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
     try {
       doc.save(filename);
       toast.dismiss(loadingToast);
-      toast.success("PDF downloaded successfully");
+      // Give a more descriptive message for mobile users who might be looking for a share menu
+      if (isMobile && !navigator.share) {
+        toast.success("Saved to Downloads! (Your app doesn't support direct sharing)");
+      } else {
+        toast.success("PDF saved to your device downloads");
+      }
     } catch (e) {
       console.error("Save failed", e);
-      // Last resort for mobile: try opening as data URI string
       try {
         const dataUri = doc.output('datauristring');
         const link = document.createElement('a');
@@ -260,16 +280,16 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
         link.click();
         document.body.removeChild(link);
         toast.dismiss(loadingToast);
-        toast.success("PDF downloaded (alternative method)");
+        toast.success("Saved via alternative method");
       } catch (err) {
         toast.dismiss(loadingToast);
-        toast.error("Download failed");
+        toast.error("Could not save PDF");
       }
     }
   }
 } catch (err) {
   toast.dismiss(loadingToast);
-  toast.error("PDF generation failed");
+  toast.error("Error generating bill");
   console.error(err);
 }
 };
