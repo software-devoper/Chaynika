@@ -191,30 +191,51 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
   // Save or Print PDF
   const filename = `bill_${bill.billNo}_${bill.customerName.replace(/\s+/g, "_")}_${new Date(bill.date).toISOString().split("T")[0]}.pdf`;
   
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 800;
+
+  // Prepare file for sharing (most reliable on mobile apps/WebViews like Applix)
+  const pdfBlob = doc.output("blob");
+  const file = new File([pdfBlob], filename, { type: "application/pdf" });
+
+  if (isMobile && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({
+        files: [file],
+        title: filename,
+        text: action === "print" ? "Print Bill" : "Download Bill",
+      });
+      return;
+    } catch (e) {
+      console.error("Mobile share failed, falling back to standard methods", e);
+    }
+  }
 
   if (action === "print") {
     doc.autoPrint();
-    const pdfBlobUrl = doc.output("bloburl");
-    window.open(pdfBlobUrl, "_blank");
-  } else {
-    if (isMobile && navigator.share) {
-      try {
-        const pdfBlob = doc.output("blob");
-        const file = new File([pdfBlob], filename, { type: "application/pdf" });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            files: [file],
-            title: filename,
-          });
-          return;
-        }
-      } catch (e) {
-        console.error("Share failed", e);
+    try {
+      const pdfBlobUrl = doc.output("bloburl");
+      const printWindow = window.open(pdfBlobUrl, "_blank");
+      if (!printWindow) {
+        // If popup blocked or window.open fails, fallback to save
+        doc.save(filename);
       }
+    } catch (e) {
+      console.error("Print failed, falling back to save", e);
+      doc.save(filename);
     }
-    
-    // Fallback to default save
-    doc.save(filename);
+  } else {
+    try {
+      doc.save(filename);
+    } catch (e) {
+      console.error("Save failed", e);
+      // Last resort: try opening as data URI string
+      const dataUri = doc.output('datauristring');
+      const link = document.createElement('a');
+      link.href = dataUri;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   }
 };
