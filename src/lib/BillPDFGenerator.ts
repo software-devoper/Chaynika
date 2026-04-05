@@ -112,10 +112,18 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
       4: { cellWidth: 12, halign: "center" }, // Qty
       5: { cellWidth: 26, halign: "right" },  // Net Amount
     },
-    margin: { left: margin, right: margin },
+    margin: { left: margin, right: margin, bottom: 20 },
   });
 
-  const finalY = (doc as any).lastAutoTable.finalY + 10;
+  let finalY = (doc as any).lastAutoTable.finalY + 10;
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const footerHeight = 80; // Estimated height for Payment Section + Totals + Footer
+
+  // Check if we need a new page for the summary and footer to avoid overlapping
+  if (finalY + footerHeight > pageHeight) {
+    doc.addPage();
+    finalY = 20; // Start near top of new page
+  }
 
   // PAYMENT SECTION
   doc.setFontSize(baseFontSize * 0.9);

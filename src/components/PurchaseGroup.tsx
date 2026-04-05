@@ -105,16 +105,16 @@ export default function PurchaseGroup() {
 
   const handleProductSelect = (item: PurchaseItem, p: Product) => {
     const updatedItems = purchaseItems.map(pi => 
-      pi.rowId === item.rowId ? {
+      pi.rowId === item.rowId ? ({
         ...pi,
         productId: p.id,
         productName: p.name,
         currentStock: p.stock,
-        purchaseRate: "",
-        wholesaleRate: "",
-        mrp: "",
+        purchaseRate: "" as const,
+        wholesaleRate: "" as const,
+        mrp: "" as const,
         isNew: false
-      } : pi
+      } as PurchaseItem) : pi
     );
     setPurchaseItems(updatedItems);
     setActiveDropdownRowId(null);
