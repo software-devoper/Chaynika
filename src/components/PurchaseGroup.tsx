@@ -62,6 +62,18 @@ export default function PurchaseGroup() {
   });
 
   const addRow = () => {
+    const lastItem = purchaseItems[purchaseItems.length - 1];
+    if (lastItem) {
+      const isQtyValid = lastItem.quantity !== "" && Number(lastItem.quantity) > 0;
+      const isPRateValid = lastItem.purchaseRate !== "" && Number(lastItem.purchaseRate) > 0;
+      const isWRateValid = lastItem.wholesaleRate !== "" && Number(lastItem.wholesaleRate) > 0;
+      const isMrpValid = lastItem.mrp !== "" && Number(lastItem.mrp) > 0;
+
+      if (!lastItem.productName.trim() || !isQtyValid || !isPRateValid || !isWRateValid || !isMrpValid) {
+        toast.error("Please fill all fields in the current row before adding a new one.");
+        return;
+      }
+    }
     setPurchaseItems([...purchaseItems, createNewEmptyRow()]);
   };
 
@@ -145,10 +157,6 @@ export default function PurchaseGroup() {
     // If not interacting with dropdown, handle row enter
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (!item.productName.trim() || !item.quantity || Number(item.quantity) <= 0) {
-        toast.error("Please fill product name and quantity before adding a new row.");
-        return;
-      }
       addRow();
     }
   };
@@ -183,6 +191,11 @@ export default function PurchaseGroup() {
       }
       return false;
     });
+
+    if (Number(payableAmount) > totalPurchaseAmount) {
+      toast.error(`Payable amount cannot exceed total purchase amount (${formatCurrency(totalPurchaseAmount)})`);
+      return;
+    }
 
     if (itemsToProcess.length === 0) {
       toast.error("No valid products to add or update. Enter quantity > 0 or update rates.");
@@ -366,7 +379,18 @@ export default function PurchaseGroup() {
           <button
             type="button"
             onClick={addRow}
-            className="text-sm flex items-center gap-1.5 bg-accent/10 text-accent px-4 py-2 rounded-lg hover:bg-accent/20 transition-all font-bold"
+            className="text-sm flex items-center gap-1.5 bg-accent/10 text-accent px-4 py-2 rounded-lg hover:bg-accent/20 transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={purchaseItems.length > 0 && (
+              !purchaseItems[purchaseItems.length - 1].productName.trim() || 
+              purchaseItems[purchaseItems.length - 1].quantity === "" || 
+              Number(purchaseItems[purchaseItems.length - 1].quantity) <= 0 ||
+              purchaseItems[purchaseItems.length - 1].purchaseRate === "" ||
+              Number(purchaseItems[purchaseItems.length - 1].purchaseRate) <= 0 ||
+              purchaseItems[purchaseItems.length - 1].wholesaleRate === "" ||
+              Number(purchaseItems[purchaseItems.length - 1].wholesaleRate) <= 0 ||
+              purchaseItems[purchaseItems.length - 1].mrp === "" ||
+              Number(purchaseItems[purchaseItems.length - 1].mrp) <= 0
+            )}
           >
             <Plus size={16} /> Add Product
           </button>
@@ -515,8 +539,17 @@ export default function PurchaseGroup() {
               <input
                 type="number"
                 min="0"
+                max={totalPurchaseAmount}
                 value={payableAmount}
-                onChange={(e) => setPayableAmount(e.target.value === "" ? "" : Number(e.target.value))}
+                onChange={(e) => {
+                  const val = e.target.value === "" ? "" : Number(e.target.value);
+                  if (val !== "" && val > totalPurchaseAmount) {
+                    setPayableAmount(totalPurchaseAmount);
+                    toast.error(`Payable amount cannot exceed total purchase amount (${formatCurrency(totalPurchaseAmount)})`);
+                  } else {
+                    setPayableAmount(val);
+                  }
+                }}
                 className="w-24 bg-primary border border-accent/10 rounded px-2 py-1 text-right outline-none focus:border-accent"
                 placeholder="0"
               />

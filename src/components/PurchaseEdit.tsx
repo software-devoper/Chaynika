@@ -16,6 +16,8 @@ export default function PurchaseEdit() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   useEffect(() => {
     const unsubProducts = productApi.getAll((data) => {
       setProducts(data);
@@ -44,24 +46,25 @@ export default function PurchaseEdit() {
       e.preventDefault();
       if (activeIndex >= 0 && activeIndex < filteredProducts.length) {
         setSelectedProduct(filteredProducts[activeIndex]);
+      } else if (filteredProducts.length === 1) {
+        setSelectedProduct(filteredProducts[0]);
       }
     }
   };
 
   const handleDelete = useCallback(async () => {
     if (!selectedProduct) return;
-    if (window.confirm("Are you sure you want to delete this product?")) {
-      setIsDeleting(true);
-      try {
-        await productApi.delete(selectedProduct.id);
-        toast.success("Product deleted");
-        setSelectedProduct(null);
-        setSearchTerm("");
-      } catch (err) {
-        toast.error("Failed to delete product");
-      } finally {
-        setIsDeleting(false);
-      }
+    setIsDeleting(true);
+    try {
+      await productApi.delete(selectedProduct.id);
+      toast.success("Product deleted");
+      setSelectedProduct(null);
+      setSearchTerm("");
+      setShowDeleteConfirm(false);
+    } catch (err) {
+      toast.error("Failed to delete product");
+    } finally {
+      setIsDeleting(false);
     }
   }, [selectedProduct]);
 
@@ -245,29 +248,51 @@ export default function PurchaseEdit() {
           </div>
 
           <div className="md:col-span-2 flex flex-col sm:flex-row gap-4 pt-4 border-t border-accent/10 mt-2">
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              type="submit"
-              disabled={isUpdating || isDeleting}
-              className="flex-1 bg-accent text-primary font-bold py-3 rounded-xl hover:opacity-90 transition-all order-1 sm:order-none flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-accent/20"
-            >
-              {isUpdating && <Loader2 className="w-5 h-5 animate-spin" />}
-              Update
-            </motion.button>
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              type="button"
-              onClick={handleDelete}
-              disabled={isUpdating || isDeleting}
-              className="px-6 py-3 sm:py-0 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl hover:bg-red-500 hover:text-white transition-all flex items-center justify-center order-2 sm:order-none disabled:opacity-50"
-            >
-              {isDeleting ? (
-                <Loader2 className="w-5 h-5 animate-spin mr-2 sm:mr-0" />
-              ) : (
-                <Trash2 size={20} className="mr-2 sm:mr-0" />
-              )}
-              <span className="sm:hidden">{isDeleting ? "Deleting..." : "Delete Product"}</span>
-            </motion.button>
+            {!showDeleteConfirm ? (
+              <>
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  type="submit"
+                  disabled={isUpdating || isDeleting}
+                  className="flex-1 bg-accent text-primary font-bold py-3 rounded-xl hover:opacity-90 transition-all order-1 sm:order-none flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-accent/20"
+                >
+                  {isUpdating && <Loader2 className="w-5 h-5 animate-spin" />}
+                  Update
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  disabled={isUpdating || isDeleting}
+                  className="px-6 py-3 sm:py-0 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl hover:bg-red-500 hover:text-white transition-all flex items-center justify-center order-2 sm:order-none disabled:opacity-50"
+                >
+                  <Trash2 size={20} className="mr-2 sm:mr-0" />
+                  <span className="sm:hidden">Delete Product</span>
+                </motion.button>
+              </>
+            ) : (
+              <div className="flex-1 flex flex-col sm:flex-row gap-4 items-center bg-red-500/5 p-4 rounded-xl border border-red-500/20">
+                <span className="text-red-500 font-medium text-sm">Are you sure? This cannot be undone.</span>
+                <div className="flex gap-2 w-full sm:w-auto ml-auto">
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="flex-1 sm:flex-none px-4 py-2 text-muted hover:text-text font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                    className="flex-1 sm:flex-none px-6 py-2 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 transition-all flex items-center justify-center gap-2"
+                  >
+                    {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
+                    Confirm Delete
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </motion.form>
       )}

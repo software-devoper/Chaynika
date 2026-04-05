@@ -66,14 +66,14 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
 
   // TABLE
   const tableData = bill.items.map((item, index) => {
-    // Assuming product info is needed for MRP, but it's not in BillItem.
-    // For now, I'll assume discount is 0 if not available.
-    const discount = 0; // Placeholder
+    const mrp = item.mrp || 0;
+    const discount = mrp > 0 ? ((mrp - item.price) / mrp) * 100 : 0;
     return [
       (index + 1).toString(),
       item.productName,
+      mrp.toFixed(2),
+      discount.toFixed(1) + "%",
       item.price.toFixed(2),
-      discount.toFixed(2) + "%",
       item.qty.toString(),
       item.total.toFixed(2),
     ];
@@ -83,9 +83,9 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
 
   autoTable(doc, {
     startY: 45,
-    head: [["Sl. No.", "Product", "Rate", "Disc(%)", "Qty", "Net Amount"]],
+    head: [["Sl. No.", "Product", "MRP", "Disc(%)", "Rate", "Qty", "Net Amount"]],
     body: tableData,
-    foot: [[`Total Qty: ${totalQty}`, "", "", "", "", bill.subtotal.toFixed(2)]],
+    foot: [[`Total Qty: ${totalQty}`, "", "", "", "", "", bill.subtotal.toFixed(2)]],
     theme: "grid", // Changed to grid for better structure
     styles: {
       font: "times",
@@ -109,12 +109,13 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
       valign: "middle",
     },
     columnStyles: {
-      0: { cellWidth: 12, halign: "center" }, // Sl. No.
-      1: { cellWidth: 40, halign: "left" },   // Product
-      2: { cellWidth: 20, halign: "right" },  // Rate
-      3: { cellWidth: 18, halign: "center" }, // Disc(%)
-      4: { cellWidth: 12, halign: "center" }, // Qty
-      5: { cellWidth: 26, halign: "right" },  // Net Amount
+      0: { cellWidth: 10, halign: "center" }, // Sl. No.
+      1: { cellWidth: 35, halign: "left" },   // Product
+      2: { cellWidth: 18, halign: "right" },  // MRP
+      3: { cellWidth: 15, halign: "center" }, // Disc(%)
+      4: { cellWidth: 18, halign: "right" },  // Rate
+      5: { cellWidth: 10, halign: "center" }, // Qty
+      6: { cellWidth: 22, halign: "right" },  // Net Amount
     },
     margin: { left: margin, right: margin, bottom: 20 },
   });

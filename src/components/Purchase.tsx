@@ -8,7 +8,7 @@ export default function Purchase() {
 
   const tabs = [
     { id: "group", label: "Party & Product" },
-    { id: "edit", label: "Edit" },
+    { id: "edit", label: "Edit & Delete" },
   ];
 
   return (

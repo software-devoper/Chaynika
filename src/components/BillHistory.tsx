@@ -213,6 +213,8 @@ export default function BillHistory() {
                     <thead>
                       <tr className="bg-gray-50 text-gray-500 text-xs uppercase font-bold">
                         <th className="px-4 py-3 border-b border-gray-200">Item Description</th>
+                        <th className="px-4 py-3 border-b border-gray-200 text-center">MRP</th>
+                        <th className="px-4 py-3 border-b border-gray-200 text-center">Disc %</th>
                         <th className="px-4 py-3 border-b border-gray-200 text-center">Qty</th>
                         <th className="px-4 py-3 border-b border-gray-200 text-right">Rate</th>
                         <th className="px-4 py-3 border-b border-gray-200 text-right">Total</th>
@@ -222,6 +224,10 @@ export default function BillHistory() {
                       {selectedBill.items.map((item, idx) => (
                         <tr key={idx} className="text-sm">
                           <td className="px-4 py-3 font-medium">{item.productName}</td>
+                          <td className="px-4 py-3 text-center text-gray-500">{formatCurrency(item.mrp || 0)}</td>
+                          <td className="px-4 py-3 text-center text-accent font-bold">
+                            {item.mrp > 0 ? (((item.mrp - item.price) / item.mrp) * 100).toFixed(1) : 0}%
+                          </td>
                           <td className="px-4 py-3 text-center">{item.qty}</td>
                           <td className="px-4 py-3 text-right">{formatCurrency(item.price)}</td>
                           <td className="px-4 py-3 text-right font-bold">{formatCurrency(item.total)}</td>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Search, Plus, Trash2, X, Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { getDoc } from "firebase/firestore";
@@ -30,6 +30,10 @@ export default function BillForm() {
   const [activeCustomerSuggestionIndex, setActiveCustomerSuggestionIndex] = useState(-1);
   const [activeProductSuggestionIndex, setActiveProductSuggestionIndex] = useState(-1);
   const [customerHistory, setCustomerHistory] = useState<{date: number, productName: string, qty: number, price: number}[]>([]);
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const qtyInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+  const [focusQtyId, setFocusQtyId] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribeProducts = productApi.getAll(setProducts);
@@ -87,6 +91,14 @@ export default function BillForm() {
     }
   }, [phones[0]]);
 
+  useEffect(() => {
+    if (focusQtyId && qtyInputRefs.current[focusQtyId]) {
+      qtyInputRefs.current[focusQtyId]?.focus();
+      qtyInputRefs.current[focusQtyId]?.select();
+      setFocusQtyId(null);
+    }
+  }, [focusQtyId]);
+
   const handleCustomerSelect = (selectedCustomer: Customer) => {
     setCustomer({
       name: selectedCustomer.name,
@@ -143,6 +155,7 @@ export default function BillForm() {
     }
     setSearchTerm("");
     setSearchResults([]);
+    setFocusQtyId(product.id);
   };
 
   const removeProductFromBill = (productId: string) => {
@@ -202,6 +215,9 @@ export default function BillForm() {
         addProductToBill(searchResults[0]);
       }
       setActiveProductSuggestionIndex(-1);
+    } else if (e.key === 'Tab') {
+      // If user tabs out of search, we might want to focus something specific
+      // but default behavior is fine for now.
     }
   };
 
@@ -212,6 +228,11 @@ export default function BillForm() {
 
     if (!customer.name || !primaryPhone || primaryPhone.length !== 10 || billItems.length === 0) {
       toast.error("Please fill customer details (valid 10-digit phone) and add products");
+      return;
+    }
+
+    if (paidAmount > grandTotal) {
+      toast.error(`Paid amount cannot exceed grand total (${formatCurrency(grandTotal)})`);
       return;
     }
 
@@ -407,47 +428,7 @@ export default function BillForm() {
 
       {/* Right Panel: Product Search & Table */}
       <div className="lg:col-span-2 space-y-6">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" size={18} />
-          <input
-            type="text"
-            placeholder="Search product to add..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(capitalizeFirstLetter(e.target.value));
-              setActiveProductSuggestionIndex(-1);
-            }}
-            onKeyDown={handleProductSearchKeyDown}
-            className="w-full bg-primary border border-accent/10 rounded-xl pl-12 pr-4 py-3 text-text focus:border-accent outline-none transition-all"
-          />
-          
-          {searchResults.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-accent/20 rounded-xl shadow-2xl z-10 overflow-hidden divide-y divide-accent/5">
-              {searchResults.map((p, index) => (
-                <button
-                  key={`${p.id}-${index}`}
-                  onClick={() => addProductToBill(p)}
-                  className={`w-full text-left px-4 py-3 transition-colors flex justify-between items-center ${
-                    index === activeProductSuggestionIndex ? 'bg-accent/10' : 'hover:bg-primary'
-                  }`}
-                >
-                  <div>
-                    <div className="font-medium">{p.name}</div>
-                    <div className="text-xs text-muted mt-1 flex flex-wrap gap-x-3 gap-y-1">
-                      <span className="text-accent font-bold">Stock: {p.stock}</span>
-                      <span>MRP: {formatCurrency(p.mrp)}</span>
-                      <span>W.Rate: {formatCurrency(p.wholesaleRate)}</span>
-                      <span>P.Rate: {formatCurrency(p.purchaseRate)}</span>
-                    </div>
-                  </div>
-                  <Plus size={18} className="text-accent" />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
+        <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0 pb-48">
           <table className="w-full text-center border-collapse whitespace-nowrap md:whitespace-normal">
             <thead>
               <tr className="border-b border-accent/10 text-muted text-xs uppercase tracking-wider">
@@ -465,6 +446,7 @@ export default function BillForm() {
                   </div>
                 </th>
                 <th className="px-2 py-3 font-medium text-center">MRP</th>
+                <th className="px-2 py-3 font-medium text-center">Disc %</th>
                 <th className="px-2 py-3 font-medium text-center">Rate</th>
                 <th className="px-2 py-3 font-medium text-center">Qty</th>
                 <th className="px-2 py-3 font-medium text-center">Total</th>
@@ -488,12 +470,22 @@ export default function BillForm() {
                       {showPurchasePrice ? formatCurrency(products.find(p => p.id === item.productId)?.purchaseRate || 0) : ""}
                     </td>
                     <td className="px-2 py-4 text-center">{formatCurrency(item.mrp)}</td>
+                    <td className="px-2 py-4 text-center text-accent font-bold">
+                      {item.mrp > 0 ? (((item.mrp - item.price) / item.mrp) * 100).toFixed(1) : 0}%
+                    </td>
                     <td className="px-2 py-4 text-center">{formatCurrency(item.price)}</td>
                     <td className="px-2 py-4 text-center">
                       <input
+                        ref={el => { qtyInputRefs.current[item.productId] = el; }}
                         type="number"
                         value={item.qty}
                         onChange={(e) => updateQuantity(item.productId, Number(e.target.value))}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            searchInputRef.current?.focus();
+                          }
+                        }}
                         className="w-16 bg-primary border border-accent/10 rounded px-2 py-1 text-center outline-none focus:border-accent mx-auto"
                       />
                     </td>
@@ -506,9 +498,62 @@ export default function BillForm() {
                   </motion.tr>
                 ))}
               </AnimatePresence>
-              {billItems.length === 0 && (
+              
+              {/* Search Row */}
+              <tr className="bg-accent/5">
+                <td className="px-2 py-4 text-center text-muted font-bold">{billItems.length + 1}</td>
+                <td className="px-2 py-4 text-center relative" colSpan={2}>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={14} />
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      placeholder="Search product..."
+                      value={searchTerm}
+                      onChange={(e) => {
+                        setSearchTerm(capitalizeFirstLetter(e.target.value));
+                        setActiveProductSuggestionIndex(-1);
+                      }}
+                      onKeyDown={handleProductSearchKeyDown}
+                      className="w-full bg-primary border border-accent/10 rounded-lg pl-9 pr-4 py-2 text-sm text-text focus:border-accent outline-none transition-all"
+                    />
+                    
+                    {searchResults.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl z-50 overflow-hidden divide-y divide-accent/5 min-w-[300px]">
+                        {searchResults.map((p, index) => (
+                          <button
+                            key={`${p.id}-${index}`}
+                            onClick={() => addProductToBill(p)}
+                            className={`w-full text-left px-4 py-2 transition-colors flex justify-between items-center ${
+                              index === activeProductSuggestionIndex ? 'bg-accent/10' : 'hover:bg-primary'
+                            }`}
+                          >
+                            <div>
+                              <div className="font-medium text-sm">{p.name}</div>
+                              <div className="text-[10px] text-muted mt-0.5 flex gap-x-3">
+                                <span className="text-accent font-bold">Stock: {p.stock}</span>
+                                <span>MRP: {formatCurrency(p.mrp)}</span>
+                                <span>Rate: {formatCurrency(p.wholesaleRate)}</span>
+                              </div>
+                            </div>
+                            <Plus size={14} className="text-accent" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </td>
+                <td className="px-2 py-4 text-center text-muted">-</td>
+                <td className="px-2 py-4 text-center text-muted">-</td>
+                <td className="px-2 py-4 text-center text-muted">-</td>
+                <td className="px-2 py-4 text-center text-muted">-</td>
+                <td className="px-2 py-4 text-center text-muted">-</td>
+                <td className="px-2 py-4 text-center"></td>
+              </tr>
+
+              {billItems.length === 0 && searchTerm === "" && (
                 <tr>
-                  <td colSpan={7} className="px-2 py-8 text-center text-muted italic">No products added to bill</td>
+                  <td colSpan={9} className="px-2 py-8 text-center text-muted italic">No products added. Use the search row above to start.</td>
                 </tr>
               )}
             </tbody>
@@ -529,8 +574,18 @@ export default function BillForm() {
               <span>Paid Amount:</span>
               <input
                 type="number"
+                min="0"
+                max={grandTotal}
                 value={paidAmount}
-                onChange={(e) => setPaidAmount(Number(e.target.value))}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  if (val > grandTotal) {
+                    setPaidAmount(grandTotal);
+                    toast.error(`Paid amount cannot exceed grand total (${formatCurrency(grandTotal)})`);
+                  } else {
+                    setPaidAmount(val);
+                  }
+                }}
                 className="w-24 bg-primary border border-accent/10 rounded px-2 py-1 text-right outline-none focus:border-accent"
               />
             </div>
