@@ -377,6 +377,7 @@ export default function Due() {
                       <th className="px-3 py-2 font-medium text-center">P.Rate</th>
                       <th className="px-3 py-2 font-medium text-center">W.Rate</th>
                       <th className="px-3 py-2 font-medium text-center">MRP</th>
+                      <th className="px-3 py-2 font-medium text-center">Date</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-accent/5">
@@ -387,6 +388,7 @@ export default function Due() {
                         <td className="px-3 py-2 text-center text-muted">{formatCurrency(p.purchaseRate)}</td>
                         <td className="px-3 py-2 text-center text-muted">{formatCurrency(p.wholesaleRate)}</td>
                         <td className="px-3 py-2 text-center text-muted">{formatCurrency(p.mrp)}</td>
+                        <td className="px-3 py-2 text-center text-muted text-xs">{formatDate(p.updatedAt)}</td>
                       </tr>
                     ))}
                   </tbody>

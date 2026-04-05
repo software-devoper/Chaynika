@@ -20,6 +20,24 @@ export default function BillForm() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [billItems, setBillItems] = useState<BillItem[]>([]);
+
+  // Load draft on mount
+  useEffect(() => {
+    const savedDraft = localStorage.getItem("bill_draft");
+    if (savedDraft) {
+      try {
+        const { customer: savedCustomer, phones: savedPhones, items: savedItems, paid: savedPaid } = JSON.parse(savedDraft);
+        if (savedCustomer) setCustomer(savedCustomer);
+        if (savedPhones) setPhones(savedPhones);
+        if (savedItems && savedItems.length > 0) setBillItems(savedItems);
+        if (savedPaid !== undefined) setPaidAmount(savedPaid);
+        toast.success("Draft loaded successfully");
+      } catch (e) {
+        console.error("Failed to load bill draft", e);
+      }
+    }
+  }, []);
+
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [paidAmount, setPaidAmount] = useState(0);
@@ -226,8 +244,23 @@ export default function BillForm() {
     const primaryPhone = phones[0];
     const additionalPhones = phones.slice(1).filter(p => p.length === 10);
 
-    if (!customer.name || !primaryPhone || primaryPhone.length !== 10 || billItems.length === 0) {
-      toast.error("Please fill customer details (valid 10-digit phone) and add products");
+    if (!customer.name?.trim()) {
+      toast.error("Customer Name is required");
+      return;
+    }
+
+    if (!primaryPhone || primaryPhone.length !== 10) {
+      toast.error("Valid 10-digit Primary Phone is required");
+      return;
+    }
+
+    if (billItems.length === 0) {
+      toast.error("Please add at least one product to the bill");
+      return;
+    }
+
+    if (billItems.some(item => !item.productName?.trim())) {
+      toast.error("All items must have a product name (Particular)");
       return;
     }
 
@@ -277,6 +310,7 @@ export default function BillForm() {
       setPaidAmount(0);
       setSearchTerm("");
       setSearchResults([]);
+      localStorage.removeItem("bill_draft");
     } catch (error) {
       console.error("Failed to save bill:", error);
       toast.error(`Failed to save bill: ${error instanceof Error ? error.message : "Unknown error"}`);
@@ -284,6 +318,24 @@ export default function BillForm() {
       setIsSaving(false);
       setIsPrinting(false);
     }
+  };
+
+  const handleSaveDraft = () => {
+    const hasData = (customer.name && customer.name.trim() !== "") || (phones[0] && phones[0].trim() !== "") || billItems.length > 0;
+    
+    if (!hasData) {
+      toast.error("Please fill some details before saving a draft");
+      return;
+    }
+
+    const draft = {
+      customer,
+      phones,
+      items: billItems,
+      paid: paidAmount
+    };
+    localStorage.setItem("bill_draft", JSON.stringify(draft));
+    toast.success("Draft saved successfully");
   };
 
   return (
@@ -403,7 +455,7 @@ export default function BillForm() {
                     <thead className="bg-primary/50 sticky top-0">
                       <tr className="text-muted uppercase tracking-wider">
                         <th className="px-3 py-2 font-medium text-center">Date</th>
-                        <th className="px-3 py-2 font-medium text-center">Product</th>
+                        <th className="px-3 py-2 font-medium text-center">Particulars</th>
                         <th className="px-3 py-2 font-medium text-center">Qty</th>
                         <th className="px-3 py-2 font-medium text-center">Rate</th>
                       </tr>
@@ -433,7 +485,7 @@ export default function BillForm() {
             <thead>
               <tr className="border-b border-accent/10 text-muted text-xs uppercase tracking-wider">
                 <th className="px-2 py-3 font-medium text-center">Sr.</th>
-                <th className="px-2 py-3 font-medium text-center">Particular</th>
+                <th className="px-2 py-3 font-medium text-center">Particulars</th>
                 <th className="px-2 py-3 font-medium text-center">
                   <div className="flex items-center justify-center gap-2">
                     {showPurchasePrice && "Preview"}
@@ -599,14 +651,27 @@ export default function BillForm() {
             </div>
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-4 w-full md:max-w-md">
+          <div className="flex flex-col sm:flex-row gap-4 w-full md:max-w-xl">
             <motion.button 
               whileTap={{ scale: 0.97 }}
-              onClick={() => { setBillItems([]); setCustomer({ name: "", address: "", email: "" }); setPhones([""]); }}
+              onClick={() => { 
+                setBillItems([]); 
+                setCustomer({ name: "", address: "", email: "" }); 
+                setPhones([""]); 
+                localStorage.removeItem("bill_draft");
+              }}
               disabled={isSaving || isPrinting}
               className="flex-1 bg-primary text-muted font-bold py-3 rounded-xl hover:text-text transition-all border border-accent/10 sm:border-none disabled:opacity-50"
             >
               Clear
+            </motion.button>
+            <motion.button 
+              whileTap={{ scale: 0.97 }}
+              onClick={handleSaveDraft}
+              disabled={isSaving || isPrinting}
+              className="flex-1 bg-primary text-muted font-bold py-3 rounded-xl hover:text-text transition-all border border-accent/10 flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              Save Draft
             </motion.button>
             <motion.button 
               whileTap={{ scale: 0.97 }}

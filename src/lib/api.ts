@@ -571,3 +571,40 @@ export const profileApi = {
     }
   }
 };
+
+export const cashSaleApi = {
+  getAll: (callback: (sales: any[]) => void) => {
+    const path = "cashSales";
+    const q = query(collection(db, path), orderBy("date", "desc"));
+    return onSnapshot(q, (snapshot) => {
+      const sales = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      callback(sales);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, path);
+    });
+  },
+  create: async (sale: any) => {
+    const path = "cashSales";
+    try {
+      const saleRef = await addDoc(collection(db, path), { ...sale, date: Date.now() });
+      
+      // Update stock
+      const productRef = doc(db, "products", sale.productId);
+      await updateDoc(productRef, {
+        stock: increment(-sale.qty)
+      });
+      
+      return saleRef;
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, path);
+    }
+  },
+  delete: async (id: string) => {
+    const path = `cashSales/${id}`;
+    try {
+      return await deleteDoc(doc(db, "cashSales", id));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, path);
+    }
+  }
+};

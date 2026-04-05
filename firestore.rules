@@ -40,6 +40,16 @@ service cloud.firestore {
     //   - lastBillDate: number (required)
     //   - lastUpdated: number (required)
     //
+    // Collection: cashSales
+    // Fields:
+    //   - productId: string (required)
+    //   - productName: string (required)
+    //   - qty: number (required)
+    //   - purchaseRate: number (required)
+    //   - mrp: number (required)
+    //   - amount: number (required)
+    //   - date: number (required)
+    //
     // ===============================================================
 
     // Helper Functions
@@ -50,6 +60,17 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() && 
         (request.auth.token.email == "subhadipmondal0101@gmail.com" && request.auth.token.email_verified == true);
+    }
+
+    function isValidCashSale(data) {
+      return data.keys().hasAll(['productId', 'productName', 'qty', 'purchaseRate', 'mrp', 'amount', 'date']) &&
+             data.productId is string &&
+             data.productName is string && data.productName.size() > 0 &&
+             data.qty is number && data.qty > 0 &&
+             data.purchaseRate is number &&
+             data.mrp is number &&
+             data.amount is number && data.amount > 0 &&
+             data.date is number;
     }
 
     function isValidGroup(data) {
@@ -141,6 +162,12 @@ service cloud.firestore {
 
     match /partyDues/{dueId} {
       allow read, write: if isAuthenticated();
+    }
+
+    match /cashSales/{saleId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidCashSale(request.resource.data);
+      allow update, delete: if isAdmin();
     }
   }
 }

@@ -1,35 +1,40 @@
 import React, { useState, useEffect } from "react";
 import { formatCurrency, formatDate } from "../lib/utils";
-import { billApi, productApi } from "../lib/api";
-import { Bill, Product } from "../types";
+import { billApi, productApi, cashSaleApi } from "../lib/api";
+import { Bill, Product, CashSale } from "../types";
 
 export default function Revenue() {
   const [bills, setBills] = useState<Bill[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [cashSales, setCashSales] = useState<CashSale[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubBills = billApi.getAll((data) => setBills(data));
+    const unsubCash = cashSaleApi.getAll((data) => setCashSales(data));
     const unsubProducts = productApi.getAll((data) => {
       setProducts(data);
       setLoading(false);
     });
     return () => {
       unsubBills();
+      unsubCash();
       unsubProducts();
     };
   }, []);
 
   // Calculate stats
-  const totalRevenue = bills.reduce((sum, b) => sum + b.subtotal, 0);
+  const creditRevenue = bills.reduce((sum, b) => sum + b.subtotal, 0);
+  const cashRevenue = cashSales.reduce((sum, s) => sum + s.amount, 0);
+  const totalRevenue = creditRevenue + cashRevenue;
   
   // For profit, we need to know the purchase price of items sold
-  // We can map items in bills to their product purchase price
   const productMap = new Map<string, Product>(products.map(p => [p.id, p]));
   
   let totalPurchaseCost = 0;
   const productStats = new Map<string, { name: string, qty: number, purchaseRate: number, wholesaleRate: number, price: number, lastSoldDate: number }>();
 
+  // Process Credit Bills
   bills.forEach(bill => {
     bill.items.forEach(item => {
       const product = productMap.get(item.productId);
@@ -46,8 +51,25 @@ export default function Revenue() {
     });
   });
 
+  // Process Cash Sales
+  cashSales.forEach(sale => {
+    const product = productMap.get(sale.productId);
+    const pRate = product?.purchaseRate || sale.purchaseRate || 0;
+    const wRate = product?.wholesaleRate || (sale.amount / sale.qty) || 0;
+    totalPurchaseCost += pRate * sale.qty;
+
+    const existing = productStats.get(sale.productId) || { name: sale.productName, qty: 0, purchaseRate: pRate, wholesaleRate: wRate, price: sale.amount / sale.qty, lastSoldDate: sale.date };
+    existing.qty += sale.qty;
+    if (sale.date > existing.lastSoldDate) {
+      existing.lastSoldDate = sale.date;
+    }
+    productStats.set(sale.productId, existing);
+  });
+
   const totalProfit = totalRevenue - totalPurchaseCost;
-  const firstSaleDate = bills.length > 0 ? Math.min(...bills.map(b => b.date)) : null;
+  const firstSaleDate = bills.length > 0 || cashSales.length > 0 
+    ? Math.min(...[...bills.map(b => b.date), ...cashSales.map(s => s.date)]) 
+    : null;
   const dateRangeText = firstSaleDate ? `Since ${formatDate(firstSaleDate)}` : "All Time";
 
   return (

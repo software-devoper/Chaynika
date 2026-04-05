@@ -31,6 +31,22 @@ export default function PurchaseGroup() {
   
   const [purchaseItems, setPurchaseItems] = useState<PurchaseItem[]>([]);
 
+  // Load draft on mount
+  useEffect(() => {
+    const savedDraft = localStorage.getItem("purchase_draft");
+    if (savedDraft) {
+      try {
+        const { partyName: savedParty, items: savedItems, payable: savedPayable } = JSON.parse(savedDraft);
+        if (savedParty) setPartyName(savedParty);
+        if (savedItems && savedItems.length > 0) setPurchaseItems(savedItems);
+        if (savedPayable !== undefined) setPayableAmount(savedPayable);
+        toast.success("Draft loaded successfully");
+      } catch (e) {
+        console.error("Failed to load purchase draft", e);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     const unsubscribeGroups = groupApi.getAll(setGroups);
     const unsubscribeProducts = productApi.getAll(setProducts);
@@ -111,6 +127,35 @@ export default function PurchaseGroup() {
         handlePartySelect(filteredGroups[activeSuggestionIndex]);
       } else if (filteredGroups.length > 0) {
         handlePartySelect(filteredGroups[0]);
+      }
+    }
+  };
+
+  const handleSaveDraft = () => {
+    const hasData = partyName.trim() !== "" || purchaseItems.some(item => item.productName.trim() !== "" || item.quantity !== "");
+    
+    if (!hasData) {
+      toast.error("Please fill some details before saving a draft");
+      return;
+    }
+
+    const draft = {
+      partyName,
+      items: purchaseItems,
+      payable: payableAmount
+    };
+    localStorage.setItem("purchase_draft", JSON.stringify(draft));
+    toast.success("Draft saved successfully");
+  };
+
+  const handleClear = () => {
+    if (partyName || purchaseItems.some(item => item.productName || item.quantity) || payableAmount) {
+      if (window.confirm("Are you sure you want to clear all data? This will also remove the saved draft.")) {
+        setPartyName("");
+        setPurchaseItems([createNewEmptyRow()]);
+        setPayableAmount("");
+        localStorage.removeItem("purchase_draft");
+        toast.success("Data cleared successfully");
       }
     }
   };
@@ -279,6 +324,7 @@ export default function PurchaseGroup() {
       setPartyName("");
       setPurchaseItems([]);
       setPayableAmount("");
+      localStorage.removeItem("purchase_draft");
     } catch (err: any) {
       console.error("Purchase Error:", err);
       toast.error(err.message || "Failed to save products");
@@ -560,15 +606,31 @@ export default function PurchaseGroup() {
             </div>
           </div>
 
-          <motion.button
-            whileTap={{ scale: 0.97 }}
-            onClick={handleSubmit}
-            disabled={isSubmitting || purchaseItems.length === 0}
-            className="bg-accent text-primary font-bold px-12 py-3 rounded-xl hover:opacity-90 transition-all w-full md:w-auto flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-accent/20 mt-4"
-          >
-            {isSubmitting && <Loader2 className="w-5 h-5 animate-spin" />}
-            {isSubmitting ? "Saving..." : "Save Purchase"}
-          </motion.button>
+          <div className="flex gap-4 w-full md:w-auto">
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={handleClear}
+              className="bg-red-500/10 text-red-500 font-bold px-6 py-3 rounded-xl hover:bg-red-500/20 transition-all border border-red-500/20 flex-1 md:flex-none"
+            >
+              Clear
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={handleSaveDraft}
+              className="bg-primary text-muted font-bold px-8 py-3 rounded-xl hover:text-text transition-all border border-accent/10 flex-1 md:flex-none"
+            >
+              Save Draft
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={handleSubmit}
+              disabled={isSubmitting || purchaseItems.length === 0}
+              className="bg-accent text-primary font-bold px-12 py-3 rounded-xl hover:opacity-90 transition-all flex-1 md:flex-none flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-accent/20"
+            >
+              {isSubmitting && <Loader2 className="w-5 h-5 animate-spin" />}
+              {isSubmitting ? "Saving..." : "Save Purchase"}
+            </motion.button>
+          </div>
         </div>
       </div>
     </div>

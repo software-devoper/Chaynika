@@ -3,8 +3,8 @@ import { Package, CircleDollarSign, ReceiptText, Hourglass, TrendingUp, Shopping
 import { motion } from "motion/react";
 import StockViewPanel from "./StockViewPanel";
 import { formatCurrency, formatDate } from "../lib/utils";
-import { billApi, productApi, dueApi } from "../lib/api";
-import { Bill, Product, CustomerDue } from "../types";
+import { billApi, productApi, dueApi, cashSaleApi } from "../lib/api";
+import { Bill, Product, CustomerDue, CashSale } from "../types";
 
 interface NavButtonProps {
   icon: React.ElementType;
@@ -40,29 +40,34 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
   const [bills, setBills] = useState<Bill[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [dues, setDues] = useState<CustomerDue[]>([]);
+  const [cashSales, setCashSales] = useState<CashSale[]>([]);
 
   useEffect(() => {
     const unsubBills = billApi.getAll(setBills);
     const unsubProducts = productApi.getAll(setProducts);
     const unsubDues = dueApi.getAll(setDues);
+    const unsubCash = cashSaleApi.getAll(setCashSales);
     return () => {
       unsubBills();
       unsubProducts();
       unsubDues();
+      unsubCash();
     };
   }, []);
 
-  const totalRevenue = bills.reduce((sum, b) => sum + b.subtotal, 0);
+  const totalRevenue = bills.reduce((sum, b) => sum + b.subtotal, 0) + cashSales.reduce((sum, s) => sum + s.amount, 0);
   const totalDues = dues.reduce((sum, d) => sum + d.amount, 0);
   const totalStockQuantity = products.reduce((sum, p) => sum + p.stock, 0);
   const totalStockValue = products.reduce((sum, p) => sum + (p.stock * p.purchaseRate), 0);
-  const todaySales = bills.filter(b => {
-    const today = new Date();
-    const billDate = new Date(b.date);
-    return today.toDateString() === billDate.toDateString();
-  }).reduce((sum, b) => sum + b.subtotal, 0);
+  
+  const today = new Date().toDateString();
+  const todayCreditSales = bills.filter(b => new Date(b.date).toDateString() === today).reduce((sum, b) => sum + b.subtotal, 0);
+  const todayCashSales = cashSales.filter(s => new Date(s.date).toDateString() === today).reduce((sum, s) => sum + s.amount, 0);
+  const todaySales = todayCreditSales + todayCashSales;
 
-  const firstSaleDate = bills.length > 0 ? Math.min(...bills.map(b => b.date)) : null;
+  const firstSaleDate = bills.length > 0 || cashSales.length > 0 
+    ? Math.min(...[...bills.map(b => b.date), ...cashSales.map(s => s.date)]) 
+    : null;
 
   const stats = [
     { 
@@ -70,7 +75,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
       value: formatCurrency(todaySales), 
       icon: TrendingUp, 
       color: "text-accent",
-      subtext: formatDate(Date.now()),
+      subtext: `Cash: ${formatCurrency(todayCashSales)} | Credit: ${formatCurrency(todayCreditSales)}`,
       action: { label: "View previous sales", onClick: () => setActiveTab("revenue") }
     },
     { 

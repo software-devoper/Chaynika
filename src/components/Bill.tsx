@@ -1,13 +1,15 @@
 import React, { useState } from "react";
 import BillForm from "./BillForm";
 import BillHistory from "./BillHistory";
+import CashSales from "./CashSales";
 import { cn } from "../lib/utils";
 
 export default function Bill() {
   const [activeSubTab, setActiveSubTab] = useState("create");
 
   const tabs = [
-    { id: "create", label: "Create Bill" },
+    { id: "create", label: "Credit Sales" },
+    { id: "cash", label: "Cash Sales" },
     { id: "history", label: "Bill History" },
   ];
 
@@ -32,6 +34,7 @@ export default function Bill() {
 
       <div className="bg-surface border border-accent/10 rounded-2xl p-6 shadow-xl min-h-[400px]">
         {activeSubTab === "create" && <BillForm />}
+        {activeSubTab === "cash" && <CashSales />}
         {activeSubTab === "history" && <BillHistory />}
       </div>
     </div>

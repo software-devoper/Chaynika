@@ -85,3 +85,14 @@ export interface AuthSession {
   createdAt: number;
   expiresAt: number;
 }
+
+export interface CashSale {
+  id: string;
+  productId: string;
+  productName: string;
+  qty: number;
+  purchaseRate: number;
+  mrp: number;
+  amount: number;
+  date: number;
+}

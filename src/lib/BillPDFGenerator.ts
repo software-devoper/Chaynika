@@ -83,9 +83,13 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
 
   autoTable(doc, {
     startY: 45,
-    head: [["Sl. No.", "Product", "MRP", "Disc(%)", "Rate", "Qty", "Net Amount"]],
+    head: [["Sl. No.", "Particulars", "MRP", "Disc(%)", "Rate", "Qty", "Net Amount"]],
     body: tableData,
-    foot: [[`Total Qty: ${totalQty}`, "", "", "", "", "", bill.subtotal.toFixed(2)]],
+    foot: [[
+      { content: `Total Qty: ${totalQty}`, colSpan: 2, styles: { halign: 'left' } },
+      { content: "", colSpan: 4 },
+      { content: bill.subtotal.toFixed(2), styles: { halign: 'right' } }
+    ]],
     theme: "grid", // Changed to grid for better structure
     styles: {
       font: "times",
@@ -93,6 +97,7 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
       cellPadding: 2,
       lineColor: [200, 200, 200],
       lineWidth: 0.1,
+      halign: "center",
     },
     headStyles: {
       fontStyle: "bold",
@@ -105,17 +110,16 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
       fontStyle: "bold",
       fillColor: [255, 255, 255],
       textColor: [0, 0, 0],
-      halign: "right",
       valign: "middle",
     },
     columnStyles: {
-      0: { cellWidth: 10, halign: "center" }, // Sl. No.
-      1: { cellWidth: 35, halign: "left" },   // Product
-      2: { cellWidth: 18, halign: "right" },  // MRP
-      3: { cellWidth: 15, halign: "center" }, // Disc(%)
-      4: { cellWidth: 18, halign: "right" },  // Rate
-      5: { cellWidth: 10, halign: "center" }, // Qty
-      6: { cellWidth: 22, halign: "right" },  // Net Amount
+      0: { cellWidth: 10 }, // Sl. No.
+      1: { cellWidth: 35 }, // Particulars
+      2: { cellWidth: 18 }, // MRP
+      3: { cellWidth: 15 }, // Disc(%)
+      4: { cellWidth: 18 }, // Rate
+      5: { cellWidth: 10 }, // Qty
+      6: { cellWidth: 22 }, // Net Amount
     },
     margin: { left: margin, right: margin, bottom: 20 },
   });
@@ -205,34 +209,6 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
   const pdfBlob = doc.output("blob");
   const file = new File([pdfBlob], filename, { type: "application/pdf" });
 
-  // Try Web Share API if available (most reliable for mobile apps/WebViews)
-  if (navigator.share) {
-    try {
-      const shareData: any = {
-        files: [file],
-        title: filename,
-        text: `Invoice from M/s CHAYANIKA (KALINDI) - Bill No: ${bill.billNo}`,
-      };
-
-      // Check if sharing files is actually supported in this specific browser/WebView
-      if (navigator.canShare && navigator.canShare(shareData)) {
-        toast.loading("Opening share menu...", { id: loadingToast });
-        await navigator.share(shareData);
-        toast.dismiss(loadingToast);
-        return;
-      } else {
-        console.warn("Share API exists but doesn't support file sharing in this environment.");
-      }
-    } catch (e: any) {
-      // If user cancelled, just stop. Otherwise log and fallback.
-      if (e.name === 'AbortError') {
-        toast.dismiss(loadingToast);
-        return;
-      }
-      console.error("Mobile share failed", e);
-    }
-  }
-
   // Fallback for environments where navigator.share is missing or fails (like some Applix versions)
   if (action === "print") {
     doc.autoPrint();
@@ -263,12 +239,7 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
     try {
       doc.save(filename);
       toast.dismiss(loadingToast);
-      // Give a more descriptive message for mobile users who might be looking for a share menu
-      if (isMobile && !navigator.share) {
-        toast.success("Saved to Downloads! (Your app doesn't support direct sharing)");
-      } else {
-        toast.success("PDF saved to your device downloads");
-      }
+      toast.success("PDF saved to your device downloads");
     } catch (e) {
       console.error("Save failed", e);
       try {
