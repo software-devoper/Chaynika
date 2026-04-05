@@ -152,142 +152,128 @@ export default function BillHistory() {
       {/* Bill Details Modal */}
       <AnimatePresence>
         {selectedBill && (
-          <motion.div
+          <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-primary/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
             onClick={() => setSelectedBill(null)}
           >
-            <motion.div
-              initial={{ scale: 0.95, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 20 }}
-              className="bg-surface border border-accent/20 rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-surface w-full max-w-2xl max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-accent/20"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Modal Header */}
-              <div className="p-6 border-b border-accent/10 flex items-center justify-between bg-primary/30">
-                <div>
-                  <h3 className="text-xl font-bold text-accent flex items-center gap-2">
-                    <Hash size={20} /> Bill No: {selectedBill.billNo}
-                  </h3>
-                  <p className="text-muted text-sm flex items-center gap-1 mt-1">
-                    <Calendar size={14} /> {formatDate(selectedBill.date)}
-                  </p>
+              <div className="p-4 border-b border-accent/10 flex justify-between items-center bg-primary/30">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center">
+                    <FileText className="text-accent" size={18} />
+                  </div>
+                  <h3 className="font-display font-bold text-lg text-accent">Digital Invoice #{selectedBill.billNo}</h3>
                 </div>
-                <button
+                <button 
                   onClick={() => setSelectedBill(null)}
-                  className="p-2 hover:bg-accent/10 rounded-full text-muted hover:text-accent transition-colors"
+                  className="p-2 hover:bg-accent/10 rounded-full transition-colors text-muted hover:text-accent"
                 >
-                  <X size={24} />
+                  <X size={20} />
                 </button>
               </div>
 
-              {/* Modal Content */}
-              <div className="p-6 overflow-y-auto flex-1 space-y-8">
-                {/* Customer Info Card */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-primary/20 p-5 rounded-xl border border-accent/5">
-                  <div className="space-y-3">
-                    <h4 className="text-xs uppercase tracking-wider text-muted font-bold mb-2">Customer Details</h4>
-                    <div className="flex items-center gap-3 text-text">
-                      <User size={18} className="text-accent" />
-                      <span className="font-medium">{selectedBill.customerName}</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-text">
-                      <Phone size={18} className="text-accent" />
-                      <span>{selectedBill.customerPhone}</span>
-                    </div>
-                    {selectedBill.additionalPhones && selectedBill.additionalPhones.length > 0 && (
-                      <div className="flex items-center gap-3 text-muted text-xs pl-7">
-                        <span>Others: {selectedBill.additionalPhones.join(", ")}</span>
-                      </div>
-                    )}
+              <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-white text-gray-900">
+                {/* Invoice Header */}
+                <div className="flex justify-between items-start border-b-2 border-gray-100 pb-6">
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900">M/s CHAYANIKA (KALINDI)</h1>
+                    <p className="text-sm text-gray-500">Kalindi, Purba Medinipur</p>
+                    <p className="text-sm text-gray-500">Mobile: 9832116317</p>
                   </div>
-                  <div className="space-y-3">
-                    <h4 className="text-xs uppercase tracking-wider text-muted font-bold mb-2 invisible md:visible">Address & Contact</h4>
-                    <div className="flex items-start gap-3 text-text">
-                      <MapPin size={18} className="text-accent mt-0.5" />
-                      <span className="text-sm leading-relaxed">{selectedBill.customerAddress || "No address provided"}</span>
-                    </div>
-                    {selectedBill.customerEmail && (
-                      <div className="flex items-center gap-3 text-text">
-                        <Mail size={18} className="text-accent" />
-                        <span className="text-sm">{selectedBill.customerEmail}</span>
-                      </div>
-                    )}
+                  <div className="text-right">
+                    <div className="text-xs uppercase tracking-wider text-gray-400 font-bold mb-1">Invoice Date</div>
+                    <div className="font-bold">{formatDate(selectedBill.date)}</div>
+                    <div className="text-xs uppercase tracking-wider text-gray-400 font-bold mt-3 mb-1">Bill Number</div>
+                    <div className="font-bold text-accent">#{selectedBill.billNo}</div>
+                  </div>
+                </div>
+
+                {/* Customer Info */}
+                <div className="grid grid-cols-2 gap-8">
+                  <div>
+                    <h4 className="text-xs uppercase tracking-wider text-gray-400 font-bold mb-2">Bill To:</h4>
+                    <div className="font-bold text-lg">{selectedBill.customerName}</div>
+                    <div className="text-gray-600">{selectedBill.customerPhone}</div>
+                    {selectedBill.customerAddress && <div className="text-gray-500 text-sm mt-1">{selectedBill.customerAddress}</div>}
                   </div>
                 </div>
 
                 {/* Items Table */}
-                <div className="space-y-3">
-                  <h4 className="text-xs uppercase tracking-wider text-muted font-bold">Bill Items</h4>
-                  <div className="border border-accent/10 rounded-xl overflow-hidden">
-                    <table className="w-full text-left text-sm border-collapse">
-                      <thead className="bg-primary/50 text-muted uppercase text-[10px] tracking-wider">
-                        <tr>
-                          <th className="px-4 py-3 font-medium">Product</th>
-                          <th className="px-4 py-3 font-medium text-center">Qty</th>
-                          <th className="px-4 py-3 font-medium text-right">Rate</th>
-                          <th className="px-4 py-3 font-medium text-right">Total</th>
+                <div className="border border-gray-200 rounded-lg overflow-hidden">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50 text-gray-500 text-xs uppercase font-bold">
+                        <th className="px-4 py-3 border-b border-gray-200">Item Description</th>
+                        <th className="px-4 py-3 border-b border-gray-200 text-center">Qty</th>
+                        <th className="px-4 py-3 border-b border-gray-200 text-right">Rate</th>
+                        <th className="px-4 py-3 border-b border-gray-200 text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {selectedBill.items.map((item, idx) => (
+                        <tr key={idx} className="text-sm">
+                          <td className="px-4 py-3 font-medium">{item.productName}</td>
+                          <td className="px-4 py-3 text-center">{item.qty}</td>
+                          <td className="px-4 py-3 text-right">{formatCurrency(item.price)}</td>
+                          <td className="px-4 py-3 text-right font-bold">{formatCurrency(item.total)}</td>
                         </tr>
-                      </thead>
-                      <tbody className="divide-y divide-accent/5">
-                        {selectedBill.items.map((item, idx) => (
-                          <tr key={idx} className="hover:bg-primary/30 transition-colors">
-                            <td className="px-4 py-3 font-medium text-text">{item.productName}</td>
-                            <td className="px-4 py-3 text-center font-bold text-accent">{item.qty}</td>
-                            <td className="px-4 py-3 text-right text-muted">{formatCurrency(item.price)}</td>
-                            <td className="px-4 py-3 text-right font-bold text-text">{formatCurrency(item.total)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
 
-                {/* Summary Section */}
-                <div className="flex flex-col md:flex-row justify-between gap-6 pt-4 border-t border-accent/10">
-                  <div className="flex-1 bg-accent/5 p-4 rounded-xl flex items-center justify-center">
-                    <div className="text-center">
-                      <p className="text-muted text-xs uppercase tracking-widest mb-1">Grand Total</p>
-                      <p className="text-3xl font-black text-accent">{formatCurrency(selectedBill.grandTotal)}</p>
+                {/* Financial Summary */}
+                <div className="flex justify-end">
+                  <div className="w-full max-w-[240px] space-y-2">
+                    <div className="flex justify-between text-sm text-gray-500">
+                      <span>Subtotal:</span>
+                      <span className="font-medium text-gray-900">{formatCurrency(selectedBill.subtotal)}</span>
                     </div>
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted">Subtotal:</span>
-                      <span className="font-medium">{formatCurrency(selectedBill.subtotal)}</span>
+                    {selectedBill.grandTotal - selectedBill.subtotal > 0 && (
+                      <div className="flex justify-between text-sm text-gray-500">
+                        <span>Previous Due:</span>
+                        <span className="font-medium text-gray-900">{formatCurrency(selectedBill.grandTotal - selectedBill.subtotal)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-lg font-bold text-accent pt-2 border-t-2 border-gray-100">
+                      <span>Grand Total:</span>
+                      <span>{formatCurrency(selectedBill.grandTotal)}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted">Previous Due:</span>
-                      <span className="font-medium text-red-500">{formatCurrency(selectedBill.grandTotal - selectedBill.subtotal)}</span>
+                    <div className="flex justify-between text-sm text-green-600 font-medium">
+                      <span>Amount Paid:</span>
+                      <span>{formatCurrency(selectedBill.paidAmount)}</span>
                     </div>
-                    <div className="flex justify-between text-sm pt-2 border-t border-accent/5">
-                      <span className="text-muted">Paid Amount:</span>
-                      <span className="font-bold text-green-500">{formatCurrency(selectedBill.paidAmount)}</span>
-                    </div>
-                    <div className="flex justify-between text-base font-bold pt-1">
-                      <span className="text-text">Balance Due:</span>
-                      <span className="text-red-500">{formatCurrency(selectedBill.dueAmount)}</span>
+                    <div className="flex justify-between text-sm text-red-600 font-bold pt-1 border-t border-gray-100">
+                      <span>Balance Due:</span>
+                      <span>{formatCurrency(selectedBill.dueAmount)}</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Modal Footer - Actions */}
-              <div className="p-6 border-t border-accent/10 bg-primary/30 flex flex-col sm:flex-row gap-3">
-                <button
+              <div className="p-4 border-t border-accent/10 bg-primary/30 grid grid-cols-2 gap-4">
+                <button 
                   onClick={() => handlePrintPDF(selectedBill)}
-                  className="flex-1 flex items-center justify-center gap-2 bg-primary border border-accent/20 text-text font-bold py-3 rounded-xl hover:bg-accent/10 transition-all"
+                  className="flex items-center justify-center gap-2 bg-primary border border-accent/20 text-text py-3 rounded-xl hover:bg-accent/10 transition-all font-bold"
                 >
-                  <Printer size={18} /> Print Bill
+                  <Printer size={18} />
+                  Print Bill
                 </button>
-                <button
+                <button 
                   onClick={() => handleDownloadPDF(selectedBill)}
-                  className="flex-1 flex items-center justify-center gap-2 bg-accent text-primary font-bold py-3 rounded-xl hover:opacity-90 transition-all shadow-lg shadow-accent/20"
+                  className="flex items-center justify-center gap-2 bg-accent text-primary py-3 rounded-xl hover:opacity-90 transition-all font-bold shadow-lg shadow-accent/20"
                 >
-                  <Download size={18} /> Download PDF
+                  <Download size={18} />
+                  Share / Save PDF
                 </button>
               </div>
             </motion.div>

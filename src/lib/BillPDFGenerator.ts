@@ -193,7 +193,7 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
   doc.line(pageWidth - margin - 30, footerY + 8, pageWidth - margin, footerY + 8);
 
   // Save or Print PDF
-  const filename = `bill_${bill.billNo}_${bill.customerName.replace(/\s+/g, "_")}_${new Date(bill.date).toISOString().split("T")[0]}.pdf`;
+  const filename = `CHAYANIKA_BILL_${bill.billNo}_${bill.customerName.replace(/\s+/g, "_")}.pdf`;
   
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
