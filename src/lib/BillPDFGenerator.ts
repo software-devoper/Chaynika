@@ -1,15 +1,19 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import QRCode from "qrcode";
+import { toast } from "react-hot-toast";
 import { Bill } from "../types";
 import { formatCurrency, formatDate } from "./utils";
 
 export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "save") => {
-  const doc = new jsPDF({
-    orientation: "portrait",
-    unit: "mm",
-    format: "a5",
-  });
+  const loadingToast = toast.loading(action === "print" ? "Preparing print..." : "Generating PDF...");
+  
+  try {
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a5",
+    });
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 10;
@@ -191,7 +195,7 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
   // Save or Print PDF
   const filename = `bill_${bill.billNo}_${bill.customerName.replace(/\s+/g, "_")}_${new Date(bill.date).toISOString().split("T")[0]}.pdf`;
   
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 800;
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
   // Prepare file for sharing (most reliable on mobile apps/WebViews like Applix)
   const pdfBlob = doc.output("blob");
@@ -204,6 +208,7 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
         title: filename,
         text: action === "print" ? "Print Bill" : "Download Bill",
       });
+      toast.dismiss(loadingToast);
       return;
     } catch (e) {
       console.error("Mobile share failed, falling back to standard methods", e);
@@ -212,30 +217,59 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
 
   if (action === "print") {
     doc.autoPrint();
-    try {
-      const pdfBlobUrl = doc.output("bloburl");
-      const printWindow = window.open(pdfBlobUrl, "_blank");
-      if (!printWindow) {
-        // If popup blocked or window.open fails, fallback to save
+    if (isMobile) {
+      // On mobile, printing is unreliable via window.open. Use save as fallback.
+      try {
         doc.save(filename);
+        toast.dismiss(loadingToast);
+        toast.success("Bill downloaded. You can print it from your downloads.");
+      } catch (e) {
+        console.error("Mobile print-save failed", e);
+        toast.dismiss(loadingToast);
+        toast.error("Download failed");
       }
-    } catch (e) {
-      console.error("Print failed, falling back to save", e);
-      doc.save(filename);
+    } else {
+      try {
+        const pdfBlobUrl = doc.output("bloburl");
+        const printWindow = window.open(pdfBlobUrl, "_blank");
+        toast.dismiss(loadingToast);
+        if (!printWindow) {
+          doc.save(filename);
+          toast.success("PDF saved (popup was blocked)");
+        }
+      } catch (e) {
+        doc.save(filename);
+        toast.dismiss(loadingToast);
+      }
     }
   } else {
     try {
       doc.save(filename);
+      toast.dismiss(loadingToast);
+      toast.success("PDF downloaded successfully");
     } catch (e) {
       console.error("Save failed", e);
-      // Last resort: try opening as data URI string
-      const dataUri = doc.output('datauristring');
-      const link = document.createElement('a');
-      link.href = dataUri;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Last resort for mobile: try opening as data URI string
+      try {
+        const dataUri = doc.output('datauristring');
+        const link = document.createElement('a');
+        link.href = dataUri;
+        link.download = filename;
+        link.target = '_self';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.dismiss(loadingToast);
+        toast.success("PDF downloaded (alternative method)");
+      } catch (err) {
+        toast.dismiss(loadingToast);
+        toast.error("Download failed");
+      }
     }
   }
+} catch (err) {
+  toast.dismiss(loadingToast);
+  toast.error("PDF generation failed");
+  console.error(err);
+}
 };
