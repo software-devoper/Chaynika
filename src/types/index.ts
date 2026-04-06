@@ -48,6 +48,7 @@ export interface CustomerDue {
 
 export interface PartyDue {
   id: string;
+  groupId?: string;
   partyName: string;
   productNames?: string;
   amount: number;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "motion/react";
 import { formatCurrency } from "../lib/utils";
 import { Product } from "../types";
@@ -9,6 +9,8 @@ export default function StockViewPanel() {
   const [searchTerm, setSearchTerm] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
 
   useEffect(() => {
     const unsubscribe = productApi.getAll((data) => {
@@ -18,6 +20,10 @@ export default function StockViewPanel() {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
   const filteredProducts = products.filter(
     (p) =>
       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -25,6 +31,12 @@ export default function StockViewPanel() {
   );
 
   const totalQuantity = filteredProducts.reduce((sum, p) => sum + p.stock, 0);
+  
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return (
     <div className="space-y-6">
@@ -61,15 +73,15 @@ export default function StockViewPanel() {
                   Loading stock data...
                 </td>
               </tr>
-            ) : filteredProducts.map((product, index) => (
+            ) : paginatedProducts.map((product, index) => (
               <motion.tr 
                 key={product.id} 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
+                transition={{ duration: 0.3, delay: (index % 10) * 0.05 }}
                 className="hover:bg-primary/30 transition-colors group"
               >
-                <td className="px-6 py-4 text-muted text-center">{index + 1}</td>
+                <td className="px-6 py-4 text-muted text-center">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                 <td className="px-6 py-4 text-muted text-center">{new Date(product.updatedAt).toLocaleDateString()}</td>
                 <td className="px-6 py-4 font-medium group-hover:text-accent transition-colors text-center">{product.name}</td>
                 <td className="px-6 py-4 text-muted text-center">{product.groupName}</td>
@@ -79,7 +91,7 @@ export default function StockViewPanel() {
                 <td className="px-6 py-4 text-center text-accent font-medium">{formatCurrency(product.mrp)}</td>
               </motion.tr>
             ))}
-            {!loading && filteredProducts.length === 0 && (
+            {!loading && paginatedProducts.length === 0 && (
               <tr>
                 <td colSpan={8} className="px-6 py-12 text-center text-muted italic">
                   No products found matching your search.
@@ -103,22 +115,22 @@ export default function StockViewPanel() {
           <div className="py-12 text-center text-muted italic bg-surface border border-accent/10 rounded-xl">
             Loading stock data...
           </div>
-        ) : filteredProducts.length === 0 ? (
+        ) : paginatedProducts.length === 0 ? (
           <div className="py-12 text-center text-muted italic bg-surface border border-accent/10 rounded-xl">
             No products found matching your search.
           </div>
         ) : (
-          filteredProducts.map((product, index) => (
+          paginatedProducts.map((product, index) => (
             <motion.div 
               key={product.id} 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.05 }}
+              transition={{ duration: 0.3, delay: (index % 10) * 0.05 }}
               className="bg-surface border border-accent/10 rounded-xl p-4 shadow-sm hover:border-accent/30 transition-colors flex flex-col gap-3"
             >
               <div className="flex justify-between items-start gap-2">
                 <div>
-                  <div className="text-xs text-muted mb-1">#{index + 1} • {new Date(product.updatedAt).toLocaleDateString()}</div>
+                  <div className="text-xs text-muted mb-1">#{(currentPage - 1) * itemsPerPage + index + 1} • {new Date(product.updatedAt).toLocaleDateString()}</div>
                   <h4 className="font-bold text-text text-lg leading-tight">{product.name}</h4>
                 </div>
                 <div className="flex flex-col items-end">
@@ -151,13 +163,66 @@ export default function StockViewPanel() {
           ))
         )}
         
-        {!loading && filteredProducts.length > 0 && (
+        {!loading && paginatedProducts.length > 0 && (
           <div className="bg-primary/50 border border-accent/10 rounded-xl p-4 flex justify-between items-center mt-2">
             <span className="text-sm font-medium text-muted uppercase tracking-wider">Total Stock</span>
             <span className="text-xl font-bold text-accent">{totalQuantity}</span>
           </div>
         )}
       </div>
+
+      {/* Pagination Controls */}
+      {!loading && totalPages > 1 && (
+        <div className="flex items-center justify-between bg-surface border border-accent/10 rounded-xl p-4 mt-6">
+          <div className="text-sm text-muted">
+            Showing <span className="font-medium text-text">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium text-text">{Math.min(currentPage * itemsPerPage, filteredProducts.length)}</span> of <span className="font-medium text-text">{filteredProducts.length}</span> results
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="p-2 rounded-lg border border-accent/10 text-text hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors ${
+                      currentPage === pageNum 
+                        ? 'bg-accent text-primary' 
+                        : 'border border-accent/10 text-text hover:bg-primary'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="p-2 rounded-lg border border-accent/10 text-text hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

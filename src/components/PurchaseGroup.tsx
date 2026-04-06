@@ -24,6 +24,7 @@ export default function PurchaseGroup() {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [partyName, setPartyName] = useState("");
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [showGroupDropdown, setShowGroupDropdown] = useState(false);
   const [activeDropdownRowId, setActiveDropdownRowId] = useState<string | null>(null);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
@@ -76,6 +77,7 @@ export default function PurchaseGroup() {
 
   const handlePartySelect = (group: Group) => {
     setPartyName(group.name);
+    setSelectedGroupId(group.id);
     setShowGroupDropdown(false);
     setActiveSuggestionIndex(-1);
     
@@ -170,6 +172,7 @@ export default function PurchaseGroup() {
     if (partyName || purchaseItems.some(item => item.productName || item.quantity) || payableAmount) {
       if (window.confirm("Are you sure you want to clear all data? This will also remove the saved draft.")) {
         setPartyName("");
+        setSelectedGroupId(null);
         setPurchaseItems([createNewEmptyRow()]);
         setPayableAmount("");
         localStorage.removeItem("purchase_draft");
@@ -232,25 +235,15 @@ export default function PurchaseGroup() {
       return;
     }
 
-    // Filter items that have a name and either have quantity > 0 or are modified existing products
+    // Filter items that have a name and either have quantity > 0 or have explicit rates entered
     const itemsToProcess = purchaseItems.filter(item => {
       if (!item.productName.trim()) return false;
       
       const qty = Number(item.quantity) || 0;
       if (qty > 0) return true;
       
-      const group = groups.find(g => g.name.toLowerCase() === partyName.trim().toLowerCase());
-      if (group) {
-        const existing = products.find(p => p.groupId === group.id && p.name.toLowerCase() === item.productName.trim().toLowerCase());
-        if (existing) {
-          const pRate = item.purchaseRate === "" ? existing.purchaseRate : Number(item.purchaseRate);
-          const wRate = item.wholesaleRate === "" ? existing.wholesaleRate : Number(item.wholesaleRate);
-          const mRate = item.mrp === "" ? existing.mrp : Number(item.mrp);
-          
-          if (pRate !== existing.purchaseRate || wRate !== existing.wholesaleRate || mRate !== existing.mrp) {
-            return true;
-          }
-        }
+      if (item.purchaseRate !== "" || item.wholesaleRate !== "" || item.mrp !== "") {
+        return true;
       }
 
       return false;
@@ -269,12 +262,13 @@ export default function PurchaseGroup() {
     setIsSubmitting(true);
     try {
       // 1. Handle Party
-      let group = groups.find(g => g.name.toLowerCase() === partyName.trim().toLowerCase());
-      let groupId = group?.id;
+      let groupId = selectedGroupId;
+      let isNewParty = false;
 
       if (!groupId) {
         const groupRef = await groupApi.add(partyName.trim());
         groupId = groupRef?.id;
+        isNewParty = true;
       }
 
       if (!groupId) throw new Error("Failed to create party");
@@ -283,26 +277,32 @@ export default function PurchaseGroup() {
       for (const item of itemsToProcess) {
         const qty = Number(item.quantity) || 0;
         
-        // Check if product with same name AND same party already exists
-        const existing = products.find(p => p.groupId === groupId && p.name.toLowerCase() === item.productName.trim().toLowerCase());
-        
-        if (existing) {
-          const pRate = item.purchaseRate === "" ? existing.purchaseRate : Number(item.purchaseRate);
-          const wRate = item.wholesaleRate === "" ? existing.wholesaleRate : Number(item.wholesaleRate);
-          const mRate = item.mrp === "" ? existing.mrp : Number(item.mrp);
+        let targetProduct = item.productId ? products.find(p => p.id === item.productId) : undefined;
+        if (!targetProduct) {
+           targetProduct = products.find(p => p.groupId === groupId && p.name.toLowerCase() === item.productName.trim().toLowerCase());
+        }
 
-          await productApi.update(existing.id, {
-            stock: existing.stock + qty,
-            purchaseRate: pRate,
-            wholesaleRate: wRate,
-            mrp: mRate,
-            updatedAt: Date.now(),
-          });
+        const pRate = item.purchaseRate === "" ? (targetProduct?.purchaseRate || 0) : Number(item.purchaseRate);
+        const wRate = item.wholesaleRate === "" ? (targetProduct?.wholesaleRate || 0) : Number(item.wholesaleRate);
+        const mRate = item.mrp === "" ? (targetProduct?.mrp || 0) : Number(item.mrp);
+
+        // Check if there's an existing product with the exact same name, party, and rates
+        const exactMatch = products.find(p => 
+          p.groupId === groupId && 
+          p.name.toLowerCase() === item.productName.trim().toLowerCase() &&
+          p.purchaseRate === pRate &&
+          p.wholesaleRate === wRate &&
+          p.mrp === mRate
+        );
+
+        if (exactMatch) {
+          if (qty > 0) {
+            await productApi.update(exactMatch.id, {
+              stock: exactMatch.stock + qty,
+              updatedAt: Date.now(),
+            });
+          }
         } else {
-          const newPRate = item.purchaseRate === "" ? 0 : Number(item.purchaseRate);
-          const newWRate = item.wholesaleRate === "" ? 0 : Number(item.wholesaleRate);
-          const newMRate = item.mrp === "" ? 0 : Number(item.mrp);
-
           await productApi.add({
             name: item.productName.trim(),
             groupId,
@@ -310,9 +310,9 @@ export default function PurchaseGroup() {
             subgroupId: "",
             subgroupName: "",
             stock: qty,
-            purchaseRate: newPRate,
-            wholesaleRate: newWRate,
-            mrp: newMRate,
+            purchaseRate: pRate,
+            wholesaleRate: wRate,
+            mrp: mRate,
             unit: "Pcs",
             updatedAt: Date.now(),
           });
@@ -323,7 +323,7 @@ export default function PurchaseGroup() {
       const dueChange = totalPurchaseAmount - (Number(payableAmount) || 0);
       if (dueChange !== 0) {
         const productNamesStr = itemsToProcess.map(item => item.productName.trim()).join(", ");
-        await partyDueApi.addOrUpdate(partyName.trim(), dueChange, productNamesStr);
+        await partyDueApi.addOrUpdate(groupId, partyName.trim(), dueChange, productNamesStr, isNewParty);
       }
 
       toast.success("Products saved successfully");
@@ -331,6 +331,7 @@ export default function PurchaseGroup() {
       
       // Reset or refresh
       setPartyName("");
+      setSelectedGroupId(null);
       setPurchaseItems([]);
       setPayableAmount("");
       localStorage.removeItem("purchase_draft");
@@ -356,6 +357,7 @@ export default function PurchaseGroup() {
               value={partyName}
               onChange={(e) => {
                 setPartyName(capitalizeFirstLetter(e.target.value));
+                setSelectedGroupId(null);
                 setShowGroupDropdown(true);
                 setActiveSuggestionIndex(-1);
               }}
@@ -386,7 +388,7 @@ export default function PurchaseGroup() {
         </div>
 
         {/* Party Products Summary */}
-        {partyName && groups.find(g => g.name.toLowerCase() === partyName.toLowerCase()) && (
+        {selectedGroupId && (
           <div className="mt-6 border-t border-accent/10 pt-6">
             <h5 className="text-sm font-bold text-accent mb-3">Party's Existing Products</h5>
             <div className="bg-primary/30 rounded-xl border border-accent/10 overflow-hidden">
@@ -403,7 +405,7 @@ export default function PurchaseGroup() {
                   </thead>
                   <tbody className="divide-y divide-accent/5">
                     {products
-                      .filter(p => p.groupName.toLowerCase() === partyName.toLowerCase())
+                      .filter(p => p.groupId === selectedGroupId)
                       .map(p => (
                         <tr key={p.id} className="hover:bg-primary/50">
                           <td className="px-3 py-2 font-medium text-text text-center">{p.name}</td>
@@ -413,7 +415,7 @@ export default function PurchaseGroup() {
                           <td className="px-3 py-2 text-center text-muted">{p.mrp}</td>
                         </tr>
                       ))}
-                    {products.filter(p => p.groupName.toLowerCase() === partyName.toLowerCase()).length === 0 && (
+                    {products.filter(p => p.groupId === selectedGroupId).length === 0 && (
                       <tr>
                         <td colSpan={5} className="px-3 py-4 text-center text-muted italic">
                           No products found for this party.

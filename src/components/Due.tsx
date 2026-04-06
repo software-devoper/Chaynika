@@ -101,7 +101,7 @@ export default function Due() {
       setProcessingId(due.id);
       setProcessingType("full");
       try {
-        await partyDueApi.markPaid(due.partyName);
+        await partyDueApi.markPaid(due.id);
         toast.success("Party dues cleared successfully");
       } catch (err) {
         toast.error("Failed to clear party dues");
@@ -128,7 +128,7 @@ export default function Due() {
       setProcessingId(due.id);
       setProcessingType("partly");
       try {
-        await partyDueApi.addOrUpdate(due.partyName, -parsedAmount);
+        await partyDueApi.addOrUpdate(due.id, due.partyName, -parsedAmount);
         toast.success("Partial payment recorded");
       } catch (err) {
         toast.error("Failed to record partial payment");
@@ -138,6 +138,9 @@ export default function Due() {
       }
     }
   };
+
+  const totalSalesDue = customerDues.reduce((sum, due) => sum + due.amount, 0);
+  const totalPurchaseDue = partyDues.reduce((sum, due) => sum + due.amount, 0);
 
   return (
     <motion.div 
@@ -149,25 +152,35 @@ export default function Due() {
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <button
           onClick={() => { setActiveTab("sales"); setSearchTerm(""); }}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold transition-all ${
+          className={`flex-1 flex flex-col items-center justify-center gap-1 py-4 px-4 rounded-xl font-bold transition-all border-2 ${
             activeTab === "sales" 
-              ? "bg-green-500 text-white shadow-lg shadow-green-500/20" 
-              : "bg-primary border border-accent/10 text-muted hover:text-text"
+              ? "bg-green-500 text-white shadow-lg shadow-green-500/20 border-green-600" 
+              : "bg-primary border-green-500/30 text-muted hover:border-green-500/60 hover:text-text"
           }`}
         >
-          <TrendingUp size={20} />
-          Sales Due
+          <div className="flex items-center gap-2 text-sm uppercase tracking-wider">
+            <TrendingUp size={18} />
+            Total Sales Due
+          </div>
+          <div className={`text-2xl ${activeTab === "sales" ? "text-white" : "text-green-500"}`}>
+            {formatCurrency(totalSalesDue)}
+          </div>
         </button>
         <button
           onClick={() => { setActiveTab("purchase"); setSearchTerm(""); }}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-bold transition-all ${
+          className={`flex-1 flex flex-col items-center justify-center gap-1 py-4 px-4 rounded-xl font-bold transition-all border-2 ${
             activeTab === "purchase" 
-              ? "bg-red-500 text-white shadow-lg shadow-red-500/20" 
-              : "bg-primary border border-accent/10 text-muted hover:text-text"
+              ? "bg-red-500 text-white shadow-lg shadow-red-500/20 border-red-600" 
+              : "bg-primary border-red-500/30 text-muted hover:border-red-500/60 hover:text-text"
           }`}
         >
-          <TrendingDown size={20} />
-          Purchase Due
+          <div className="flex items-center gap-2 text-sm uppercase tracking-wider">
+            <TrendingDown size={18} />
+            Total Purchase Due
+          </div>
+          <div className={`text-2xl ${activeTab === "purchase" ? "text-white" : "text-red-500"}`}>
+            {formatCurrency(totalPurchaseDue)}
+          </div>
         </button>
       </div>
 

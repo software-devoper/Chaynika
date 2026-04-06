@@ -9,7 +9,7 @@ import Due from "./components/Due";
 import Profile from "./components/Profile";
 import { Toaster, toast } from "react-hot-toast";
 import { cn } from "./lib/utils";
-import { settingsApi, profileApi } from "./lib/api";
+import { settingsApi, profileApi, cleanupApi } from "./lib/api";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { 
   signInAnonymously,
@@ -39,6 +39,9 @@ export default function App() {
     if (savedTheme === 'light') {
       document.documentElement.classList.add('light');
     }
+
+    // Run cleanup logic for old records
+    cleanupApi.runCleanup();
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -193,6 +196,7 @@ export default function App() {
                     placeholder="Enter ur full name"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAccess()}
                     className="w-full bg-primary border border-accent/10 rounded-xl pl-12 pr-4 py-3 text-text focus:border-accent outline-none transition-all"
                   />
                 </div>
@@ -207,6 +211,7 @@ export default function App() {
                     placeholder="Enter access password"
                     value={accessPassword}
                     onChange={(e) => setAccessPassword(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAccess()}
                     className="w-full bg-primary border border-accent/10 rounded-xl pl-12 pr-12 py-3 text-text focus:border-accent outline-none transition-all"
                   />
                   <button

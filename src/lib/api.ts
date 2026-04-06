@@ -438,20 +438,29 @@ export const partyDueApi = {
       handleFirestoreError(error, OperationType.GET, path);
     });
   },
-  markPaid: async (partyName: string) => {
-    const path = `partyDues/${partyName}`;
+  markPaid: async (id: string) => {
+    const path = `partyDues/${id}`;
     try {
-      await deleteDoc(doc(db, "partyDues", partyName));
+      await deleteDoc(doc(db, "partyDues", id));
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, path);
     }
   },
-  addOrUpdate: async (partyName: string, dueChange: number, productNames?: string) => {
-    const path = `partyDues/${partyName}`;
+  addOrUpdate: async (groupId: string, partyName: string, dueChange: number, productNames?: string, isNewParty: boolean = false) => {
+    const path = `partyDues/${groupId}`;
     try {
-      const dueRef = doc(db, "partyDues", partyName);
-      const dueSnap = await getDoc(dueRef);
+      let dueRef = doc(db, "partyDues", groupId);
+      let dueSnap = await getDoc(dueRef);
       
+      if (!dueSnap.exists() && !isNewParty) {
+        const legacyRef = doc(db, "partyDues", partyName);
+        const legacySnap = await getDoc(legacyRef);
+        if (legacySnap.exists()) {
+          dueRef = legacyRef;
+          dueSnap = legacySnap;
+        }
+      }
+
       if (dueSnap.exists()) {
         const data = dueSnap.data();
         let updatedProductNames = data.productNames || "";
@@ -469,6 +478,7 @@ export const partyDueApi = {
         });
       } else {
         await setDoc(dueRef, {
+          groupId,
           partyName,
           amount: Math.max(0, dueChange),
           lastPurchaseDate: Date.now(),
@@ -605,6 +615,50 @@ export const cashSaleApi = {
       return await deleteDoc(doc(db, "cashSales", id));
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, path);
+    }
+  }
+};
+
+export const cleanupApi = {
+  runCleanup: async () => {
+    const now = Date.now();
+    const fifteenDaysAgo = now - (15 * 24 * 60 * 60 * 1000);
+    const ninetyDaysAgo = now - (90 * 24 * 60 * 60 * 1000);
+
+    try {
+      // 1. Cleanup Cash Sales (older than 15 days)
+      const cashSalesRef = collection(db, "cashSales");
+      const oldCashSalesQuery = query(cashSalesRef, where("date", "<", fifteenDaysAgo));
+      const cashSalesSnapshot = await getDocs(oldCashSalesQuery);
+      
+      if (!cashSalesSnapshot.empty) {
+        const batch = writeBatch(db);
+        cashSalesSnapshot.forEach((doc) => {
+          batch.delete(doc.ref);
+        });
+        await batch.commit();
+        console.log(`Cleaned up ${cashSalesSnapshot.size} old cash sales.`);
+      }
+
+      // 2. Cleanup Credit Sales (older than 90 days AND fully paid)
+      const billsRef = collection(db, "bills");
+      const oldBillsQuery = query(
+        billsRef, 
+        where("date", "<", ninetyDaysAgo),
+        where("dueAmount", "<=", 0)
+      );
+      const billsSnapshot = await getDocs(oldBillsQuery);
+
+      if (!billsSnapshot.empty) {
+        const batch = writeBatch(db);
+        billsSnapshot.forEach((doc) => {
+          batch.delete(doc.ref);
+        });
+        await batch.commit();
+        console.log(`Cleaned up ${billsSnapshot.size} old fully paid bills.`);
+      }
+    } catch (error) {
+      console.error("Cleanup failed:", error);
     }
   }
 };

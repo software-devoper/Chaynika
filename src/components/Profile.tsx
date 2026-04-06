@@ -11,8 +11,10 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLightMode, setIsLightMode] = useState(false);
 
   const businessInfo = {
@@ -57,11 +59,17 @@ export default function Profile() {
 
   const handleChangePassword = async () => {
     if (!newPassword) return toast.error("Please enter a new password");
+    if (!confirmPassword) return toast.error("Please confirm your new password");
+    if (newPassword !== confirmPassword) {
+      return toast.error("Passwords do not match. Please try again.");
+    }
+    
     setIsChangingPassword(true);
     try {
       await settingsApi.updateAccessPassword(newPassword);
       toast.success("Access password updated successfully");
       setNewPassword("");
+      setConfirmPassword("");
       setShowPasswordForm(false);
     } catch (err: any) {
       toast.error(err.message || "Failed to update password");
@@ -172,8 +180,8 @@ export default function Profile() {
             </div>
 
             {showPasswordForm && (
-              <div className="flex flex-col sm:flex-row gap-3 mt-4">
-                <div className="relative flex-1">
+              <div className="flex flex-col gap-3 mt-4">
+                <div className="relative">
                   <input 
                     type={showPassword ? "text" : "password"}
                     placeholder="Enter new access password"
@@ -189,13 +197,29 @@ export default function Profile() {
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
+                <div className="relative">
+                  <input 
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Confirm new access password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full bg-primary border border-accent/10 rounded-xl pl-4 pr-12 py-2 text-text focus:border-accent outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-accent/50 hover:text-accent transition-colors"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
                 <button 
                   onClick={handleChangePassword}
                   disabled={isChangingPassword}
-                  className="bg-accent text-primary font-bold px-6 py-2 rounded-xl hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto bg-accent text-primary font-bold px-6 py-2 rounded-xl hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {isChangingPassword && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Update
+                  Update Password
                 </button>
               </div>
             )}

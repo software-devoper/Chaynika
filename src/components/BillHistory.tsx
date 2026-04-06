@@ -105,15 +105,15 @@ export default function BillHistory() {
 
       <div className="overflow-x-auto custom-scrollbar pb-4 -mx-6 px-6 md:mx-0 md:px-0">
         {activeTab === "credit" ? (
-          <table className="w-full text-left border-collapse whitespace-nowrap md:whitespace-normal">
+          <table className="w-full text-center border-collapse whitespace-nowrap md:whitespace-normal">
             <thead>
               <tr className="border-b border-accent/10 text-muted text-xs uppercase tracking-wider">
-                <th className="px-4 py-4 font-medium">Bill No.</th>
-                <th className="px-4 py-4 font-medium">Customer Name</th>
-                <th className="px-4 py-4 font-medium">Phone</th>
-                <th className="px-4 py-4 font-medium">Date</th>
-                <th className="px-4 py-4 font-medium text-right">Grand Total</th>
-                <th className="px-4 py-4 font-medium text-right">Due</th>
+                <th className="px-4 py-4 font-medium text-center">Bill No.</th>
+                <th className="px-4 py-4 font-medium text-center">Customer Name</th>
+                <th className="px-4 py-4 font-medium text-center">Phone</th>
+                <th className="px-4 py-4 font-medium text-center">Date</th>
+                <th className="px-4 py-4 font-medium text-center">Grand Total</th>
+                <th className="px-4 py-4 font-medium text-center">Due</th>
                 <th className="px-4 py-4 font-medium text-center">Status</th>
                 <th className="px-4 py-4 font-medium text-center">Actions</th>
               </tr>
@@ -121,9 +121,9 @@ export default function BillHistory() {
             <tbody className="text-sm">
               {filteredBills.map((bill, index) => (
                 <tr key={`${bill.id}-${index}`} className="border-b border-accent/5 hover:bg-primary/50 transition-colors">
-                  <td className="px-4 py-4 font-bold text-accent">{bill.billNo}</td>
-                  <td className="px-4 py-4 font-medium">{bill.customerName}</td>
-                  <td className="px-4 py-4 text-muted">
+                  <td className="px-4 py-4 font-bold text-accent text-center">{bill.billNo}</td>
+                  <td className="px-4 py-4 font-medium text-center">{bill.customerName}</td>
+                  <td className="px-4 py-4 text-muted text-center">
                     {bill.customerPhone}
                     {bill.additionalPhones && bill.additionalPhones.length > 0 && (
                       <div className="text-[10px] opacity-70">
@@ -131,9 +131,9 @@ export default function BillHistory() {
                       </div>
                     )}
                   </td>
-                  <td className="px-4 py-4 text-muted">{formatDate(bill.date)}</td>
-                  <td className="px-4 py-4 text-right font-bold">{formatCurrency(bill.grandTotal)}</td>
-                  <td className="px-4 py-4 text-right text-red-500">{formatCurrency(bill.dueAmount)}</td>
+                  <td className="px-4 py-4 text-muted text-center">{formatDate(bill.date)}</td>
+                  <td className="px-4 py-4 text-center font-bold">{formatCurrency(bill.grandTotal)}</td>
+                  <td className="px-4 py-4 text-center text-red-500">{formatCurrency(bill.dueAmount)}</td>
                   <td className="px-4 py-4 text-center">
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-bold ${
@@ -173,25 +173,25 @@ export default function BillHistory() {
             </tbody>
           </table>
         ) : (
-          <table className="w-full text-left border-collapse whitespace-nowrap md:whitespace-normal">
+          <table className="w-full text-center border-collapse whitespace-nowrap md:whitespace-normal">
             <thead>
               <tr className="border-b border-accent/10 text-muted text-xs uppercase tracking-wider">
-                <th className="px-4 py-4 font-medium">Date</th>
-                <th className="px-4 py-4 font-medium">Product Name</th>
+                <th className="px-4 py-4 font-medium text-center">Date</th>
+                <th className="px-4 py-4 font-medium text-center">Product Name</th>
                 <th className="px-4 py-4 font-medium text-center">Qty</th>
-                <th className="px-4 py-4 font-medium text-right">Rate</th>
-                <th className="px-4 py-4 font-medium text-right">Total Amount</th>
+                <th className="px-4 py-4 font-medium text-center">Rate</th>
+                <th className="px-4 py-4 font-medium text-center">Total Amount</th>
                 <th className="px-4 py-4 font-medium text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="text-sm">
               {filteredCashSales.map((sale, index) => (
                 <tr key={`${sale.id}-${index}`} className="border-b border-accent/5 hover:bg-primary/50 transition-colors">
-                  <td className="px-4 py-4 text-muted">{formatDate(sale.date)}</td>
-                  <td className="px-4 py-4 font-medium">{sale.productName}</td>
+                  <td className="px-4 py-4 text-muted text-center">{formatDate(sale.date)}</td>
+                  <td className="px-4 py-4 font-medium text-center">{sale.productName}</td>
                   <td className="px-4 py-4 text-center">{sale.qty}</td>
-                  <td className="px-4 py-4 text-right">{formatCurrency(sale.amount / sale.qty)}</td>
-                  <td className="px-4 py-4 text-right font-bold text-accent">{formatCurrency(sale.amount)}</td>
+                  <td className="px-4 py-4 text-center">{formatCurrency(sale.amount / sale.qty)}</td>
+                  <td className="px-4 py-4 text-center font-bold text-accent">{formatCurrency(sale.amount)}</td>
                   <td className="px-4 py-4 text-center">
                     <div className="flex items-center justify-center gap-3">
                       <button

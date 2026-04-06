@@ -165,9 +165,7 @@ service cloud.firestore {
     }
 
     match /cashSales/{saleId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isValidCashSale(request.resource.data);
-      allow update, delete: if isAdmin();
+      allow read, write: if isAuthenticated();
     }
   }
 }
