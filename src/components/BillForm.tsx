@@ -54,6 +54,15 @@ export default function BillForm() {
   const [focusQtyId, setFocusQtyId] = useState<string | null>(null);
 
   useEffect(() => {
+    if (activeProductSuggestionIndex >= 0) {
+      const el = document.getElementById(`bill-suggestion-${activeProductSuggestionIndex}`);
+      if (el) {
+        el.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [activeProductSuggestionIndex]);
+
+  useEffect(() => {
     const unsubscribeProducts = productApi.getAll(setProducts);
     const unsubscribeCustomers = customerApi.getAll(setCustomers);
     return () => {
@@ -480,7 +489,7 @@ export default function BillForm() {
 
       {/* Right Panel: Product Search & Table */}
       <div className="lg:col-span-2 space-y-6">
-        <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0 pb-48">
+        <div className="overflow-x-auto custom-scrollbar -mx-6 px-6 md:mx-0 md:px-0 pb-48">
           <table className="w-full text-center border-collapse whitespace-nowrap md:whitespace-normal">
             <thead>
               <tr className="border-b border-accent/10 text-muted text-xs uppercase tracking-wider">
@@ -571,10 +580,11 @@ export default function BillForm() {
                     />
                     
                     {searchResults.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl z-50 overflow-hidden divide-y divide-accent/5 min-w-[300px]">
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl z-50 overflow-y-auto max-h-48 divide-y divide-accent/5 min-w-[300px]">
                         {searchResults.map((p, index) => (
                           <button
                             key={`${p.id}-${index}`}
+                            id={`bill-suggestion-${index}`}
                             onClick={() => addProductToBill(p)}
                             className={`w-full text-left px-4 py-2 transition-colors flex justify-between items-center ${
                               index === activeProductSuggestionIndex ? 'bg-accent/10' : 'hover:bg-primary'
@@ -646,7 +656,7 @@ export default function BillForm() {
               <span>{formatCurrency(grandTotal)}</span>
             </div>
             <div className="flex justify-between text-muted text-sm">
-              <span>New Due:</span>
+              <span>Sales Due:</span>
               <span className="text-red-500">{formatCurrency(Math.max(0, grandTotal - paidAmount))}</span>
             </div>
           </div>

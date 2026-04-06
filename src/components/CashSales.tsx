@@ -29,6 +29,15 @@ export default function CashSales() {
   const nameInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   useEffect(() => {
+    if (activeDropdownRowId && activeSuggestionIndex >= 0) {
+      const el = document.getElementById(`suggestion-${activeDropdownRowId}-${activeSuggestionIndex}`);
+      if (el) {
+        el.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [activeSuggestionIndex, activeDropdownRowId]);
+
+  useEffect(() => {
     if (focusNewRow) {
       const lastItem = cashItems[cashItems.length - 1];
       if (lastItem) {
@@ -211,7 +220,7 @@ export default function CashSales() {
       e.preventDefault();
       if (activeSuggestionIndex >= 0 && activeSuggestionIndex < filtered.length) {
         handleProductSelect(item, filtered[activeSuggestionIndex]);
-      } else if (filtered.length === 1) {
+      } else if (filtered.length > 0) {
         handleProductSelect(item, filtered[0]);
       } else if (item.productName.trim()) {
         qtyInputRefs.current[item.rowId]?.focus();
@@ -234,7 +243,7 @@ export default function CashSales() {
         </button>
       </div>
 
-      <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
+      <div className="overflow-x-auto custom-scrollbar pb-48 -mx-6 px-6 md:mx-0 md:px-0">
         <table className="w-full text-center border-collapse whitespace-nowrap md:whitespace-normal">
           <thead>
             <tr className="border-b border-accent/10 text-muted text-xs uppercase tracking-wider">
@@ -285,6 +294,7 @@ export default function CashSales() {
                           {filteredProducts.map((p, idx) => (
                             <div
                               key={p.id}
+                              id={`suggestion-${item.rowId}-${idx}`}
                               className={`px-4 py-2 cursor-pointer text-text border-b border-accent/5 last:border-0 text-left ${
                                 idx === activeSuggestionIndex ? 'bg-accent/10' : 'hover:bg-primary'
                               }`}
@@ -389,7 +399,7 @@ export default function CashSales() {
             </div>
           </div>
 
-          <div className="flex gap-3 w-full md:w-auto">
+          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={handleClear}

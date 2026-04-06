@@ -45,6 +45,7 @@ export default function StockViewPanel() {
           <thead>
             <tr className="bg-primary/50 border-b border-accent/10 text-muted text-xs uppercase tracking-wider">
               <th className="px-6 py-4 font-medium text-center">Sr. No.</th>
+              <th className="px-6 py-4 font-medium text-center">Date</th>
               <th className="px-6 py-4 font-medium text-center">Product Name</th>
               <th className="px-6 py-4 font-medium text-center">Party Name</th>
               <th className="px-6 py-4 font-medium text-center">Stock</th>
@@ -56,7 +57,7 @@ export default function StockViewPanel() {
           <tbody className="text-text divide-y divide-accent/5">
             {loading ? (
               <tr>
-                <td colSpan={7} className="px-6 py-12 text-center text-muted italic">
+                <td colSpan={8} className="px-6 py-12 text-center text-muted italic">
                   Loading stock data...
                 </td>
               </tr>
@@ -69,6 +70,7 @@ export default function StockViewPanel() {
                 className="hover:bg-primary/30 transition-colors group"
               >
                 <td className="px-6 py-4 text-muted text-center">{index + 1}</td>
+                <td className="px-6 py-4 text-muted text-center">{new Date(product.updatedAt).toLocaleDateString()}</td>
                 <td className="px-6 py-4 font-medium group-hover:text-accent transition-colors text-center">{product.name}</td>
                 <td className="px-6 py-4 text-muted text-center">{product.groupName}</td>
                 <td className="px-6 py-4 text-center font-medium">{product.stock}</td>
@@ -79,7 +81,7 @@ export default function StockViewPanel() {
             ))}
             {!loading && filteredProducts.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-6 py-12 text-center text-muted italic">
+                <td colSpan={8} className="px-6 py-12 text-center text-muted italic">
                   No products found matching your search.
                 </td>
               </tr>
@@ -87,7 +89,7 @@ export default function StockViewPanel() {
           </tbody>
           <tfoot className="bg-primary/50 border-t border-accent/10">
             <tr className="font-bold text-text">
-              <td colSpan={3} className="px-6 py-4 text-right uppercase tracking-wider text-xs text-muted">Total Stock Quantity:</td>
+              <td colSpan={4} className="px-6 py-4 text-right uppercase tracking-wider text-xs text-muted">Total Stock Quantity:</td>
               <td className="px-6 py-4 text-center text-lg text-accent">{totalQuantity}</td>
               <td colSpan={3} className="px-6 py-4"></td>
             </tr>
@@ -116,7 +118,7 @@ export default function StockViewPanel() {
             >
               <div className="flex justify-between items-start gap-2">
                 <div>
-                  <div className="text-xs text-muted mb-1">#{index + 1}</div>
+                  <div className="text-xs text-muted mb-1">#{index + 1} • {new Date(product.updatedAt).toLocaleDateString()}</div>
                   <h4 className="font-bold text-text text-lg leading-tight">{product.name}</h4>
                 </div>
                 <div className="flex flex-col items-end">

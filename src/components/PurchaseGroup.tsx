@@ -48,6 +48,24 @@ export default function PurchaseGroup() {
   }, []);
 
   useEffect(() => {
+    if (showGroupDropdown && activeSuggestionIndex >= 0) {
+      const el = document.getElementById(`party-suggestion-${activeSuggestionIndex}`);
+      if (el) {
+        el.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [activeSuggestionIndex, showGroupDropdown]);
+
+  useEffect(() => {
+    if (activeDropdownRowId && activeSuggestionIndex >= 0) {
+      const el = document.getElementById(`purchase-suggestion-${activeDropdownRowId}-${activeSuggestionIndex}`);
+      if (el) {
+        el.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [activeSuggestionIndex, activeDropdownRowId]);
+
+  useEffect(() => {
     const unsubscribeGroups = groupApi.getAll(setGroups);
     const unsubscribeProducts = productApi.getAll(setProducts);
     return () => {
@@ -219,21 +237,22 @@ export default function PurchaseGroup() {
       if (!item.productName.trim()) return false;
       
       const qty = Number(item.quantity) || 0;
-      if (item.isNew && qty > 0) return true;
+      if (qty > 0) return true;
       
-      if (!item.isNew && item.productId) {
-        const original = products.find(p => p.id === item.productId);
-        if (!original) return false;
-        
-        const pRate = item.purchaseRate === "" ? original.purchaseRate : Number(item.purchaseRate);
-        const wRate = item.wholesaleRate === "" ? original.wholesaleRate : Number(item.wholesaleRate);
-        const mRate = item.mrp === "" ? original.mrp : Number(item.mrp);
-        
-        // Process if quantity added OR rates changed
-        if (qty > 0 || pRate !== original.purchaseRate || wRate !== original.wholesaleRate || mRate !== original.mrp) {
-          return true;
+      const group = groups.find(g => g.name.toLowerCase() === partyName.trim().toLowerCase());
+      if (group) {
+        const existing = products.find(p => p.groupId === group.id && p.name.toLowerCase() === item.productName.trim().toLowerCase());
+        if (existing) {
+          const pRate = item.purchaseRate === "" ? existing.purchaseRate : Number(item.purchaseRate);
+          const wRate = item.wholesaleRate === "" ? existing.wholesaleRate : Number(item.wholesaleRate);
+          const mRate = item.mrp === "" ? existing.mrp : Number(item.mrp);
+          
+          if (pRate !== existing.purchaseRate || wRate !== existing.wholesaleRate || mRate !== existing.mrp) {
+            return true;
+          }
         }
       }
+
       return false;
     });
 
@@ -263,50 +282,40 @@ export default function PurchaseGroup() {
       // 2. Process Products
       for (const item of itemsToProcess) {
         const qty = Number(item.quantity) || 0;
-        const original = products.find(p => p.id === item.productId);
         
-        const pRate = item.purchaseRate === "" ? (original ? original.purchaseRate : 0) : Number(item.purchaseRate);
-        const wRate = item.wholesaleRate === "" ? (original ? original.wholesaleRate : 0) : Number(item.wholesaleRate);
-        const mRate = item.mrp === "" ? (original ? original.mrp : 0) : Number(item.mrp);
+        // Check if product with same name AND same party already exists
+        const existing = products.find(p => p.groupId === groupId && p.name.toLowerCase() === item.productName.trim().toLowerCase());
+        
+        if (existing) {
+          const pRate = item.purchaseRate === "" ? existing.purchaseRate : Number(item.purchaseRate);
+          const wRate = item.wholesaleRate === "" ? existing.wholesaleRate : Number(item.wholesaleRate);
+          const mRate = item.mrp === "" ? existing.mrp : Number(item.mrp);
 
-        if (item.isNew || !item.productId) {
-          // Check if product with same name already exists for this party
-          const existing = products.find(p => p.groupId === groupId && p.name.toLowerCase() === item.productName.trim().toLowerCase());
-          if (existing) {
-            await productApi.update(existing.id, {
-              stock: existing.stock + qty,
-              purchaseRate: pRate,
-              wholesaleRate: wRate,
-              mrp: mRate,
-              updatedAt: Date.now(),
-            });
-          } else {
-            await productApi.add({
-              name: item.productName.trim(),
-              groupId,
-              groupName: partyName.trim(),
-              subgroupId: "",
-              subgroupName: "",
-              stock: qty,
-              purchaseRate: pRate,
-              wholesaleRate: wRate,
-              mrp: mRate,
-              unit: "Pcs",
-              updatedAt: Date.now(),
-            });
-          }
+          await productApi.update(existing.id, {
+            stock: existing.stock + qty,
+            purchaseRate: pRate,
+            wholesaleRate: wRate,
+            mrp: mRate,
+            updatedAt: Date.now(),
+          });
         } else {
-          // Update existing product
-          const original = products.find(p => p.id === item.productId);
-          if (original) {
-            await productApi.update(original.id, {
-              stock: original.stock + qty,
-              purchaseRate: pRate,
-              wholesaleRate: wRate,
-              mrp: mRate,
-              updatedAt: Date.now(),
-            });
-          }
+          const newPRate = item.purchaseRate === "" ? 0 : Number(item.purchaseRate);
+          const newWRate = item.wholesaleRate === "" ? 0 : Number(item.wholesaleRate);
+          const newMRate = item.mrp === "" ? 0 : Number(item.mrp);
+
+          await productApi.add({
+            name: item.productName.trim(),
+            groupId,
+            groupName: partyName.trim(),
+            subgroupId: "",
+            subgroupName: "",
+            stock: qty,
+            purchaseRate: newPRate,
+            wholesaleRate: newWRate,
+            mrp: newMRate,
+            unit: "Pcs",
+            updatedAt: Date.now(),
+          });
         }
       }
 
@@ -362,6 +371,7 @@ export default function PurchaseGroup() {
                 {filteredGroups.map((g, idx) => (
                     <div
                       key={g.id}
+                      id={`party-suggestion-${idx}`}
                       className={`px-4 py-3 cursor-pointer text-text border-b border-accent/5 last:border-0 ${
                         idx === activeSuggestionIndex ? 'bg-accent/10' : 'hover:bg-primary'
                       }`}
@@ -491,6 +501,7 @@ export default function PurchaseGroup() {
                           {filteredProducts.map((p, idx) => (
                               <div
                                 key={p.id}
+                                id={`purchase-suggestion-${item.rowId}-${idx}`}
                                 className={`px-4 py-2 cursor-pointer text-text border-b border-accent/5 last:border-0 ${
                                   idx === activeSuggestionIndex ? 'bg-accent/10' : 'hover:bg-primary'
                                 }`}

@@ -42,6 +42,24 @@
     @apply bg-primary text-text font-sans transition-colors duration-300;
   }
 
+  /* Custom Scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: var(--theme-primary);
+    border-radius: 8px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--theme-accent);
+    border-radius: 8px;
+    opacity: 0.8;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--theme-muted);
+  }
+
   h1, h2, h3, h4, h5, h6 {
     @apply font-display;
   }

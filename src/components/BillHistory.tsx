@@ -103,7 +103,7 @@ export default function BillHistory() {
         />
       </div>
 
-      <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
+      <div className="overflow-x-auto custom-scrollbar pb-4 -mx-6 px-6 md:mx-0 md:px-0">
         {activeTab === "credit" ? (
           <table className="w-full text-left border-collapse whitespace-nowrap md:whitespace-normal">
             <thead>
@@ -278,8 +278,8 @@ export default function BillHistory() {
                 </div>
 
                 {/* Items Table */}
-                <div className="border border-gray-200 rounded-lg overflow-hidden">
-                  <table className="w-full text-left border-collapse">
+                <div className="border border-gray-200 rounded-lg overflow-x-auto custom-scrollbar">
+                  <table className="w-full text-left border-collapse whitespace-nowrap md:whitespace-normal">
                     <thead>
                       <tr className="bg-gray-50 text-gray-500 text-xs uppercase font-bold">
                         <th className="px-4 py-3 border-b border-gray-200">Date</th>

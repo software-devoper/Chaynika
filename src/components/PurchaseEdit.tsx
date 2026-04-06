@@ -46,11 +46,20 @@ export default function PurchaseEdit() {
       e.preventDefault();
       if (activeIndex >= 0 && activeIndex < filteredProducts.length) {
         setSelectedProduct(filteredProducts[activeIndex]);
-      } else if (filteredProducts.length === 1) {
+      } else if (filteredProducts.length > 0) {
         setSelectedProduct(filteredProducts[0]);
       }
     }
   };
+
+  useEffect(() => {
+    if (activeIndex >= 0) {
+      const el = document.getElementById(`edit-suggestion-${activeIndex}`);
+      if (el) {
+        el.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [activeIndex]);
 
   const handleDelete = useCallback(async () => {
     if (!selectedProduct) return;
@@ -129,33 +138,34 @@ export default function PurchaseEdit() {
               onKeyDown={handleKeyDown}
               className="w-full bg-primary border border-accent/10 rounded-xl pl-12 pr-4 py-3 text-text focus:border-accent outline-none transition-all shadow-sm"
             />
+            
+            {searchTerm && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-primary border border-accent/10 rounded-xl overflow-y-auto max-h-48 custom-scrollbar divide-y divide-accent/5 shadow-lg absolute z-50 w-full mt-1"
+              >
+                {filteredProducts.map((p, index) => (
+                  <button
+                    key={p.id}
+                    id={`edit-suggestion-${index}`}
+                    onClick={() => setSelectedProduct(p)}
+                    className={`w-full text-left px-4 py-3 transition-colors flex justify-between items-center ${
+                      index === activeIndex ? 'bg-accent/10' : 'hover:bg-surface'
+                    }`}
+                  >
+                    <div className="flex flex-col">
+                      <span className="font-medium">{p.name}</span>
+                    </div>
+                    <span className="text-xs text-muted">{p.groupName}</span>
+                  </button>
+                ))}
+                {filteredProducts.length === 0 && (
+                  <div className="px-4 py-3 text-muted text-center">No products found</div>
+                )}
+              </motion.div>
+            )}
           </div>
-          
-          {searchTerm && (
-            <motion.div 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-primary border border-accent/10 rounded-xl overflow-hidden divide-y divide-accent/5 shadow-lg"
-            >
-              {filteredProducts.map((p, index) => (
-                <button
-                  key={p.id}
-                  onClick={() => setSelectedProduct(p)}
-                  className={`w-full text-left px-4 py-3 transition-colors flex justify-between items-center ${
-                    index === activeIndex ? 'bg-accent/10' : 'hover:bg-surface'
-                  }`}
-                >
-                  <div className="flex flex-col">
-                    <span className="font-medium">{p.name}</span>
-                  </div>
-                  <span className="text-xs text-muted">{p.groupName}</span>
-                </button>
-              ))}
-              {filteredProducts.length === 0 && (
-                <div className="px-4 py-3 text-muted text-center">No products found</div>
-              )}
-            </motion.div>
-          )}
         </div>
       ) : (
         <motion.form 
