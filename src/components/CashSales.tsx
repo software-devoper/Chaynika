@@ -117,6 +117,15 @@ export default function CashSales() {
         if (field === "quantity" || field === "mrp") {
           const q = field === "quantity" ? Number(value) : Number(item.quantity);
           const m = field === "mrp" ? Number(value) : Number(item.mrp);
+          
+          if (field === "quantity" && item.productId) {
+            const product = products.find(p => p.id === item.productId);
+            if (product && q > product.stock) {
+              toast.error(`Cannot sell ${q} of ${product.name}. Only ${product.stock} in stock.`);
+              return item; // Revert change
+            }
+          }
+
           if (q && m) {
             updated.amount = q * m;
           } else {
@@ -130,6 +139,14 @@ export default function CashSales() {
   };
 
   const handleProductSelect = (item: CashItem, p: Product) => {
+    const qty = item.quantity ? Number(item.quantity) : 0;
+    let finalQty = item.quantity;
+    
+    if (qty > p.stock) {
+      toast.error(`Cannot sell ${qty} of ${p.name}. Only ${p.stock} in stock. Adjusting quantity.`);
+      finalQty = p.stock > 0 ? p.stock : "";
+    }
+
     setCashItems(cashItems.map(ci => 
       ci.rowId === item.rowId ? {
         ...ci,
@@ -138,7 +155,8 @@ export default function CashSales() {
         purchaseRate: p.purchaseRate,
         mrp: p.mrp,
         isNew: false,
-        amount: ci.quantity ? Number(ci.quantity) * p.mrp : ""
+        quantity: finalQty,
+        amount: finalQty ? Number(finalQty) * p.mrp : ""
       } : ci
     ));
     setActiveDropdownRowId(null);
@@ -181,6 +199,22 @@ export default function CashSales() {
     if (validItems.length === 0) {
       toast.error("Please add at least one valid item with Product Name and Quantity");
       return;
+    }
+
+    // Final stock validation before saving (aggregating quantities for the same product)
+    const productQuantities: { [key: string]: number } = {};
+    for (const item of validItems) {
+      if (item.productId) {
+        productQuantities[item.productId] = (productQuantities[item.productId] || 0) + Number(item.quantity);
+      }
+    }
+
+    for (const productId in productQuantities) {
+      const product = products.find(p => p.id === productId);
+      if (product && productQuantities[productId] > product.stock) {
+        toast.error(`Cannot sell ${productQuantities[productId]} of ${product.name}. Only ${product.stock} in stock.`);
+        return;
+      }
     }
 
     setIsSaving(true);
