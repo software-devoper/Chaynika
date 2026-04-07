@@ -34,14 +34,14 @@ export default function Navbar({ onMenuClick, activeTab, onBack }: NavbarProps) 
         {activeTab !== "dashboard" ? (
           <button 
             onClick={onBack} 
-            className="p-2 text-accent hover:bg-accent/10 rounded-full transition-all flex items-center gap-2 group"
+            className="p-2 text-accent hover:bg-accent/10 rounded-full transition-all flex items-center gap-2 group lg:hidden"
             title="Back to Dashboard"
           >
             <ArrowLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
             <span className="hidden sm:inline font-bold">Back</span>
           </button>
         ) : (
-          <button onClick={onMenuClick} className="p-2 text-muted hover:text-accent transition-colors">
+          <button onClick={onMenuClick} className="p-2 text-muted hover:text-accent transition-colors lg:hidden">
             <Menu size={24} />
           </button>
         )}
