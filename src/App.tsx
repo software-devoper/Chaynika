@@ -244,7 +244,11 @@ export default function App() {
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-primary">
-        <Navbar onMenuClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)} />
+        <Navbar 
+          onMenuClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)} 
+          activeTab={activeTab}
+          onBack={() => setActiveTab("dashboard")}
+        />
         <div className="flex pt-16">
           <div className={cn(
             "fixed inset-0 z-40 bg-primary/80 lg:hidden",
