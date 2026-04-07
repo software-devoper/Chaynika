@@ -7,9 +7,10 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
 // Use named database if provided, otherwise default
-console.log("Initializing Firestore with database ID:", firebaseConfig.firestoreDatabaseId);
-export const db = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== "(default)"
-  ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
+const config = firebaseConfig as any;
+console.log("Initializing Firestore with database ID:", config.firestoreDatabaseId);
+export const db = config.firestoreDatabaseId && config.firestoreDatabaseId !== "(default)"
+  ? getFirestore(app, config.firestoreDatabaseId)
   : getFirestore(app);
 
 // Test connection to Firestore

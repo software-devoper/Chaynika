@@ -40,9 +40,6 @@ export default function App() {
       document.documentElement.classList.add('light');
     }
 
-    // Run cleanup logic for old records
-    cleanupApi.runCleanup();
-
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
@@ -50,6 +47,7 @@ export default function App() {
           if (profile) {
             setIsAuthenticated(true);
             setFullName(profile.fullName || "");
+            cleanupApi.runCleanup(); // Run cleanup for restored sessions
           } else {
             // If profile is not found (e.g. due to permission denied or database not found),
             // we don't force logout here because it might interrupt a login in progress.
@@ -94,6 +92,9 @@ export default function App() {
       setIsAuthenticated(true);
       setFullName(fullName);
       toast.success(`Welcome, ${fullName}!`);
+      
+      // Run cleanup logic for old records after successful login
+      cleanupApi.runCleanup();
     } catch (err: any) {
       console.error("Access Error:", err);
       // If we signed in but something failed, sign out

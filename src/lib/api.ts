@@ -621,6 +621,11 @@ export const cashSaleApi = {
 
 export const cleanupApi = {
   runCleanup: async () => {
+    if (!auth.currentUser) {
+      console.log("Cleanup skipped: User not authenticated.");
+      return;
+    }
+
     const now = Date.now();
     const fifteenDaysAgo = now - (15 * 24 * 60 * 60 * 1000);
     const ninetyDaysAgo = now - (90 * 24 * 60 * 60 * 1000);
@@ -644,21 +649,29 @@ export const cleanupApi = {
       const billsRef = collection(db, "bills");
       const oldBillsQuery = query(
         billsRef, 
-        where("date", "<", ninetyDaysAgo),
-        where("dueAmount", "<=", 0)
+        where("date", "<", ninetyDaysAgo)
       );
       const billsSnapshot = await getDocs(oldBillsQuery);
 
       if (!billsSnapshot.empty) {
         const batch = writeBatch(db);
+        let count = 0;
         billsSnapshot.forEach((doc) => {
-          batch.delete(doc.ref);
+          const data = doc.data();
+          // Filter for fully paid bills in memory to avoid requiring a composite index
+          if (data.dueAmount === 0) {
+            batch.delete(doc.ref);
+            count++;
+          }
         });
-        await batch.commit();
-        console.log(`Cleaned up ${billsSnapshot.size} old fully paid bills.`);
+        
+        if (count > 0) {
+          await batch.commit();
+          console.log(`Cleaned up ${count} old fully paid bills.`);
+        }
       }
-    } catch (error) {
-      console.error("Cleanup failed:", error);
+    } catch (error: any) {
+      console.error("Cleanup failed:", error.message || error);
     }
   }
 };
