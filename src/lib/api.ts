@@ -541,6 +541,25 @@ export const settingsApi = {
       console.error("Error updating password:", error);
       throw new Error("Failed to update password. Please check your permissions.");
     }
+  },
+  getBusinessInfo: async () => {
+    try {
+      const docRef = doc(db, "settings", "business");
+      const docSnap = await getDoc(docRef);
+      return docSnap.exists() ? docSnap.data() : null;
+    } catch (error) {
+      console.error("Error fetching business info:", error);
+      return null;
+    }
+  },
+  updateBusinessInfo: async (info: any) => {
+    try {
+      const docRef = doc(db, "settings", "business");
+      await setDoc(docRef, info, { merge: true });
+    } catch (error) {
+      console.error("Error updating business info:", error);
+      throw new Error("Failed to update business info.");
+    }
   }
 };
 

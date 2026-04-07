@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Phone, Menu, ArrowLeft } from "lucide-react";
 import Logo from "./Logo";
+import { settingsApi } from "../lib/api";
 
 interface NavbarProps {
   onMenuClick: () => void;
@@ -9,6 +10,24 @@ interface NavbarProps {
 }
 
 export default function Navbar({ onMenuClick, activeTab, onBack }: NavbarProps) {
+  const [businessInfo, setBusinessInfo] = useState({
+    phone: "9832116317",
+    address: "Kalindi, Purba Medinipur, 721455"
+  });
+
+  useEffect(() => {
+    const fetchInfo = async () => {
+      const info = await settingsApi.getBusinessInfo();
+      if (info) {
+        setBusinessInfo({
+          phone: info.phone || "9832116317",
+          address: info.address || "Kalindi, Purba Medinipur, 721455"
+        });
+      }
+    };
+    fetchInfo();
+  }, []);
+
   return (
     <nav className="fixed top-0 left-0 right-0 h-16 bg-primary border-b border-accent/20 flex items-center justify-between px-4 md:px-6 z-50">
       <div className="flex items-center gap-4">
@@ -30,11 +49,11 @@ export default function Navbar({ onMenuClick, activeTab, onBack }: NavbarProps) 
       </div>
       <div className="flex flex-col items-end justify-center md:flex-row md:items-center md:gap-6">
         <div className="text-[10px] sm:text-xs md:text-sm text-muted font-medium order-2 md:order-1 mt-0.5 md:mt-0">
-          Kalindi, Purba Medinipur, 721455
+          {businessInfo.address}
         </div>
         <div className="flex items-center gap-1.5 text-accent order-1 md:order-2">
           <Phone size={16} />
-          <span className="font-bold text-sm md:text-base tracking-wide">9832116317</span>
+          <span className="font-bold text-sm md:text-base tracking-wide">{businessInfo.phone}</span>
         </div>
       </div>
     </nav>
