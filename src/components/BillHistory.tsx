@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Search, FileText, Trash2, X, User, Phone, MapPin, Mail, Calendar, Hash, Receipt, Printer } from "lucide-react";
 import { toast } from "react-hot-toast";
-import { Bill, CashSale } from "../types";
+import { Bill, CashSale, Product } from "../types";
 import { formatCurrency, formatDate } from "../lib/utils";
-import { billApi, cashSaleApi } from "../lib/api";
+import { billApi, cashSaleApi, productApi } from "../lib/api";
 import { auth } from "../lib/firebase";
 import { motion, AnimatePresence } from "motion/react";
 import { generateBillPDF } from "../lib/BillPDFGenerator";
@@ -14,6 +14,7 @@ export default function BillHistory() {
   const [searchTerm, setSearchTerm] = useState("");
   const [bills, setBills] = useState<Bill[]>([]);
   const [cashSales, setCashSales] = useState<CashSale[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
   const [editingBill, setEditingBill] = useState<Bill | null>(null);
@@ -27,9 +28,13 @@ export default function BillHistory() {
     const unsubscribeCash = cashSaleApi.getAll((data) => {
       setCashSales(data);
     });
+    const unsubscribeProducts = productApi.getAll((data) => {
+      setProducts(data);
+    });
     return () => {
       unsubscribeBills();
       unsubscribeCash();
+      unsubscribeProducts();
     };
   }, []);
 
@@ -82,6 +87,15 @@ export default function BillHistory() {
     }
   };
 
+  const calculateBillProfit = (bill: Bill) => {
+    const totalCost = bill.items.reduce((sum, item) => {
+      const product = products.find(p => p.id === item.productId);
+      const purchaseRate = product ? product.purchaseRate : 0;
+      return sum + (item.qty * purchaseRate);
+    }, 0);
+    return bill.subtotal - totalCost;
+  };
+
   return (
     <div className="space-y-6">
       {/* Tab Switcher */}
@@ -125,6 +139,7 @@ export default function BillHistory() {
                 <th className="px-4 py-4 font-medium text-center">Phone</th>
                 <th className="px-4 py-4 font-medium text-center">Date</th>
                 <th className="px-4 py-4 font-medium text-center">Grand Total</th>
+                <th className="px-4 py-4 font-medium text-center">Profit</th>
                 <th className="px-4 py-4 font-medium text-center">Due</th>
                 <th className="px-4 py-4 font-medium text-center">Status</th>
                 <th className="px-4 py-4 font-medium text-center">Actions</th>
@@ -145,6 +160,7 @@ export default function BillHistory() {
                   </td>
                   <td className="px-4 py-4 text-muted text-center">{formatDate(bill.date)}</td>
                   <td className="px-4 py-4 text-center font-bold">{formatCurrency(bill.grandTotal)}</td>
+                  <td className="px-4 py-4 text-center font-bold text-green-500">{formatCurrency(calculateBillProfit(bill))}</td>
                   <td className="px-4 py-4 text-center text-red-500">{formatCurrency(bill.dueAmount)}</td>
                   <td className="px-4 py-4 text-center">
                     <span
@@ -184,7 +200,7 @@ export default function BillHistory() {
               ))}
               {filteredBills.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-muted italic">
+                  <td colSpan={9} className="px-4 py-12 text-center text-muted italic">
                     No bills found
                   </td>
                 </tr>
@@ -200,6 +216,7 @@ export default function BillHistory() {
                 <th className="px-4 py-4 font-medium text-center">Qty</th>
                 <th className="px-4 py-4 font-medium text-center">Rate</th>
                 <th className="px-4 py-4 font-medium text-center">Total Amount</th>
+                <th className="px-4 py-4 font-medium text-center">Profit</th>
                 <th className="px-4 py-4 font-medium text-center">Actions</th>
               </tr>
             </thead>
@@ -211,6 +228,7 @@ export default function BillHistory() {
                   <td className="px-4 py-4 text-center">{sale.qty}</td>
                   <td className="px-4 py-4 text-center">{formatCurrency(sale.amount / sale.qty)}</td>
                   <td className="px-4 py-4 text-center font-bold text-accent">{formatCurrency(sale.amount)}</td>
+                  <td className="px-4 py-4 text-center font-bold text-green-500">{formatCurrency(sale.amount - (sale.qty * sale.purchaseRate))}</td>
                   <td className="px-4 py-4 text-center">
                     <div className="flex items-center justify-center gap-3">
                       <button
@@ -233,7 +251,7 @@ export default function BillHistory() {
               ))}
               {filteredCashSales.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-muted italic">
+                  <td colSpan={7} className="px-4 py-12 text-center text-muted italic">
                     No cash sales found
                   </td>
                 </tr>
