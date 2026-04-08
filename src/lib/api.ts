@@ -334,6 +334,74 @@ export const billApi = {
       handleFirestoreError(error, OperationType.CREATE, path);
     }
   },
+  update: async (billId: string, updatedBill: Bill, oldBill: Bill) => {
+    const path = `bills/${billId}`;
+    try {
+      // 1. Update Bill Document
+      const { id, ...billData } = updatedBill;
+      await updateDoc(doc(db, "bills", billId), billData);
+
+      // 2. Adjust Stock
+      const stockChanges: Record<string, number> = {};
+      oldBill.items.forEach(item => {
+        stockChanges[item.productId] = (stockChanges[item.productId] || 0) + item.qty;
+      });
+      updatedBill.items.forEach(item => {
+        stockChanges[item.productId] = (stockChanges[item.productId] || 0) - item.qty;
+      });
+
+      for (const [productId, change] of Object.entries(stockChanges)) {
+        if (change !== 0) {
+          try {
+            await updateDoc(doc(db, "products", productId), {
+              stock: increment(change)
+            });
+          } catch (e) {
+            console.error("Failed to update stock for product", productId, e);
+          }
+        }
+      }
+
+      // 3. Adjust Customer Dues
+      if (oldBill.customerPhone === updatedBill.customerPhone) {
+        const oldDueChange = oldBill.subtotal - oldBill.paidAmount;
+        const newDueChange = updatedBill.subtotal - updatedBill.paidAmount;
+        const dueDifference = newDueChange - oldDueChange;
+
+        if (dueDifference !== 0) {
+          const dueRef = doc(db, "dues", updatedBill.customerPhone);
+          const dueSnap = await getDoc(dueRef);
+          if (dueSnap.exists()) {
+            await updateDoc(dueRef, {
+              amount: increment(dueDifference),
+              lastBillDate: Date.now()
+            });
+          }
+        }
+      } else {
+        // If customer changed
+        const oldDueChange = oldBill.subtotal - oldBill.paidAmount;
+        if (oldDueChange !== 0) {
+          await updateDoc(doc(db, "dues", oldBill.customerPhone), {
+            amount: increment(-oldDueChange)
+          });
+        }
+        const newDueChange = updatedBill.subtotal - updatedBill.paidAmount;
+        if (newDueChange !== 0) {
+          const dueRef = doc(db, "dues", updatedBill.customerPhone);
+          const dueSnap = await getDoc(dueRef);
+          if (dueSnap.exists()) {
+            await updateDoc(dueRef, {
+              amount: increment(newDueChange),
+              lastBillDate: Date.now()
+            });
+          }
+        }
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, path);
+    }
+  },
   delete: async (id: string) => {
     const path = `bills/${id}`;
     console.log(`Attempting to delete bill at path: ${path}`);

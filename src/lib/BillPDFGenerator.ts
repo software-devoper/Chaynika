@@ -83,18 +83,19 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
 
   autoTable(doc, {
     startY: 45,
-    head: [["Sl. No.", "Particulars", "MRP", "Disc(%)", "Rate", "Qty", "Net Amount"]],
+    head: [["Sl. No.", "Particulars", "MRP", "Percentage", "Rate", "Qty", "Net Amount"]],
     body: tableData,
     foot: [[
       { content: `Total Qty: ${totalQty}`, colSpan: 2, styles: { halign: 'left' } },
       { content: "", colSpan: 4 },
       { content: bill.subtotal.toFixed(2), styles: { halign: 'right' } }
     ]],
+    showFoot: "lastPage",
     theme: "grid", // Changed to grid for better structure
     styles: {
       font: "times",
       fontSize: 9,
-      cellPadding: 2,
+      cellPadding: 0.5,
       lineColor: [200, 200, 200],
       lineWidth: 0.1,
       halign: "center",
@@ -116,20 +117,29 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
       0: { cellWidth: 10 }, // Sl. No.
       1: { cellWidth: 35 }, // Particulars
       2: { cellWidth: 18 }, // MRP
-      3: { cellWidth: 15 }, // Disc(%)
+      3: { cellWidth: 15 }, // Percentage
       4: { cellWidth: 18 }, // Rate
       5: { cellWidth: 10 }, // Qty
       6: { cellWidth: 22 }, // Net Amount
     },
-    margin: { left: margin, right: margin, bottom: 20 },
+    margin: { left: margin, right: margin, bottom: 5 },
   });
+
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i < pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.text(`${i}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 2, { align: "center" });
+  }
+  doc.setPage(pageCount);
 
   let finalY = (doc as any).lastAutoTable.finalY + 10;
   const pageHeight = doc.internal.pageSize.getHeight();
   const footerHeight = 80; // Estimated height for Payment Section + Totals + Footer
 
   // Check if we need a new page for the summary and footer to avoid overlapping
-  if (finalY + footerHeight > pageHeight) {
+  // If content takes more than ~70% of the page, push footer to a new page
+  if (finalY > pageHeight * 0.7 || finalY + footerHeight > pageHeight) {
     doc.addPage();
     finalY = 20; // Start near top of new page
   }

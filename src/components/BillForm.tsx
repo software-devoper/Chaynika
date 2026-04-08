@@ -47,6 +47,7 @@ export default function BillForm() {
   const [isPrinting, setIsPrinting] = useState(false);
   const [activeCustomerSuggestionIndex, setActiveCustomerSuggestionIndex] = useState(-1);
   const [activeProductSuggestionIndex, setActiveProductSuggestionIndex] = useState(-1);
+  const [activeDropdownRowId, setActiveDropdownRowId] = useState<string | null>(null);
   const [customerHistory, setCustomerHistory] = useState<{date: number, productName: string, qty: number, price: number}[]>([]);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -54,13 +55,22 @@ export default function BillForm() {
   const [focusQtyId, setFocusQtyId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (activeProductSuggestionIndex >= 0) {
+    if (activeProductSuggestionIndex >= 0 && !activeDropdownRowId) {
       const el = document.getElementById(`bill-suggestion-${activeProductSuggestionIndex}`);
       if (el) {
         el.scrollIntoView({ block: 'nearest' });
       }
     }
-  }, [activeProductSuggestionIndex]);
+  }, [activeProductSuggestionIndex, activeDropdownRowId]);
+
+  useEffect(() => {
+    if (activeDropdownRowId && activeProductSuggestionIndex >= 0) {
+      const el = document.getElementById(`bill-row-suggestion-${activeDropdownRowId}-${activeProductSuggestionIndex}`);
+      if (el) {
+        el.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [activeProductSuggestionIndex, activeDropdownRowId]);
 
   useEffect(() => {
     const unsubscribeProducts = productApi.getAll(setProducts);
@@ -200,6 +210,69 @@ export default function BillForm() {
         ? { ...item, qty: qty, total: qty * item.price }
         : item
     ));
+  };
+
+  const updatePrice = (productId: string, price: number) => {
+    setBillItems(billItems.map(item => 
+      item.productId === productId 
+        ? { ...item, price: price, total: item.qty * price }
+        : item
+    ));
+  };
+
+  const updateProductName = (productId: string, newName: string) => {
+    setBillItems(billItems.map(item => 
+      item.productId === productId 
+        ? { ...item, productName: newName }
+        : item
+    ));
+  };
+
+  const handleProductRowSelect = (oldProductId: string, newProduct: Product) => {
+    const existing = billItems.find(item => item.productId === newProduct.id);
+    if (existing && existing.productId !== oldProductId) {
+      toast.error("Product already in bill");
+      return;
+    }
+
+    setBillItems(billItems.map(item => {
+      if (item.productId === oldProductId) {
+        return {
+          productId: newProduct.id,
+          productName: newProduct.name,
+          qty: 1,
+          price: newProduct.wholesaleRate,
+          mrp: newProduct.mrp,
+          total: newProduct.wholesaleRate,
+        };
+      }
+      return item;
+    }));
+    setActiveDropdownRowId(null);
+    setActiveProductSuggestionIndex(-1);
+    setFocusQtyId(newProduct.id);
+  };
+
+  const handleProductRowKeyDown = (e: React.KeyboardEvent, oldProductId: string, filteredProducts: Product[]) => {
+    if (activeDropdownRowId !== oldProductId) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveProductSuggestionIndex(prev => 
+        prev < filteredProducts.length - 1 ? prev + 1 : prev
+      );
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveProductSuggestionIndex(prev => prev > 0 ? prev - 1 : -1);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (activeProductSuggestionIndex >= 0 && filteredProducts[activeProductSuggestionIndex]) {
+        handleProductRowSelect(oldProductId, filteredProducts[activeProductSuggestionIndex]);
+      } else {
+        qtyInputRefs.current[oldProductId]?.focus();
+        setActiveDropdownRowId(null);
+      }
+    }
   };
 
   const subtotal = billItems.reduce((sum, item) => sum + item.total, 0);
@@ -507,7 +580,7 @@ export default function BillForm() {
                   </div>
                 </th>
                 <th className="px-2 py-3 font-medium text-center">MRP</th>
-                <th className="px-2 py-3 font-medium text-center">Disc %</th>
+                <th className="px-2 py-3 font-medium text-center">Percentage</th>
                 <th className="px-2 py-3 font-medium text-center">Rate</th>
                 <th className="px-2 py-3 font-medium text-center">Qty</th>
                 <th className="px-2 py-3 font-medium text-center">Total</th>
@@ -516,17 +589,60 @@ export default function BillForm() {
             </thead>
             <tbody className="text-sm">
               <AnimatePresence mode="popLayout">
-                {billItems.map((item, index) => (
+                {billItems.map((item, index) => {
+                  const filteredProducts = products.filter(p => p.name.toLowerCase().includes(item.productName.toLowerCase()) && p.stock > 0);
+                  return (
                   <motion.tr 
                     layout
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
                     key={item.productId} 
-                    className="border-b border-accent/5"
+                    className="border-b border-accent/5 group relative"
                   >
                     <td className="px-2 py-4 text-center">{index + 1}</td>
-                    <td className="px-2 py-4 font-medium text-center">{item.productName}</td>
+                    <td className="px-2 py-4 font-medium text-center relative">
+                      <input
+                        type="text"
+                        value={item.productName}
+                        onChange={(e) => {
+                          updateProductName(item.productId, e.target.value);
+                          setActiveDropdownRowId(item.productId);
+                          setActiveProductSuggestionIndex(-1);
+                        }}
+                        onFocus={() => {
+                          setActiveDropdownRowId(item.productId);
+                          setActiveProductSuggestionIndex(-1);
+                        }}
+                        onBlur={() => setTimeout(() => setActiveDropdownRowId(null), 200)}
+                        onKeyDown={(e) => handleProductRowKeyDown(e, item.productId, filteredProducts)}
+                        className="w-full min-w-[120px] bg-transparent border-b border-transparent hover:border-accent/30 focus:border-accent outline-none text-center transition-colors"
+                      />
+                      {activeDropdownRowId === item.productId && item.productName && (
+                        <div className="absolute z-50 w-full mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl max-h-48 overflow-y-auto left-0 text-left">
+                          {filteredProducts.map((p, idx) => (
+                            <div
+                              key={p.id}
+                              id={`bill-row-suggestion-${item.productId}-${idx}`}
+                              className={`px-4 py-2 cursor-pointer text-text border-b border-accent/5 last:border-0 ${
+                                idx === activeProductSuggestionIndex ? 'bg-accent/10' : 'hover:bg-primary'
+                              }`}
+                              onClick={() => handleProductRowSelect(item.productId, p)}
+                            >
+                              <div className="font-medium text-sm">{p.name}</div>
+                              <div className="text-[10px] text-muted mt-0.5 flex gap-x-3">
+                                <span className="text-accent font-bold">Stock: {p.stock}</span>
+                                <span>MRP: {formatCurrency(p.mrp)}</span>
+                                <span>Rate: {formatCurrency(p.wholesaleRate)}</span>
+                              </div>
+                            </div>
+                          ))}
+                          {filteredProducts.length === 0 && (
+                            <div className="px-4 py-2 text-sm text-muted italic">No matching products in stock</div>
+                          )}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-2 py-4 text-center text-muted">
                       {showPurchasePrice ? formatCurrency(products.find(p => p.id === item.productId)?.purchaseRate || 0) : ""}
                     </td>
@@ -534,7 +650,15 @@ export default function BillForm() {
                     <td className="px-2 py-4 text-center text-accent font-bold">
                       {item.mrp > 0 ? (((item.mrp - item.price) / item.mrp) * 100).toFixed(1) : 0}%
                     </td>
-                    <td className="px-2 py-4 text-center">{formatCurrency(item.price)}</td>
+                    <td className="px-2 py-4 text-center">
+                      <input
+                        type="number"
+                        step="any"
+                        value={item.price}
+                        onChange={(e) => updatePrice(item.productId, Number(e.target.value))}
+                        className="w-20 bg-primary border border-accent/10 rounded px-2 py-1 text-center outline-none focus:border-accent mx-auto"
+                      />
+                    </td>
                     <td className="px-2 py-4 text-center">
                       <input
                         ref={el => { qtyInputRefs.current[item.productId] = el; }}
@@ -557,7 +681,8 @@ export default function BillForm() {
                       </button>
                     </td>
                   </motion.tr>
-                ))}
+                  );
+                })}
               </AnimatePresence>
               
               {/* Search Row */}
@@ -628,9 +753,15 @@ export default function BillForm() {
               <span>Sub Total:</span>
               <span>{formatCurrency(subtotal)}</span>
             </div>
-            <div className="flex justify-between text-muted">
+            <div className="flex justify-between items-center gap-4 text-muted">
               <span>Previous Due:</span>
-              <span>{formatCurrency(previousDue)}</span>
+              <input
+                type="number"
+                step="any"
+                value={previousDue}
+                onChange={(e) => setPreviousDue(Number(e.target.value))}
+                className="w-24 bg-transparent border-b border-transparent hover:border-accent/30 focus:border-accent outline-none text-right transition-colors"
+              />
             </div>
             <div className="flex justify-between items-center gap-4 text-muted">
               <span>Paid Amount:</span>

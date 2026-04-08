@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Search, FileText, Trash2, X, User, Phone, MapPin, Mail, Calendar, Hash, Receipt } from "lucide-react";
+import { Search, FileText, Trash2, X, User, Phone, MapPin, Mail, Calendar, Hash, Receipt, Printer } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { Bill, CashSale } from "../types";
 import { formatCurrency, formatDate } from "../lib/utils";
 import { billApi, cashSaleApi } from "../lib/api";
 import { auth } from "../lib/firebase";
 import { motion, AnimatePresence } from "motion/react";
+import { generateBillPDF } from "../lib/BillPDFGenerator";
+import BillEditModal from "./BillEditModal";
 
 export default function BillHistory() {
   const [activeTab, setActiveTab] = useState<"credit" | "cash">("credit");
@@ -14,6 +16,7 @@ export default function BillHistory() {
   const [cashSales, setCashSales] = useState<CashSale[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
+  const [editingBill, setEditingBill] = useState<Bill | null>(null);
   const [selectedCashSale, setSelectedCashSale] = useState<CashSale | null>(null);
 
   useEffect(() => {
@@ -67,6 +70,15 @@ export default function BillHistory() {
       } catch (err) {
         toast.error("Failed to delete cash sale");
       }
+    }
+  };
+
+  const handlePrintBill = async (bill: Bill) => {
+    try {
+      await generateBillPDF(bill, "print");
+    } catch (error) {
+      console.error("Failed to print bill:", error);
+      toast.error("Failed to print bill");
     }
   };
 
@@ -151,6 +163,13 @@ export default function BillHistory() {
                         title="View Details"
                       >
                         <FileText size={18} />
+                      </button>
+                      <button
+                        onClick={() => setEditingBill(bill)}
+                        className="text-muted hover:text-blue-500"
+                        title="Edit / Return"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
                       </button>
                       <button
                         onClick={() => handleDeleteBill(bill)}
@@ -285,7 +304,7 @@ export default function BillHistory() {
                         <th className="px-4 py-3 border-b border-gray-200">Date</th>
                         <th className="px-4 py-3 border-b border-gray-200">Item Description</th>
                         <th className="px-4 py-3 border-b border-gray-200 text-center">MRP</th>
-                        <th className="px-4 py-3 border-b border-gray-200 text-center">Disc %</th>
+                        <th className="px-4 py-3 border-b border-gray-200 text-center">Percentage</th>
                         <th className="px-4 py-3 border-b border-gray-200 text-center">Qty</th>
                         <th className="px-4 py-3 border-b border-gray-200 text-right">Rate</th>
                         <th className="px-4 py-3 border-b border-gray-200 text-right">Total</th>
@@ -338,12 +357,19 @@ export default function BillHistory() {
                 </div>
               </div>
 
-              <div className="p-6 border-t border-accent/10 bg-primary/30">
+              <div className="p-6 border-t border-accent/10 bg-primary/30 flex gap-4">
                 <button 
                   onClick={() => setSelectedBill(null)}
-                  className="w-full bg-accent text-primary font-bold py-3 rounded-xl hover:opacity-90 transition-all shadow-lg shadow-accent/20"
+                  className="flex-1 bg-primary text-muted font-bold py-3 rounded-xl hover:text-text transition-all border border-accent/10"
                 >
                   Close
+                </button>
+                <button 
+                  onClick={() => handlePrintBill(selectedBill)}
+                  className="flex-1 bg-accent text-primary font-bold py-3 rounded-xl hover:opacity-90 transition-all shadow-lg shadow-accent/20 flex items-center justify-center gap-2"
+                >
+                  <Printer size={20} />
+                  Print Bill
                 </button>
               </div>
             </motion.div>
@@ -414,6 +440,13 @@ export default function BillHistory() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {editingBill && (
+        <BillEditModal
+          bill={editingBill}
+          onClose={() => setEditingBill(null)}
+        />
+      )}
     </div>
   );
 }

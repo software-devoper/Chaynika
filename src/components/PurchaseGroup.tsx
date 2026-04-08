@@ -132,9 +132,17 @@ export default function PurchaseGroup() {
   };
 
   const updateRow = (rowId: string, field: keyof PurchaseItem, value: any) => {
-    setPurchaseItems(purchaseItems.map(item => 
-      item.rowId === rowId ? { ...item, [field]: value } : item
-    ));
+    setPurchaseItems(purchaseItems.map(item => {
+      if (item.rowId === rowId) {
+        const updated = { ...item, [field]: value };
+        if (field === "productName") {
+          updated.productId = undefined;
+          updated.isNew = true;
+        }
+        return updated;
+      }
+      return item;
+    }));
   };
 
   const totalPurchaseAmount = purchaseItems.reduce((sum, item) => {
@@ -527,7 +535,6 @@ export default function PurchaseGroup() {
                         onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
                         placeholder="Product Name"
                         className="w-full min-w-[150px] bg-primary border border-accent/10 rounded px-3 py-2 text-text outline-none focus:border-accent"
-                        disabled={!item.isNew}
                       />
                       {activeDropdownRowId === item.rowId && item.productName && item.isNew && (
                         <div className="absolute z-50 w-full mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl max-h-48 overflow-y-auto left-0">
