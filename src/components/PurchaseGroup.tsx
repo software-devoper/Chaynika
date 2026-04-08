@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Plus, Loader2, Trash2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { Group, Product } from "../types";
@@ -31,6 +31,8 @@ export default function PurchaseGroup() {
   const [payableAmount, setPayableAmount] = useState<number | "">("");
   
   const [purchaseItems, setPurchaseItems] = useState<PurchaseItem[]>([]);
+  const [focusNewRow, setFocusNewRow] = useState(false);
+  const nameInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   // Load draft on mount
   useEffect(() => {
@@ -67,6 +69,16 @@ export default function PurchaseGroup() {
   }, [activeSuggestionIndex, activeDropdownRowId]);
 
   useEffect(() => {
+    if (focusNewRow) {
+      const lastItem = purchaseItems[purchaseItems.length - 1];
+      if (lastItem) {
+        nameInputRefs.current[lastItem.rowId]?.focus();
+      }
+      setFocusNewRow(false);
+    }
+  }, [purchaseItems, focusNewRow]);
+
+  useEffect(() => {
     const unsubscribeGroups = groupApi.getAll(setGroups);
     const unsubscribeProducts = productApi.getAll(setProducts);
     return () => {
@@ -84,6 +96,7 @@ export default function PurchaseGroup() {
     if (purchaseItems.length === 0) {
       setPurchaseItems([createNewEmptyRow()]);
     }
+    setFocusNewRow(true);
   };
 
   const createNewEmptyRow = (): PurchaseItem => ({
@@ -111,6 +124,7 @@ export default function PurchaseGroup() {
       }
     }
     setPurchaseItems([...purchaseItems, createNewEmptyRow()]);
+    setFocusNewRow(true);
   };
 
   const removeRow = (rowId: string) => {
@@ -134,6 +148,29 @@ export default function PurchaseGroup() {
   const filteredGroups = groups.filter(g => g.name.toLowerCase().includes(partyName.toLowerCase()));
 
   const handlePartyKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (showGroupDropdown) {
+        if (activeSuggestionIndex >= 0 && activeSuggestionIndex < filteredGroups.length) {
+          handlePartySelect(filteredGroups[activeSuggestionIndex]);
+        } else if (filteredGroups.length > 0) {
+          handlePartySelect(filteredGroups[0]);
+        } else if (partyName.trim()) {
+          setShowGroupDropdown(false);
+          if (purchaseItems.length === 0) {
+            setPurchaseItems([createNewEmptyRow()]);
+          }
+          setFocusNewRow(true);
+        }
+      } else if (partyName.trim()) {
+        if (purchaseItems.length === 0) {
+          setPurchaseItems([createNewEmptyRow()]);
+        }
+        setFocusNewRow(true);
+      }
+      return;
+    }
+
     if (!showGroupDropdown) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -141,13 +178,6 @@ export default function PurchaseGroup() {
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setActiveSuggestionIndex(prev => (prev > 0 ? prev - 1 : prev));
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      if (activeSuggestionIndex >= 0 && activeSuggestionIndex < filteredGroups.length) {
-        handlePartySelect(filteredGroups[activeSuggestionIndex]);
-      } else if (filteredGroups.length > 0) {
-        handlePartySelect(filteredGroups[0]);
-      }
     }
   };
 
@@ -481,6 +511,7 @@ export default function PurchaseGroup() {
                   >
                     <td className="px-2 py-3 relative text-center">
                       <input
+                        ref={el => { nameInputRefs.current[item.rowId] = el; }}
                         type="text"
                         value={item.productName}
                         onChange={(e) => {
