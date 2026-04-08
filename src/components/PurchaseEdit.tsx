@@ -229,6 +229,7 @@ export default function PurchaseEdit() {
             <input
               type="number"
               min="0"
+              step="any"
               value={selectedProduct.purchaseRate}
               onChange={(e) => setSelectedProduct({ ...selectedProduct, purchaseRate: Number(e.target.value) })}
               className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
@@ -240,6 +241,7 @@ export default function PurchaseEdit() {
             <input
               type="number"
               min="0"
+              step="any"
               value={selectedProduct.wholesaleRate}
               onChange={(e) => setSelectedProduct({ ...selectedProduct, wholesaleRate: Number(e.target.value) })}
               className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
@@ -251,6 +253,7 @@ export default function PurchaseEdit() {
             <input
               type="number"
               min="0"
+              step="any"
               value={selectedProduct.mrp}
               onChange={(e) => setSelectedProduct({ ...selectedProduct, mrp: Number(e.target.value) })}
               className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"

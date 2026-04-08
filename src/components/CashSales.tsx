@@ -364,6 +364,7 @@ export default function CashSales() {
                     <td className="px-2 py-3 text-center">
                       <input
                         type="number"
+                        step="any"
                         value={item.purchaseRate}
                         onChange={(e) => updateRow(item.rowId, "purchaseRate", e.target.value)}
                         readOnly={!item.isNew}
@@ -376,6 +377,7 @@ export default function CashSales() {
                     <td className="px-2 py-3 text-center">
                       <input
                         type="number"
+                        step="any"
                         value={item.mrp}
                         onChange={(e) => updateRow(item.rowId, "mrp", e.target.value)}
                         readOnly={!item.isNew}
@@ -389,6 +391,7 @@ export default function CashSales() {
                       <input
                         ref={el => { amountInputRefs.current[item.rowId] = el; }}
                         type="number"
+                        step="any"
                         value={item.amount}
                         onChange={(e) => updateRow(item.rowId, "amount", e.target.value)}
                         onKeyDown={(e) => {

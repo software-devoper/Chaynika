@@ -565,6 +565,7 @@ export default function PurchaseGroup() {
                       <input
                         type="number"
                         min="0"
+                        step="any"
                         value={item.purchaseRate}
                         onChange={(e) => updateRow(item.rowId, "purchaseRate", e.target.value)}
                         onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
@@ -576,6 +577,7 @@ export default function PurchaseGroup() {
                       <input
                         type="number"
                         min="0"
+                        step="any"
                         value={item.wholesaleRate}
                         onChange={(e) => updateRow(item.rowId, "wholesaleRate", e.target.value)}
                         onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
@@ -587,6 +589,7 @@ export default function PurchaseGroup() {
                       <input
                         type="number"
                         min="0"
+                        step="any"
                         value={item.mrp}
                         onChange={(e) => updateRow(item.rowId, "mrp", e.target.value)}
                         onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
@@ -629,6 +632,7 @@ export default function PurchaseGroup() {
               <input
                 type="number"
                 min="0"
+                step="any"
                 max={totalPurchaseAmount}
                 value={payableAmount}
                 onChange={(e) => {

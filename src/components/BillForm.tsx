@@ -637,6 +637,7 @@ export default function BillForm() {
               <input
                 type="number"
                 min="0"
+                step="any"
                 max={grandTotal}
                 value={paidAmount}
                 onChange={(e) => {
