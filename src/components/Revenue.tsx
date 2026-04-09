@@ -91,9 +91,9 @@ export default function Revenue() {
 
       <div className="bg-surface border border-accent/10 rounded-2xl p-6 shadow-xl">
         <h3 className="text-xl font-display font-bold text-accent mb-6">Product Breakdown</h3>
-        <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0">
-          <table className="w-full text-center border-collapse whitespace-nowrap md:whitespace-normal">
-            <thead>
+        <div className="overflow-x-auto overflow-y-auto max-h-[60vh] custom-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
+          <table className="w-full text-center border-collapse whitespace-nowrap md:whitespace-normal relative">
+            <thead className="sticky top-0 z-10 bg-surface shadow-sm">
               <tr className="border-b border-accent/10 text-muted text-xs uppercase tracking-wider">
                 <th className="px-4 py-4 font-medium text-center">Product</th>
                 <th className="px-4 py-4 font-medium text-center">Last Sold</th>

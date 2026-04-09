@@ -86,9 +86,9 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
     head: [["Sl. No.", "Particulars", "MRP", "Percentage", "Rate", "Qty", "Net Amount"]],
     body: tableData,
     foot: [[
-      { content: `Total Qty: ${totalQty}`, colSpan: 2, styles: { halign: 'left' } },
-      { content: "", colSpan: 4 },
-      { content: bill.subtotal.toFixed(2), styles: { halign: 'right' } }
+      { content: "Total", colSpan: 5, styles: { halign: 'right' } },
+      { content: totalQty.toString(), styles: { halign: 'center' } },
+      { content: bill.subtotal.toFixed(2), styles: { halign: 'center' } }
     ]],
     showFoot: "lastPage",
     theme: "grid", // Changed to grid for better structure
@@ -116,9 +116,9 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
     columnStyles: {
       0: { cellWidth: 10 }, // Sl. No.
       1: { cellWidth: 35 }, // Particulars
-      2: { cellWidth: 18 }, // MRP
-      3: { cellWidth: 15 }, // Percentage
-      4: { cellWidth: 18 }, // Rate
+      2: { cellWidth: 16 }, // MRP
+      3: { cellWidth: 18 }, // Percentage
+      4: { cellWidth: 17 }, // Rate
       5: { cellWidth: 10 }, // Qty
       6: { cellWidth: 22 }, // Net Amount
     },

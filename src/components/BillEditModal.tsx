@@ -90,9 +90,9 @@ export default function BillEditModal({ bill, onClose }: BillEditModalProps) {
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-accent/20">
-            <table className="w-full text-left border-collapse">
-              <thead>
+          <div className="overflow-x-auto overflow-y-auto max-h-[40vh] custom-scrollbar rounded-xl border border-accent/20">
+            <table className="w-full text-left border-collapse relative">
+              <thead className="sticky top-0 z-10 bg-surface shadow-sm">
                 <tr className="bg-accent/5 border-b border-accent/20">
                   <th className="p-3 font-medium text-text">Product</th>
                   <th className="p-3 font-medium text-text text-center">Rate</th>

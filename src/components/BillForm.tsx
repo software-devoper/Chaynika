@@ -532,9 +532,9 @@ export default function BillForm() {
             <div className="mt-6 border-t border-accent/10 pt-6">
               <h5 className="text-sm font-bold text-accent mb-3">Customer's Past Purchases</h5>
               <div className="bg-primary/30 rounded-xl border border-accent/10 overflow-hidden">
-                <div className="w-full">
-                  <table className="w-full text-center text-xs">
-                    <thead className="bg-primary/50 sticky top-0">
+                <div className="w-full overflow-y-auto max-h-[30vh] custom-scrollbar">
+                  <table className="w-full text-center text-xs relative">
+                    <thead className="bg-surface sticky top-0 z-10 shadow-sm">
                       <tr className="text-muted uppercase tracking-wider">
                         <th className="px-3 py-2 font-medium text-center">Date</th>
                         <th className="px-3 py-2 font-medium text-center">Particulars</th>

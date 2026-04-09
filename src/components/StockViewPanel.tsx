@@ -52,9 +52,9 @@ export default function StockViewPanel() {
       </div>
 
       {/* Desktop Table View */}
-      <div className="hidden md:block overflow-x-auto rounded-xl border border-accent/10 bg-surface">
-        <table className="w-full text-center border-collapse">
-          <thead>
+      <div className="hidden md:block overflow-x-auto overflow-y-auto max-h-[60vh] custom-scrollbar rounded-xl border border-accent/10 bg-surface">
+        <table className="w-full text-center border-collapse relative">
+          <thead className="sticky top-0 z-10 bg-surface shadow-sm">
             <tr className="bg-primary/50 border-b border-accent/10 text-muted text-xs uppercase tracking-wider">
               <th className="px-6 py-4 font-medium text-center">Sr. No.</th>
               <th className="px-6 py-4 font-medium text-center">Date</th>
