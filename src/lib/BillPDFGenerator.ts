@@ -94,8 +94,8 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
     theme: "grid", // Changed to grid for better structure
     styles: {
       font: "times",
-      fontSize: 9,
-      cellPadding: 0.5,
+      fontSize: 8,
+      cellPadding: 0.3,
       lineColor: [200, 200, 200],
       lineWidth: 0.1,
       halign: "center",
@@ -133,51 +133,51 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
   }
   doc.setPage(pageCount);
 
-  let finalY = (doc as any).lastAutoTable.finalY + 10;
+  let finalY = (doc as any).lastAutoTable.finalY + 3;
   const pageHeight = doc.internal.pageSize.getHeight();
-  const footerHeight = 80; // Estimated height for Payment Section + Totals + Footer
+  const footerHeight = 40; // Reduced estimated height for Payment Section + Totals + Footer
 
   // Check if we need a new page for the summary and footer to avoid overlapping
-  // If content takes more than ~70% of the page, push footer to a new page
-  if (finalY > pageHeight * 0.7 || finalY + footerHeight > pageHeight) {
+  // Only push to new page if it physically won't fit
+  if (finalY + footerHeight > pageHeight) {
     doc.addPage();
-    finalY = 20; // Start near top of new page
+    finalY = 10; // Start near top of new page
   }
 
   // PAYMENT SECTION
-  doc.setFontSize(baseFontSize * 0.9);
+  doc.setFontSize(baseFontSize * 0.8);
   doc.setFont("times", "bold");
   doc.text("Payment Details:", margin, finalY);
   
-  doc.setFontSize(baseFontSize * 0.8);
+  doc.setFontSize(baseFontSize * 0.7);
   doc.setFont("times", "normal");
-  doc.text("UPI ID: chayanika822@iob", margin, finalY + 5);
+  doc.text("UPI ID: chayanika822@iob", margin, finalY + 3);
 
   // QR CODE
-  const qrSize = 25;
+  const qrSize = 18;
   try {
     const qrDataUrl = await QRCode.toDataURL("upi://pay?pa=chayanika822@iob&pn=CHAYANIKA&cu=INR");
-    doc.addImage(qrDataUrl, "PNG", margin, finalY + 8, qrSize, qrSize);
+    doc.addImage(qrDataUrl, "PNG", margin, finalY + 5, qrSize, qrSize);
   } catch (error) {
     console.error("Failed to generate QR code:", error);
-    doc.rect(margin, finalY + 8, qrSize, qrSize);
-    doc.text("QR", margin + qrSize / 2, finalY + 8 + qrSize / 2, { align: "center" });
-    doc.text("CODE", margin + qrSize / 2, finalY + 8 + qrSize / 2 + 3, { align: "center" });
+    doc.rect(margin, finalY + 5, qrSize, qrSize);
+    doc.text("QR", margin + qrSize / 2, finalY + 5 + qrSize / 2, { align: "center" });
+    doc.text("CODE", margin + qrSize / 2, finalY + 5 + qrSize / 2 + 3, { align: "center" });
   }
-  doc.text("SCAN & PAY", margin + qrSize / 2, finalY + qrSize + 12, { align: "center" });
+  doc.text("SCAN & PAY", margin + qrSize / 2, finalY + qrSize + 8, { align: "center" });
 
   // RIGHT: TOTALS
-  doc.setFontSize(baseFontSize * 0.9);
+  doc.setFontSize(baseFontSize * 0.8);
   doc.setFont("times", "normal");
   const rightAlignX = pageWidth - margin;
   const previousDue = bill.grandTotal - bill.subtotal;
-  doc.text(`Sub Total:  ${bill.subtotal.toFixed(2)}`, rightAlignX, finalY + 5, { align: "right" });
-  doc.text(`Previous Due:  ${previousDue.toFixed(2)}`, rightAlignX, finalY + 10, { align: "right" });
-  doc.text(`Paid Amount:  ${bill.paidAmount.toFixed(2)}`, rightAlignX, finalY + 15, { align: "right" });
-  doc.text(`Balance Due:  ${bill.dueAmount.toFixed(2)}`, rightAlignX, finalY + 20, { align: "right" });
+  doc.text(`Sub Total:  ${bill.subtotal.toFixed(2)}`, rightAlignX, finalY + 3, { align: "right" });
+  doc.text(`Previous Due:  ${previousDue.toFixed(2)}`, rightAlignX, finalY + 7, { align: "right" });
+  doc.text(`Paid Amount:  ${bill.paidAmount.toFixed(2)}`, rightAlignX, finalY + 11, { align: "right" });
+  doc.text(`Balance Due:  ${bill.dueAmount.toFixed(2)}`, rightAlignX, finalY + 15, { align: "right" });
 
   // FOOTER
-  const footerY = doc.internal.pageSize.getHeight() - 25;
+  const footerY = doc.internal.pageSize.getHeight() - 12;
   
   // LEFT: Owner Signature
   // Placeholder base64 for the signature image. Replace this with the actual base64 string of the signature.
