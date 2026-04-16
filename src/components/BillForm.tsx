@@ -138,13 +138,14 @@ export default function BillForm() {
 
   const handleDeleteCustomer = async (e: React.MouseEvent, phone: string) => {
     e.stopPropagation();
-    if (window.confirm("Are you sure you want to delete this customer suggestion?")) {
-      try {
-        await customerApi.delete(phone);
-        toast.success("Customer removed from suggestions");
-      } catch (err) {
-        toast.error("Failed to delete customer");
-      }
+    e.preventDefault();
+    console.log("Deleting customer suggestion for phone:", phone);
+    try {
+      await customerApi.delete(phone);
+      toast.success("Customer removed from suggestions");
+    } catch (err) {
+      console.error("Error deleting customer suggestion:", err);
+      toast.error("Failed to delete customer");
     }
   };
 
@@ -470,8 +471,9 @@ export default function BillForm() {
                         <div className="text-xs text-muted">{c.phone}</div>
                       </div>
                       <button
+                        type="button"
                         onClick={(e) => handleDeleteCustomer(e, c.phone)}
-                        className="p-1.5 text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg opacity-0 group-hover/item:opacity-100 transition-all"
+                        className="p-1.5 text-muted/50 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all relative z-30"
                         title="Delete suggestion"
                       >
                         <Trash2 size={14} />

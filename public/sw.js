@@ -30,6 +30,13 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  
+  // Skip Firestore and other Google API requests to avoid interference with real-time streams
+  if (url.hostname.includes('firestore.googleapis.com') || url.hostname.includes('googleapis.com')) {
+    return;
+  }
+
   // Network-first strategy: Always try to get the latest from the internet first
   event.respondWith(
     fetch(event.request)
@@ -43,9 +50,18 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       })
-      .catch(() => {
+      .catch(async () => {
         // If network fails (offline), fall back to cache
-        return caches.match(event.request);
+        const cachedResponse = await caches.match(event.request);
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        // If not in cache and network failed, return a basic error response or let it fail
+        // Returning a new Response avoids the "Failed to convert value to 'Response'" error
+        return new Response('Network error occurred', {
+          status: 408,
+          statusText: 'Network error occurred',
+        });
       })
   );
 });

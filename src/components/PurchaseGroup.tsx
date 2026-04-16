@@ -89,13 +89,14 @@ export default function PurchaseGroup() {
 
   const handleDeleteGroup = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (window.confirm("Are you sure you want to delete this party suggestion?")) {
-      try {
-        await groupApi.delete(id);
-        toast.success("Party removed from suggestions");
-      } catch (err) {
-        toast.error("Failed to delete party");
-      }
+    e.preventDefault();
+    console.log("Deleting party suggestion for id:", id);
+    try {
+      await groupApi.delete(id);
+      toast.success("Party removed from suggestions");
+    } catch (err) {
+      console.error("Error deleting party suggestion:", err);
+      toast.error("Failed to delete party");
     }
   };
 
@@ -461,8 +462,9 @@ export default function PurchaseGroup() {
                     >
                       <span>{g.name}</span>
                       <button
+                        type="button"
                         onClick={(e) => handleDeleteGroup(e, g.id)}
-                        className="p-1.5 text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg opacity-0 group-hover/item:opacity-100 transition-all"
+                        className="p-1.5 text-muted/50 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all relative z-30"
                         title="Delete suggestion"
                       >
                         <Trash2 size={14} />

@@ -8,7 +8,8 @@ export const auth = getAuth(app);
 
 // Use named database if provided, otherwise default
 const config = firebaseConfig as any;
-console.log("Initializing Firestore with database ID:", config.firestoreDatabaseId);
+const dbId = config.firestoreDatabaseId || "(default)";
+console.log("Initializing Firestore with database ID:", dbId);
 export const db = config.firestoreDatabaseId && config.firestoreDatabaseId !== "(default)"
   ? getFirestore(app, config.firestoreDatabaseId)
   : getFirestore(app);
