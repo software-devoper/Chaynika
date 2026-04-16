@@ -457,7 +457,7 @@ export default function BillForm() {
               placeholder="Enter name"
             />
             {showCustomerDropdown && customers.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl z-20 max-h-48 overflow-y-auto">
+              <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto">
                 {filteredCustomers.map((c, index) => (
                     <div
                       key={`${c.id}-${index}`}
@@ -472,8 +472,12 @@ export default function BillForm() {
                       </div>
                       <button
                         type="button"
-                        onClick={(e) => handleDeleteCustomer(e, c.phone)}
-                        className="p-1.5 text-muted/50 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all relative z-30"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteCustomer(e, c.phone);
+                        }}
+                        className="p-1.5 text-muted/50 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all relative z-50 cursor-pointer pointer-events-auto"
                         title="Delete suggestion"
                       >
                         <Trash2 size={14} />

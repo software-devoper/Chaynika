@@ -450,7 +450,7 @@ export default function PurchaseGroup() {
               autoComplete="off"
             />
             {showGroupDropdown && partyName && (
-              <div className="absolute z-10 w-full mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl max-h-48 overflow-y-auto">
+              <div className="absolute z-50 w-full mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl max-h-48 overflow-y-auto">
                 {filteredGroups.map((g, idx) => (
                     <div
                       key={g.id}
@@ -463,8 +463,12 @@ export default function PurchaseGroup() {
                       <span>{g.name}</span>
                       <button
                         type="button"
-                        onClick={(e) => handleDeleteGroup(e, g.id)}
-                        className="p-1.5 text-muted/50 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all relative z-30"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteGroup(e, g.id);
+                        }}
+                        className="p-1.5 text-muted/50 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all relative z-50 cursor-pointer pointer-events-auto"
                         title="Delete suggestion"
                       >
                         <Trash2 size={14} />
