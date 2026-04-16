@@ -762,3 +762,15 @@ export const cleanupApi = {
     }
   }
 };
+
+export const migrationApi = {
+  migrateCollection: async (collectionName: string, data: any[]) => {
+    const batch = writeBatch(db);
+    data.forEach((item) => {
+      const { id, ...rest } = item;
+      const docRef = doc(db, collectionName, id);
+      batch.set(docRef, rest, { merge: true });
+    });
+    await batch.commit();
+  }
+};

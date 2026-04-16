@@ -1,28 +1,59 @@
 import React, { useState, useEffect } from "react";
-import { Search, ChevronLeft, ChevronRight } from "lucide-react";
-import { motion } from "motion/react";
-import { formatCurrency } from "../lib/utils";
-import { Product } from "../types";
-import { productApi } from "../lib/api";
+import { Search, ChevronLeft, ChevronRight, Edit2, X, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { formatCurrency, capitalizeFirstLetter } from "../lib/utils";
+import { Product, Group } from "../types";
+import { productApi, groupApi } from "../lib/api";
+import { toast } from "react-hot-toast";
 
 export default function StockViewPanel() {
   const [searchTerm, setSearchTerm] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
   const itemsPerPage = 50;
 
   useEffect(() => {
-    const unsubscribe = productApi.getAll((data) => {
+    const unsubscribeProducts = productApi.getAll((data) => {
       setProducts(data);
       setLoading(false);
     });
-    return () => unsubscribe();
+    const unsubscribeGroups = groupApi.getAll(setGroups);
+    return () => {
+      unsubscribeProducts();
+      unsubscribeGroups();
+    };
   }, []);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProduct) return;
+    
+    setIsUpdating(true);
+    try {
+      const selectedGroup = groups.find(g => g.id === editingProduct.groupId);
+      
+      await productApi.update(editingProduct.id, {
+        ...editingProduct,
+        groupName: selectedGroup?.name || editingProduct.groupName,
+        subgroupId: "",
+        subgroupName: ""
+      });
+      toast.success("Product updated successfully");
+      setEditingProduct(null);
+    } catch (err) {
+      toast.error("Failed to update product");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const filteredProducts = products.filter(
     (p) =>
@@ -39,7 +70,7 @@ export default function StockViewPanel() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
       <div className="relative">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" size={18} />
         <input
@@ -64,12 +95,13 @@ export default function StockViewPanel() {
               <th className="px-6 py-4 font-medium text-center">Purchase Rate</th>
               <th className="px-6 py-4 font-medium text-center">Wholesale Rate</th>
               <th className="px-6 py-4 font-medium text-center">MRP</th>
+              <th className="px-6 py-4 font-medium text-center">Actions</th>
             </tr>
           </thead>
           <tbody className="text-text divide-y divide-accent/5">
             {loading ? (
               <tr>
-                <td colSpan={8} className="px-6 py-12 text-center text-muted italic">
+                <td colSpan={9} className="px-6 py-12 text-center text-muted italic">
                   Loading stock data...
                 </td>
               </tr>
@@ -89,11 +121,20 @@ export default function StockViewPanel() {
                 <td className="px-6 py-4 text-center text-muted">{formatCurrency(product.purchaseRate)}</td>
                 <td className="px-6 py-4 text-center text-muted">{formatCurrency(product.wholesaleRate)}</td>
                 <td className="px-6 py-4 text-center text-accent font-medium">{formatCurrency(product.mrp)}</td>
+                <td className="px-6 py-4 text-center">
+                  <button
+                    onClick={() => setEditingProduct(product)}
+                    className="p-2 text-muted hover:text-accent hover:bg-accent/10 rounded-lg transition-colors"
+                    title="Edit Product"
+                  >
+                    <Edit2 size={16} />
+                  </button>
+                </td>
               </motion.tr>
             ))}
             {!loading && paginatedProducts.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-6 py-12 text-center text-muted italic">
+                <td colSpan={9} className="px-6 py-12 text-center text-muted italic">
                   No products found matching your search.
                 </td>
               </tr>
@@ -103,7 +144,7 @@ export default function StockViewPanel() {
             <tr className="font-bold text-text">
               <td colSpan={4} className="px-6 py-4 text-right uppercase tracking-wider text-xs text-muted">Total Stock Quantity:</td>
               <td className="px-6 py-4 text-center text-lg text-accent">{totalQuantity}</td>
-              <td colSpan={3} className="px-6 py-4"></td>
+              <td colSpan={4} className="px-6 py-4"></td>
             </tr>
           </tfoot>
         </table>
@@ -126,22 +167,27 @@ export default function StockViewPanel() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: (index % 10) * 0.05 }}
-              className="bg-surface border border-accent/10 rounded-xl p-4 shadow-sm hover:border-accent/30 transition-colors flex flex-col gap-3"
+              className="bg-surface border border-accent/10 rounded-xl p-4 shadow-sm hover:border-accent/30 transition-colors flex flex-col gap-3 relative"
             >
-              <div className="flex justify-between items-start gap-2">
+              <button
+                onClick={() => setEditingProduct(product)}
+                className="absolute top-4 right-4 p-2 text-muted hover:text-accent hover:bg-accent/10 rounded-lg transition-colors"
+              >
+                <Edit2 size={16} />
+              </button>
+              <div className="flex justify-between items-start gap-2 pr-10">
                 <div>
                   <div className="text-xs text-muted mb-1">#{(currentPage - 1) * itemsPerPage + index + 1} • {new Date(product.updatedAt).toLocaleDateString()}</div>
                   <h4 className="font-bold text-text text-lg leading-tight">{product.name}</h4>
-                </div>
-                <div className="flex flex-col items-end">
-                  <span className="text-xs text-muted uppercase tracking-wider mb-1">Stock</span>
-                  <span className="font-bold text-accent text-xl">{product.stock}</span>
                 </div>
               </div>
               
               <div className="flex flex-wrap gap-2">
                 <span className="px-2.5 py-1 bg-primary text-muted text-xs rounded-md border border-accent/5">
                   {product.groupName}
+                </span>
+                <span className="px-2.5 py-1 bg-accent/10 text-accent font-bold text-xs rounded-md border border-accent/20">
+                  Stock: {product.stock}
                 </span>
               </div>
 
@@ -223,6 +269,126 @@ export default function StockViewPanel() {
           </div>
         </div>
       )}
+
+      {/* Edit Modal */}
+      <AnimatePresence>
+        {editingProduct && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-surface rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden border border-accent/10"
+            >
+              <div className="flex justify-between items-center p-6 border-b border-accent/10">
+                <h3 className="text-xl font-bold text-text">Edit Product</h3>
+                <button
+                  onClick={() => setEditingProduct(null)}
+                  className="p-2 text-muted hover:text-text hover:bg-primary rounded-lg transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <form onSubmit={handleUpdate} className="p-6 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-muted mb-1">Product Name</label>
+                    <input
+                      required
+                      type="text"
+                      value={editingProduct.name}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, name: capitalizeFirstLetter(e.target.value) })}
+                      className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-2 text-text focus:border-accent outline-none transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-muted mb-1">Party Name</label>
+                    <select
+                      required
+                      value={editingProduct.groupId}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, groupId: e.target.value })}
+                      className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-2 text-text focus:border-accent outline-none transition-all"
+                    >
+                      {groups.map((group) => (
+                        <option key={group.id} value={group.id}>
+                          {group.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-muted mb-1">Stock Quantity</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={editingProduct.stock}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, stock: Number(e.target.value) })}
+                      className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-2 text-text focus:border-accent outline-none transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-muted mb-1">Purchase Rate</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      value={editingProduct.purchaseRate}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, purchaseRate: Number(e.target.value) })}
+                      className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-2 text-text focus:border-accent outline-none transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-muted mb-1">Wholesale Rate</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      value={editingProduct.wholesaleRate}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, wholesaleRate: Number(e.target.value) })}
+                      className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-2 text-text focus:border-accent outline-none transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-muted mb-1">MRP</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      value={editingProduct.mrp}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, mrp: Number(e.target.value) })}
+                      className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-2 text-text focus:border-accent outline-none transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-accent/10 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setEditingProduct(null)}
+                    className="px-6 py-2 text-muted hover:text-text font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isUpdating}
+                    className="px-6 py-2 bg-accent text-primary font-bold rounded-xl hover:opacity-90 transition-all flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {isUpdating && <Loader2 className="w-4 h-4 animate-spin" />}
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import Logo from "./Logo";
-import { User, Mail, Phone, MapPin, Shield, Lock, Loader2, Eye, EyeOff, Moon, Sun, Palette } from "lucide-react";
+import { User, Mail, Phone, MapPin, Shield, Lock, Loader2, Eye, EyeOff, Moon, Sun, Palette, Database, ArrowRight, CheckCircle2 } from "lucide-react";
 import { auth } from "../lib/firebase";
-import { profileApi, settingsApi } from "../lib/api";
+import { profileApi, settingsApi, migrationApi } from "../lib/api";
+import { fetchOldData } from "../lib/migration";
 import { toast } from "react-hot-toast";
 import { motion } from "motion/react";
 
@@ -11,6 +12,12 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isSavingBusinessInfo, setIsSavingBusinessInfo] = useState(false);
+  const [isMigrating, setIsMigrating] = useState(false);
+  const [migrationStatus, setMigrationStatus] = useState<{
+    step: string;
+    progress: number;
+    total: number;
+  } | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -65,6 +72,40 @@ export default function Profile() {
       document.documentElement.classList.add('light');
       localStorage.setItem('theme', 'light');
       setIsLightMode(true);
+    }
+  };
+
+  const handleMigration = async () => {
+    if (!window.confirm("Are you sure you want to start the migration? This will copy all data from the old database to the new one. Existing data in the new database with the same IDs will be overwritten.")) {
+      return;
+    }
+
+    setIsMigrating(true);
+    try {
+      const collections = ["groups", "products", "bills", "customerDues", "cashSales", "settings"];
+      
+      for (const collectionName of collections) {
+        setMigrationStatus({ step: `Fetching ${collectionName}...`, progress: 0, total: 0 });
+        const data = await fetchOldData(collectionName);
+        
+        if (data.length > 0) {
+          setMigrationStatus({ step: `Migrating ${collectionName}...`, progress: 0, total: data.length });
+          // Migrate in chunks of 500 (Firestore batch limit)
+          for (let i = 0; i < data.length; i += 500) {
+            const chunk = data.slice(i, i + 500);
+            await migrationApi.migrateCollection(collectionName, chunk);
+            setMigrationStatus(prev => prev ? { ...prev, progress: Math.min(i + 500, data.length) } : null);
+          }
+        }
+      }
+      
+      toast.success("Migration completed successfully!");
+      setMigrationStatus(null);
+    } catch (err: any) {
+      console.error("Migration error:", err);
+      toast.error("Migration failed: " + (err.message || "Unknown error"));
+    } finally {
+      setIsMigrating(false);
     }
   };
 
@@ -328,6 +369,75 @@ export default function Profile() {
             <div className="px-3 py-1 bg-green-500/10 text-green-500 text-xs font-bold rounded-full uppercase tracking-wider">
               Active
             </div>
+          </div>
+        </div>
+      </motion.div>
+      
+      <motion.div variants={itemVariants} className="bg-surface border border-accent/10 rounded-3xl p-8 shadow-xl">
+        <h3 className="text-xl font-display font-bold text-accent mb-6 flex items-center gap-2">
+          <Database size={24} />
+          Data Migration
+        </h3>
+        <div className="space-y-4">
+          <div className="p-6 bg-primary/30 rounded-2xl border border-accent/5">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="flex-1">
+                <div className="text-text font-bold text-lg mb-1">Import from Old Database</div>
+                <p className="text-sm text-muted leading-relaxed">
+                  Transfer all your data (Products, Parties, Bills, and Dues) from the previous database to this new one. 
+                  This will not delete anything from the old database.
+                </p>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-widest text-muted">
+                  <span>Old DB</span>
+                  <ArrowRight size={14} className="text-accent" />
+                  <span>New DB</span>
+                </div>
+                <button 
+                  onClick={handleMigration}
+                  disabled={isMigrating}
+                  className="w-full md:w-auto px-8 py-3 bg-accent text-primary font-bold rounded-xl hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-accent/20 transition-all"
+                >
+                  {isMigrating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Database size={18} />}
+                  {isMigrating ? "Migrating..." : "Start Migration"}
+                </button>
+              </div>
+            </div>
+
+            {isMigrating && migrationStatus && (
+              <div className="mt-8 space-y-3">
+                <div className="flex justify-between items-end">
+                  <div className="text-sm font-medium text-accent animate-pulse">{migrationStatus.step}</div>
+                  {migrationStatus.total > 0 && (
+                    <div className="text-xs text-muted">
+                      {migrationStatus.progress} / {migrationStatus.total} items
+                    </div>
+                  )}
+                </div>
+                <div className="h-2 bg-primary rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ 
+                      width: migrationStatus.total > 0 
+                        ? `${(migrationStatus.progress / migrationStatus.total) * 100}%` 
+                        : "100%" 
+                    }}
+                    className="h-full bg-accent"
+                  />
+                </div>
+              </div>
+            )}
+            
+            {!isMigrating && !migrationStatus && (
+              <div className="mt-6 flex items-start gap-3 p-4 bg-accent/5 rounded-xl border border-accent/10">
+                <CheckCircle2 size={18} className="text-accent mt-0.5 shrink-0" />
+                <p className="text-xs text-muted leading-relaxed">
+                  <span className="font-bold text-text">Note:</span> This process is safe. It only copies data. 
+                  If you have already added data to the new database, it will only overwrite items that have the exact same ID.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </motion.div>

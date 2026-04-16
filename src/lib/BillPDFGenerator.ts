@@ -125,7 +125,7 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
     margin: { left: margin, right: margin, bottom: 5 },
   });
 
-  const pageCount = doc.internal.getNumberOfPages();
+  const pageCount = doc.getNumberOfPages();
   for (let i = 1; i < pageCount; i++) {
     doc.setPage(i);
     doc.setFontSize(8);

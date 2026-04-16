@@ -1,9 +1,9 @@
 {
-  "apiKey": "AIzaSyDXPqx1j2j9KQlEVbo5jnJ_ab8amnx44bc",
-  "authDomain": "chayanika-inventory-prod.firebaseapp.com",
-  "projectId": "chayanika-inventory-prod",
-  "storageBucket": "chayanika-inventory-prod.firebasestorage.app",
-  "messagingSenderId": "876885170454",
-  "appId": "1:876885170454:web:8bbb40043602e613be9837",
-  "measurementId": "G-H0X8FW5SSM"
+  "apiKey": "AIzaSyBtkp-u36pk7PaZDCYNuWZqU2B9JXccf1c",
+  "authDomain": "chayanika-billing.firebaseapp.com",
+  "projectId": "chayanika-billing",
+  "storageBucket": "chayanika-billing.firebasestorage.app",
+  "messagingSenderId": "212274484828",
+  "appId": "1:212274484828:web:0a691f50ea017a71023899",
+  "measurementId": "G-XH05FHMK7K"
 }
