@@ -1,5 +1,6 @@
 import { initializeApp, getApp, getApps } from "firebase/app";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
+import { getAuth, signInAnonymously } from "firebase/auth";
 
 // Old Firebase Configuration (chayanika-inventory-prod)
 const oldFirebaseConfig = {
@@ -18,8 +19,14 @@ const oldApp = !getApps().find(app => app.name === "oldApp")
   : getApp("oldApp");
 
 export const oldDb = getFirestore(oldApp);
+export const oldAuth = getAuth(oldApp);
 
 export async function fetchOldData(collectionName: string) {
+  // Ensure we are authenticated on the old app
+  if (!oldAuth.currentUser) {
+    await signInAnonymously(oldAuth);
+  }
+  
   const querySnapshot = await getDocs(collection(oldDb, collectionName));
   return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }

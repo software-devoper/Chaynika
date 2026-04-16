@@ -82,7 +82,18 @@ export default function Profile() {
 
     setIsMigrating(true);
     try {
-      const collections = ["groups", "products", "bills", "customerDues", "cashSales", "settings"];
+      const collections = [
+        "groups", 
+        "subgroups", 
+        "products", 
+        "bills", 
+        "customers", 
+        "dues", 
+        "partyDues", 
+        "cashSales", 
+        "settings",
+        "profiles"
+      ];
       
       for (const collectionName of collections) {
         setMigrationStatus({ step: `Fetching ${collectionName}...`, progress: 0, total: 0 });
