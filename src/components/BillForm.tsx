@@ -136,9 +136,14 @@ export default function BillForm() {
     }
   }, [focusQtyId]);
 
-  const handleDeleteCustomer = async (e: React.MouseEvent, phone: string) => {
+  const handleDeleteCustomer = async (e: React.MouseEvent | React.TouchEvent, phone: string) => {
     e.stopPropagation();
     e.preventDefault();
+    
+    if (!window.confirm("Are you sure you want to delete this customer suggestion?")) {
+      return;
+    }
+
     console.log("Deleting customer suggestion for phone:", phone);
     try {
       await customerApi.delete(phone);

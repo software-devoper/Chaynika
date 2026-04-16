@@ -87,9 +87,14 @@ export default function PurchaseGroup() {
     };
   }, []);
 
-  const handleDeleteGroup = async (e: React.MouseEvent, id: string) => {
+  const handleDeleteGroup = async (e: React.MouseEvent | React.TouchEvent, id: string) => {
     e.stopPropagation();
     e.preventDefault();
+
+    if (!window.confirm("Are you sure you want to delete this party suggestion?")) {
+      return;
+    }
+
     console.log("Deleting party suggestion for id:", id);
     try {
       await groupApi.delete(id);

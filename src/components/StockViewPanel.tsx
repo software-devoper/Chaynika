@@ -39,16 +39,49 @@ export default function StockViewPanel() {
     setIsUpdating(true);
     try {
       const selectedGroup = groups.find(g => g.id === editingProduct.groupId);
+      const newGroupName = selectedGroup?.name || editingProduct.groupName;
       
-      await productApi.update(editingProduct.id, {
-        ...editingProduct,
-        groupName: selectedGroup?.name || editingProduct.groupName,
-        subgroupId: "",
-        subgroupName: ""
-      });
+      // Find the original product to get the key it was merged by
+      const originalProduct = products.find(p => p.id === editingProduct.id);
+      
+      if (originalProduct) {
+        const originalKey = `${originalProduct.name.toLowerCase()}|${originalProduct.groupName.toLowerCase()}|${originalProduct.purchaseRate}|${originalProduct.wholesaleRate}|${originalProduct.mrp}`;
+        
+        // Find all products that match this key
+        const matchingProducts = products.filter(p => {
+          const key = `${p.name.toLowerCase()}|${p.groupName.toLowerCase()}|${p.purchaseRate}|${p.wholesaleRate}|${p.mrp}`;
+          return key === originalKey;
+        });
+
+        // 1. Update the primary product with all new details (including the new stock)
+        await productApi.update(editingProduct.id, {
+          ...editingProduct,
+          groupName: newGroupName,
+          subgroupId: "",
+          subgroupName: ""
+        });
+
+        // 2. Delete all other products that were part of this merged row
+        // This consolidates them into the single primary product
+        for (const p of matchingProducts) {
+          if (p.id !== editingProduct.id) {
+            await productApi.delete(p.id);
+          }
+        }
+      } else {
+        // Fallback if original product not found (shouldn't happen)
+        await productApi.update(editingProduct.id, {
+          ...editingProduct,
+          groupName: newGroupName,
+          subgroupId: "",
+          subgroupName: ""
+        });
+      }
+
       toast.success("Product updated successfully");
       setEditingProduct(null);
     } catch (err) {
+      console.error("Update error:", err);
       toast.error("Failed to update product");
     } finally {
       setIsUpdating(false);
