@@ -136,6 +136,18 @@ export default function BillForm() {
     }
   }, [focusQtyId]);
 
+  const handleDeleteCustomer = async (e: React.MouseEvent, phone: string) => {
+    e.stopPropagation();
+    if (window.confirm("Are you sure you want to delete this customer suggestion?")) {
+      try {
+        await customerApi.delete(phone);
+        toast.success("Customer removed from suggestions");
+      } catch (err) {
+        toast.error("Failed to delete customer");
+      }
+    }
+  };
+
   const handleCustomerSelect = (selectedCustomer: Customer) => {
     setCustomer({
       name: selectedCustomer.name,
@@ -279,7 +291,8 @@ export default function BillForm() {
   const grandTotal = subtotal + previousDue;
   const currentBillDue = Math.max(0, subtotal - paidAmount);
 
-  const filteredCustomers = customers.filter(c => c.name.toLowerCase().includes((customer.name || "").toLowerCase()));
+  const filteredCustomers = Array.from(new Map(customers.map(c => [c.name.toLowerCase(), c])).values())
+    .filter(c => c.name.toLowerCase().includes((customer.name || "").toLowerCase()));
 
   const handleCustomerKeyDown = (e: React.KeyboardEvent) => {
     if (!showCustomerDropdown) return;
@@ -447,13 +460,22 @@ export default function BillForm() {
                 {filteredCustomers.map((c, index) => (
                     <div
                       key={`${c.id}-${index}`}
-                      className={`px-4 py-2 cursor-pointer text-sm ${
+                      className={`px-4 py-2 cursor-pointer text-sm flex justify-between items-center group/item ${
                         index === activeCustomerSuggestionIndex ? 'bg-accent/10' : 'hover:bg-primary'
                       }`}
                       onClick={() => handleCustomerSelect(c)}
                     >
-                      <div className="font-medium">{c.name}</div>
-                      <div className="text-xs text-muted">{c.phone}</div>
+                      <div>
+                        <div className="font-medium">{c.name}</div>
+                        <div className="text-xs text-muted">{c.phone}</div>
+                      </div>
+                      <button
+                        onClick={(e) => handleDeleteCustomer(e, c.phone)}
+                        className="p-1.5 text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg opacity-0 group-hover/item:opacity-100 transition-all"
+                        title="Delete suggestion"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   ))}
               </div>

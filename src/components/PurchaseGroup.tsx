@@ -87,6 +87,18 @@ export default function PurchaseGroup() {
     };
   }, []);
 
+  const handleDeleteGroup = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (window.confirm("Are you sure you want to delete this party suggestion?")) {
+      try {
+        await groupApi.delete(id);
+        toast.success("Party removed from suggestions");
+      } catch (err) {
+        toast.error("Failed to delete party");
+      }
+    }
+  };
+
   const handlePartySelect = (group: Group) => {
     setPartyName(group.name);
     setSelectedGroupId(group.id);
@@ -153,7 +165,8 @@ export default function PurchaseGroup() {
 
   const purchaseDue = Math.max(0, totalPurchaseAmount - (Number(payableAmount) || 0));
 
-  const filteredGroups = groups.filter(g => g.name.toLowerCase().includes(partyName.toLowerCase()));
+  const filteredGroups = Array.from(new Map(groups.map(g => [g.name.toLowerCase(), g])).values())
+    .filter(g => g.name.toLowerCase().includes(partyName.toLowerCase()));
 
   const handlePartyKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -304,9 +317,15 @@ export default function PurchaseGroup() {
       let isNewParty = false;
 
       if (!groupId) {
-        const groupRef = await groupApi.add(partyName.trim());
-        groupId = groupRef?.id;
-        isNewParty = true;
+        // Check if group already exists by name
+        const existingGroup = groups.find(g => g.name.toLowerCase() === partyName.trim().toLowerCase());
+        if (existingGroup) {
+          groupId = existingGroup.id;
+        } else {
+          const groupRef = await groupApi.add(partyName.trim());
+          groupId = groupRef?.id;
+          isNewParty = true;
+        }
       }
 
       if (!groupId) throw new Error("Failed to create party");
@@ -381,6 +400,29 @@ export default function PurchaseGroup() {
     }
   };
 
+  const partyProducts = React.useMemo(() => {
+    if (!selectedGroupId) return [];
+    const selectedGroup = groups.find(g => g.id === selectedGroupId);
+    if (!selectedGroup) return [];
+
+    const map = new Map<string, Product>();
+    products
+      .filter(p => p.groupName.toLowerCase() === selectedGroup.name.toLowerCase())
+      .forEach(p => {
+        const key = `${p.name.toLowerCase()}|${p.purchaseRate}|${p.wholesaleRate}|${p.mrp}`;
+        if (map.has(key)) {
+          const existing = map.get(key)!;
+          map.set(key, {
+            ...existing,
+            stock: existing.stock + p.stock
+          });
+        } else {
+          map.set(key, { ...p });
+        }
+      });
+    return Array.from(map.values());
+  }, [products, selectedGroupId, groups]);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
       {/* Left Panel: Party Details */}
@@ -412,12 +454,19 @@ export default function PurchaseGroup() {
                     <div
                       key={g.id}
                       id={`party-suggestion-${idx}`}
-                      className={`px-4 py-3 cursor-pointer text-text border-b border-accent/5 last:border-0 ${
+                      className={`px-4 py-3 cursor-pointer text-text border-b border-accent/5 last:border-0 flex justify-between items-center group/item ${
                         idx === activeSuggestionIndex ? 'bg-accent/10' : 'hover:bg-primary'
                       }`}
                       onClick={() => handlePartySelect(g)}
                     >
-                      {g.name}
+                      <span>{g.name}</span>
+                      <button
+                        onClick={(e) => handleDeleteGroup(e, g.id)}
+                        className="p-1.5 text-muted hover:text-red-500 hover:bg-red-500/10 rounded-lg opacity-0 group-hover/item:opacity-100 transition-all"
+                        title="Delete suggestion"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   ))}
               </div>
@@ -442,9 +491,7 @@ export default function PurchaseGroup() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-accent/5">
-                    {products
-                      .filter(p => p.groupId === selectedGroupId)
-                      .map(p => (
+                    {partyProducts.map(p => (
                         <tr key={p.id} className="hover:bg-primary/50">
                           <td className="px-3 py-2 font-medium text-text text-center">{p.name}</td>
                           <td className="px-3 py-2 text-center text-accent font-bold">{p.stock}</td>
@@ -453,7 +500,7 @@ export default function PurchaseGroup() {
                           <td className="px-3 py-2 text-center text-muted">{p.mrp}</td>
                         </tr>
                       ))}
-                    {products.filter(p => p.groupId === selectedGroupId).length === 0 && (
+                    {partyProducts.length === 0 && (
                       <tr>
                         <td colSpan={5} className="px-3 py-4 text-center text-muted italic">
                           No products found for this party.

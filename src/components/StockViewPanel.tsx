@@ -55,7 +55,27 @@ export default function StockViewPanel() {
     }
   };
 
-  const filteredProducts = products.filter(
+  const mergedProducts = React.useMemo(() => {
+    const map = new Map<string, Product>();
+    
+    products.forEach(p => {
+      const key = `${p.name.toLowerCase()}|${p.groupName.toLowerCase()}|${p.purchaseRate}|${p.wholesaleRate}|${p.mrp}`;
+      if (map.has(key)) {
+        const existing = map.get(key)!;
+        map.set(key, {
+          ...existing,
+          stock: existing.stock + p.stock,
+          updatedAt: Math.max(existing.updatedAt, p.updatedAt)
+        });
+      } else {
+        map.set(key, { ...p });
+      }
+    });
+    
+    return Array.from(map.values());
+  }, [products]);
+
+  const filteredProducts = mergedProducts.filter(
     (p) =>
       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.groupName.toLowerCase().includes(searchTerm.toLowerCase())

@@ -191,6 +191,14 @@ export const customerApi = {
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, path);
     }
+  },
+  delete: async (phone: string) => {
+    const path = `customers/${phone}`;
+    try {
+      await deleteDoc(doc(db, "customers", phone));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, path);
+    }
   }
 };
 
