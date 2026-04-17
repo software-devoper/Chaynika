@@ -144,10 +144,11 @@ Always provide polite, concise answers. If asked about stock, dues, or sales, us
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] bg-surface border border-accent/10 rounded-2xl p-8 shadow-xl text-center">
         <WifiOff size={64} className="text-muted mb-6" />
-        <h2 className="text-2xl font-display font-bold text-accent mb-2">You are offline</h2>
+        <h2 className="text-2xl font-display font-bold text-accent mb-2">Intelligence Gateway Offline</h2>
         <p className="text-muted max-w-md">
-          The Ask AI section requires an active internet connection to communicate with the Gemini servers. 
-          Please check your connection and try again. Don't worry, your other local data is safe!
+          Real-time AI analysis and business intelligence services require a stable network connection to contextually process requests. 
+          All core features, including inventory management, billing, and offline data persistence, remain fully functional. 
+          Please restore your connection to resume AI-powered insights.
         </p>
       </div>
     );
