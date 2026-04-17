@@ -170,8 +170,58 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-primary flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+      <div className="fixed inset-0 min-h-[100dvh] bg-primary flex flex-col items-center justify-between py-12 z-50 overflow-hidden">
+        {/* Ambient background glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[100px] pointer-events-none"></div>
+        
+        <div className="flex-1 flex flex-col items-center justify-center relative z-10">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <Logo size={110} showText={false} />
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
+            className="mt-8 flex flex-col items-center"
+          >
+            <h1 className="text-4xl font-display font-bold text-text tracking-tight shadow-sm">Chayanika</h1>
+            <span className="text-sm text-accent font-medium mt-2 uppercase tracking-[0.4em]">Kalindi</span>
+          </motion.div>
+        </div>
+
+        <motion.div 
+           initial={{ opacity: 0 }}
+           animate={{ opacity: 1 }}
+           transition={{ duration: 0.8, delay: 0.5 }}
+           className="flex flex-col items-center justify-end w-full relative z-10 pb-8"
+        >
+          <div className="w-48 h-1 bg-accent/10 rounded-full overflow-hidden mb-4 relative">
+             <motion.div 
+                className="absolute top-0 left-0 h-full bg-accent rounded-full"
+                animate={{ 
+                  left: ["-100%", "100%"] 
+                }}
+                transition={{
+                  repeat: Infinity,
+                  duration: 1.5,
+                  ease: "easeInOut"
+                }}
+                style={{ width: "30%" }}
+             />
+          </div>
+          <motion.span 
+            animate={{ opacity: [0.4, 1, 0.4] }}
+            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+            className="text-[10px] text-muted font-medium tracking-widest uppercase"
+          >
+            Initializing
+          </motion.span>
+        </motion.div>
       </div>
     );
   }

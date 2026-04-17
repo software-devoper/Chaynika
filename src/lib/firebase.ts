@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 import firebaseConfig from "../../firebase-applet-config.json";
 
 const app = initializeApp(firebaseConfig);
@@ -10,9 +10,16 @@ export const auth = getAuth(app);
 const config = firebaseConfig as any;
 const dbId = config.firestoreDatabaseId || "(default)";
 console.log("Initializing Firestore with database ID:", dbId);
-export const db = config.firestoreDatabaseId && config.firestoreDatabaseId !== "(default)"
-  ? getFirestore(app, config.firestoreDatabaseId)
-  : getFirestore(app);
+
+// Modern way to enable offline persistence (supports multiple browser tabs)
+export const db = initializeFirestore(
+  app, 
+  {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+  },
+  config.firestoreDatabaseId && config.firestoreDatabaseId !== "(default)" ? config.firestoreDatabaseId : undefined
+);
+
 
 // Test connection to Firestore
 import { getDocFromServer, doc } from "firebase/firestore";
