@@ -23,9 +23,17 @@ import { Loader2, Lock, User as UserIcon, Eye, EyeOff } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem("chayanika_active_tab") || "dashboard";
+  });
+  
+  useEffect(() => {
+    localStorage.setItem("chayanika_active_tab", activeTab);
+  }, [activeTab]);
+
   const [collapsed, setCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
