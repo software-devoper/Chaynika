@@ -7,6 +7,7 @@ import Bill from "./components/Bill";
 import Revenue from "./components/Revenue";
 import Due from "./components/Due";
 import Profile from "./components/Profile";
+import AskAI from "./components/AskAI";
 import { Toaster, toast } from "react-hot-toast";
 import { cn } from "./lib/utils";
 import { settingsApi, profileApi, cleanupApi } from "./lib/api";
@@ -164,6 +165,12 @@ export default function App() {
           <>
             <h2 className="text-2xl font-display font-bold text-accent mb-6">Profile</h2>
             <Profile />
+          </>
+        );
+      case "askai":
+        return (
+          <>
+            <AskAI />
           </>
         );
       default:

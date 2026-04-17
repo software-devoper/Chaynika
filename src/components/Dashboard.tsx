@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Package, CircleDollarSign, ReceiptText, Hourglass, TrendingUp, ShoppingBag, CreditCard } from "lucide-react";
+import { Package, CircleDollarSign, ReceiptText, Hourglass, TrendingUp, ShoppingBag, CreditCard, Bot } from "lucide-react";
 import { motion } from "motion/react";
 import StockViewPanel from "./StockViewPanel";
 import { formatCurrency, formatDate } from "../lib/utils";
@@ -121,7 +121,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
         <NavButton 
           icon={Package} 
           label="Purchase" 
@@ -145,6 +145,12 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           label="Revenue" 
           onClick={() => setActiveTab("revenue")} 
           delay={0.4}
+        />
+        <NavButton 
+          icon={Bot} 
+          label="Ask AI" 
+          onClick={() => setActiveTab("askai")} 
+          delay={0.5}
         />
       </div>
 

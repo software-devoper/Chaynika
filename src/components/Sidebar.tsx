@@ -9,7 +9,8 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Menu
+  Menu,
+  Bot
 } from "lucide-react";
 import Logo from "./Logo";
 import { cn } from "../lib/utils";
@@ -58,6 +59,7 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
     { id: "bill", label: "Sales", icon: <ReceiptText size={20} /> },
     { id: "due", label: "Dues", icon: <Hourglass size={20} /> },
     { id: "revenue", label: "Revenue", icon: <CircleDollarSign size={20} /> },
+    { id: "askai", label: "Ask AI", icon: <Bot size={20} /> },
   ];
 
   return (
