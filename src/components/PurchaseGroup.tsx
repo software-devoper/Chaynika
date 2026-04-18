@@ -261,10 +261,11 @@ export default function PurchaseGroup() {
         secondaryUnit: p.secondaryUnit || "Box",
         conversionRate: p.conversionRate || "",
         selectedUnitType: "primary",
+        quantity: "1",
         currentStock: p.stock,
-        purchaseRate: "" as const,
-        wholesaleRate: "" as const,
-        mrp: "" as const,
+        purchaseRate: p.purchaseRate || "",
+        wholesaleRate: p.wholesaleRate || "",
+        mrp: p.mrp || "",
         isNew: false
       } as PurchaseItem) : pi
     );
