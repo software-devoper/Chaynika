@@ -191,7 +191,9 @@ export default function BillForm() {
   const addProductToBill = (product: Product) => {
     const existing = billItems.find(item => item.productId === product.id);
     if (existing) {
-      if (existing.qty >= product.stock) return toast.error("Out of stock");
+      const multiplier = existing.selectedUnitType === "secondary" && product.conversionRate ? product.conversionRate : 1;
+      const baseQtyRequired = (existing.qty + 1) * multiplier;
+      if (baseQtyRequired > product.stock) return toast.error("Out of stock");
       setBillItems(billItems.map(item => 
         item.productId === product.id 
           ? { ...item, qty: item.qty + 1, total: (item.qty + 1) * item.price }
@@ -205,6 +207,11 @@ export default function BillForm() {
         price: product.wholesaleRate,
         mrp: product.mrp,
         total: product.wholesaleRate,
+        unit: product.unit || "Pcs",
+        secondaryUnit: product.secondaryUnit,
+        conversionRate: product.conversionRate,
+        hasSecondaryUnit: !!product.secondaryUnit,
+        selectedUnitType: "primary"
       };
       setBillItems([...billItems, newItem]);
     }
@@ -220,14 +227,48 @@ export default function BillForm() {
   const updateQuantity = (productId: string, qty: number) => {
     const product = products.find(p => p.id === productId);
     if (!product) return;
-    if (qty > product.stock) return toast.error("Out of stock");
     if (qty < 1) return;
 
-    setBillItems(billItems.map(item => 
-      item.productId === productId 
-        ? { ...item, qty: qty, total: qty * item.price }
-        : item
-    ));
+    setBillItems(billItems.map(item => {
+      if (item.productId === productId) {
+        const multiplier = item.selectedUnitType === "secondary" && item.conversionRate ? item.conversionRate : 1;
+        const baseQty = qty * multiplier;
+        if (baseQty > product.stock) {
+           toast.error(`Out of stock. Only ${product.stock} base units available.`);
+           return item;
+        }
+        return { ...item, qty, total: qty * item.price };
+      }
+      return item;
+    }));
+  };
+
+  const updateUnitType = (productId: string, type: "primary" | "secondary") => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+
+    setBillItems(billItems.map(item => {
+      if (item.productId === productId) {
+        const multiplier = type === "secondary" && product.conversionRate ? product.conversionRate : 1;
+        const newPrice = product.wholesaleRate * multiplier;
+        const newMrp = product.mrp * multiplier;
+        
+        const baseQtyRequired = item.qty * multiplier;
+        if (baseQtyRequired > product.stock) {
+          toast.error(`Cannot switch unit. Only ${product.stock} base units available.`);
+          return item;
+        }
+
+        return { 
+          ...item, 
+          selectedUnitType: type,
+          price: newPrice,
+          mrp: newMrp,
+          total: item.qty * newPrice
+        };
+      }
+      return item;
+    }));
   };
 
   const updatePrice = (productId: string, price: number) => {
@@ -400,7 +441,10 @@ export default function BillForm() {
       if (billSnap.exists()) {
         billData.billNo = billSnap.data().billNo;
       }
-      await generateBillPDF(billData, action);
+
+      if (action === "print") {
+        await generateBillPDF(billData, action);
+      }
       
       toast.success(`Bill ${action === "save" ? "saved" : "printed"} successfully`);
       // Reset form
@@ -692,20 +736,34 @@ export default function BillForm() {
                         className="w-20 bg-primary border border-accent/10 rounded px-2 py-1 text-center outline-none focus:border-accent mx-auto"
                       />
                     </td>
-                    <td className="px-2 py-4 text-center">
-                      <input
-                        ref={el => { qtyInputRefs.current[item.productId] = el; }}
-                        type="number"
-                        value={item.qty}
-                        onChange={(e) => updateQuantity(item.productId, Number(e.target.value))}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            searchInputRef.current?.focus();
-                          }
-                        }}
-                        className="w-16 bg-primary border border-accent/10 rounded px-2 py-1 text-center outline-none focus:border-accent mx-auto"
-                      />
+                    <td className="px-2 py-4 text-center align-top">
+                      <div className="flex flex-col items-center gap-1">
+                        <input
+                          ref={el => { qtyInputRefs.current[item.productId] = el; }}
+                          type="number"
+                          value={item.qty}
+                          onChange={(e) => updateQuantity(item.productId, Number(e.target.value))}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              searchInputRef.current?.focus();
+                            }
+                          }}
+                          className="w-16 bg-primary border border-accent/10 rounded px-2 py-1 text-center outline-none focus:border-accent mx-auto"
+                        />
+                        {item.hasSecondaryUnit ? (
+                          <select 
+                            value={item.selectedUnitType || "primary"} 
+                            onChange={e => updateUnitType(item.productId, e.target.value as "primary" | "secondary")} 
+                            className="w-16 text-[10px] font-medium bg-accent/10 text-accent border border-accent/20 rounded px-1 py-1 outline-none cursor-pointer uppercase mx-auto block"
+                          >
+                            <option value="primary">{item.unit || "Pcs"}</option>
+                            <option value="secondary">{item.secondaryUnit}</option>
+                          </select>
+                        ) : (
+                          <span className="text-[10px] text-muted font-medium bg-accent/5 px-2 py-0.5 rounded uppercase mx-auto block w-fit">{item.unit || "Pcs"}</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-2 py-4 text-center font-medium">{formatCurrency(item.total)}</td>
                     <td className="px-2 py-4 text-center">
@@ -855,7 +913,7 @@ export default function BillForm() {
               className="flex-1 bg-accent/20 text-accent font-bold py-3 rounded-xl hover:bg-accent/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
-              Save as PDF
+              Save Bill
             </motion.button>
             <motion.button 
               whileTap={{ scale: 0.97 }}

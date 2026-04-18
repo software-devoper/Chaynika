@@ -290,8 +290,11 @@ export const billApi = {
         const productPath = `products/${item.productId}`;
         try {
           const productRef = doc(db, "products", item.productId);
+          const multiplier = item.selectedUnitType === "secondary" && item.conversionRate ? item.conversionRate : 1;
+          const decrementQty = item.qty * multiplier;
+          
           await updateDoc(productRef, {
-            stock: increment(-item.qty)
+            stock: increment(-decrementQty)
           });
         } catch (error) {
           handleFirestoreError(error, OperationType.UPDATE, productPath);

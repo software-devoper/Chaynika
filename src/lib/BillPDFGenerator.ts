@@ -68,13 +68,14 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
   const tableData = bill.items.map((item, index) => {
     const mrp = item.mrp || 0;
     const discount = mrp > 0 ? ((mrp - item.price) / mrp) * 100 : 0;
+    const printedUnit = item.selectedUnitType === "secondary" && item.secondaryUnit ? item.secondaryUnit : (item.unit || "Pcs");
     return [
       (index + 1).toString(),
       item.productName,
       mrp.toFixed(2),
       discount.toFixed(1) + "%",
       item.price.toFixed(2),
-      item.qty.toString(),
+      `${item.qty} ${printedUnit}`,
       item.total.toFixed(2),
     ];
   });

@@ -10,6 +10,8 @@ export interface Product {
   wholesaleRate: number;
   mrp: number;
   unit: string;
+  secondaryUnit?: string;
+  conversionRate?: number;
   updatedAt: number;
 }
 
@@ -62,6 +64,11 @@ export interface BillItem {
   price: number;
   total: number;
   mrp: number;
+  unit?: string;
+  secondaryUnit?: string;
+  conversionRate?: number;
+  hasSecondaryUnit?: boolean;
+  selectedUnitType?: "primary" | "secondary";
 }
 
 export interface Bill {

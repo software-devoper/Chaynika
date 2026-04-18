@@ -10,6 +10,13 @@ interface PurchaseItem {
   rowId: string;
   productId?: string;
   productName: string;
+
+  unit: string;
+  hasSecondaryUnit: boolean;
+  secondaryUnit: string;
+  conversionRate: number | "";
+  selectedUnitType: "primary" | "secondary";
+
   quantity: number | "";
   currentStock: number;
   purchaseRate: number | "";
@@ -120,6 +127,11 @@ export default function PurchaseGroup() {
   const createNewEmptyRow = (): PurchaseItem => ({
     rowId: Math.random().toString(36).substring(7),
     productName: "",
+    unit: "Pcs",
+    hasSecondaryUnit: false,
+    secondaryUnit: "Box",
+    conversionRate: "",
+    selectedUnitType: "primary",
     quantity: "",
     currentStock: 0,
     purchaseRate: "",
@@ -244,6 +256,11 @@ export default function PurchaseGroup() {
         ...pi,
         productId: p.id,
         productName: p.name,
+        unit: p.unit || "Pcs",
+        hasSecondaryUnit: !!p.secondaryUnit,
+        secondaryUnit: p.secondaryUnit || "Box",
+        conversionRate: p.conversionRate || "",
+        selectedUnitType: "primary",
         currentStock: p.stock,
         purchaseRate: "" as const,
         wholesaleRate: "" as const,
@@ -338,30 +355,39 @@ export default function PurchaseGroup() {
 
       // 2. Process Products
       for (const item of itemsToProcess) {
-        const qty = Number(item.quantity) || 0;
+        const qtyEntered = Number(item.quantity) || 0;
         
         let targetProduct = item.productId ? products.find(p => p.id === item.productId) : undefined;
         if (!targetProduct) {
            targetProduct = products.find(p => p.groupId === groupId && p.name.toLowerCase() === item.productName.trim().toLowerCase());
         }
 
-        const pRate = item.purchaseRate === "" ? (targetProduct?.purchaseRate || 0) : Number(item.purchaseRate);
-        const wRate = item.wholesaleRate === "" ? (targetProduct?.wholesaleRate || 0) : Number(item.wholesaleRate);
-        const mRate = item.mrp === "" ? (targetProduct?.mrp || 0) : Number(item.mrp);
+        const multiplier = (item.selectedUnitType === "secondary" && Number(item.conversionRate) > 0) 
+            ? Number(item.conversionRate) : 1;
+
+        const baseQty = qtyEntered * multiplier;
+
+        const uiPRate = item.purchaseRate === "" ? ((targetProduct?.purchaseRate || 0) * (item.selectedUnitType === "secondary" && targetProduct?.conversionRate ? targetProduct.conversionRate : 1)) : Number(item.purchaseRate);
+        const uiWRate = item.wholesaleRate === "" ? ((targetProduct?.wholesaleRate || 0) * (item.selectedUnitType === "secondary" && targetProduct?.conversionRate ? targetProduct.conversionRate : 1)) : Number(item.wholesaleRate);
+        const uiMRate = item.mrp === "" ? ((targetProduct?.mrp || 0) * (item.selectedUnitType === "secondary" && targetProduct?.conversionRate ? targetProduct.conversionRate : 1)) : Number(item.mrp);
+
+        const basePRate = uiPRate / multiplier;
+        const baseWRate = uiWRate / multiplier;
+        const baseMRate = uiMRate / multiplier;
 
         // Check if there's an existing product with the exact same name, party, and rates
         const exactMatch = products.find(p => 
           p.groupId === groupId && 
           p.name.toLowerCase() === item.productName.trim().toLowerCase() &&
-          p.purchaseRate === pRate &&
-          p.wholesaleRate === wRate &&
-          p.mrp === mRate
+          p.purchaseRate === basePRate &&
+          p.wholesaleRate === baseWRate &&
+          p.mrp === baseMRate
         );
 
         if (exactMatch) {
-          if (qty > 0) {
+          if (baseQty > 0) {
             await productApi.update(exactMatch.id, {
-              stock: exactMatch.stock + qty,
+              stock: exactMatch.stock + baseQty,
               updatedAt: Date.now(),
             });
           }
@@ -372,11 +398,13 @@ export default function PurchaseGroup() {
             groupName: partyName.trim(),
             subgroupId: "",
             subgroupName: "",
-            stock: qty,
-            purchaseRate: pRate,
-            wholesaleRate: wRate,
-            mrp: mRate,
-            unit: "Pcs",
+            stock: baseQty,
+            purchaseRate: basePRate,
+            wholesaleRate: baseWRate,
+            mrp: baseMRate,
+            unit: item.unit.trim() || "Pcs",
+            secondaryUnit: item.hasSecondaryUnit ? item.secondaryUnit.trim() : "",
+            conversionRate: item.hasSecondaryUnit ? Number(item.conversionRate) : undefined,
             updatedAt: Date.now(),
           });
         }
@@ -575,7 +603,7 @@ export default function PurchaseGroup() {
                     key={item.rowId} 
                     className="border-b border-accent/5 group"
                   >
-                    <td className="px-2 py-3 relative text-center">
+                    <td className="px-2 py-3 relative text-center align-top">
                       <input
                         ref={el => { nameInputRefs.current[item.rowId] = el; }}
                         type="text"
@@ -612,21 +640,87 @@ export default function PurchaseGroup() {
                         </div>
                       )}
                       {!item.isNew && (
-                        <div className="text-[10px] text-muted mt-1">Current Stock: {item.currentStock}</div>
+                        <div className="text-[10px] text-muted mt-1 text-left">Current Stock: {item.currentStock} {item.unit}</div>
+                      )}
+                      {item.isNew && item.productName.trim() && (
+                        <div className="mt-2 text-xs flex flex-col gap-2 bg-primary/30 p-2 rounded border border-accent/10 text-left">
+                          <div className="flex gap-2 items-center">
+                            <span className="text-muted">Base Unit:</span>
+                            <select 
+                              value={item.unit} 
+                              onChange={e => updateRow(item.rowId, "unit", e.target.value)}
+                              className="bg-surface border border-accent/10 rounded px-1 py-0.5 outline-none flex-1"
+                            >
+                              <option value="Pcs">Pcs</option>
+                              <option value="Box">Box</option>
+                              <option value="Pack">Pack</option>
+                              <option value="Roll">Roll</option>
+                              <option value="Kg">Kg</option>
+                              <option value="Ltr">Ltr</option>
+                            </select>
+                          </div>
+                          <label className="flex items-center gap-2 cursor-pointer text-muted">
+                            <input 
+                              type="checkbox" 
+                              checked={item.hasSecondaryUnit} 
+                              onChange={e => updateRow(item.rowId, "hasSecondaryUnit", e.target.checked)} 
+                            />
+                            <span>Secondary Unit? (Bulk/Pack)</span>
+                          </label>
+                          {item.hasSecondaryUnit && (
+                            <div className="flex gap-1 items-center bg-surface p-1 rounded border border-accent/10">
+                              <span className="text-muted">1</span>
+                              <select 
+                                value={item.secondaryUnit} 
+                                onChange={e => updateRow(item.rowId, "secondaryUnit", e.target.value)}
+                                className="bg-primary/50 border border-accent/10 rounded outline-none flex-1 font-medium"
+                              >
+                                <option value="Box">Box</option>
+                                <option value="Pack">Pack</option>
+                                <option value="Roll">Roll</option>
+                                <option value="Case">Case</option>
+                                <option value="Dozen">Dozen</option>
+                              </select>
+                              <span className="text-muted">=</span>
+                              <input 
+                                type="number" 
+                                value={item.conversionRate} 
+                                onChange={e => updateRow(item.rowId, "conversionRate", e.target.value)} 
+                                className="w-12 bg-primary border border-accent/10 rounded px-1 outline-none text-center" 
+                                placeholder="Qty" 
+                              />
+                              <span className="text-muted truncate max-w-[40px]">{item.unit}</span>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </td>
-                    <td className="px-2 py-3 text-center">
-                      <input
-                        type="number"
-                        min="0"
-                        value={item.quantity}
-                        onChange={(e) => updateRow(item.rowId, "quantity", e.target.value)}
-                        onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
-                        placeholder="0"
-                        className="w-20 mx-auto block bg-primary border border-accent/10 rounded px-2 py-2 text-center outline-none focus:border-accent"
-                      />
+                    <td className="px-2 py-3 text-center align-top">
+                      <div className="flex flex-col items-center gap-1">
+                        <input
+                          type="number"
+                          min="0"
+                          value={item.quantity}
+                          onChange={(e) => updateRow(item.rowId, "quantity", e.target.value)}
+                          onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
+                          placeholder="0"
+                          className="w-20 bg-primary border border-accent/10 rounded px-2 py-2 text-center outline-none focus:border-accent"
+                        />
+                        {!item.hasSecondaryUnit ? (
+                          <span className="text-[10px] text-muted font-medium bg-accent/5 px-2 py-0.5 rounded uppercase">{item.unit}</span>
+                        ) : (
+                          <select 
+                            value={item.selectedUnitType} 
+                            onChange={e => updateRow(item.rowId, "selectedUnitType", e.target.value)} 
+                            className="w-20 text-[10px] font-medium bg-accent/10 text-accent border border-accent/20 rounded px-1 py-1 outline-none cursor-pointer uppercase"
+                          >
+                            <option value="primary">{item.unit}</option>
+                            <option value="secondary">{item.secondaryUnit}</option>
+                          </select>
+                        )}
+                      </div>
                     </td>
-                    <td className="px-2 py-3 text-center">
+                    <td className="px-2 py-3 text-center align-top">
                       <input
                         type="number"
                         min="0"
@@ -638,7 +732,7 @@ export default function PurchaseGroup() {
                         className="w-24 mx-auto block bg-primary border border-accent/10 rounded px-2 py-2 text-center outline-none focus:border-accent"
                       />
                     </td>
-                    <td className="px-2 py-3 text-center">
+                    <td className="px-2 py-3 text-center align-top">
                       <input
                         type="number"
                         min="0"
@@ -650,7 +744,7 @@ export default function PurchaseGroup() {
                         className="w-24 mx-auto block bg-primary border border-accent/10 rounded px-2 py-2 text-center outline-none focus:border-accent"
                       />
                     </td>
-                    <td className="px-2 py-3 text-center">
+                    <td className="px-2 py-3 text-center align-top">
                       <input
                         type="number"
                         min="0"
@@ -662,7 +756,7 @@ export default function PurchaseGroup() {
                         className="w-24 mx-auto block bg-primary border border-accent/10 rounded px-2 py-2 text-center outline-none focus:border-accent"
                       />
                     </td>
-                    <td className="px-2 py-3 text-center">
+                    <td className="px-2 py-3 text-center align-top">
                       <button 
                         type="button"
                         onClick={() => removeRow(item.rowId)} 
