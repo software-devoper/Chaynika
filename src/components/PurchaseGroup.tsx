@@ -261,7 +261,7 @@ export default function PurchaseGroup() {
         secondaryUnit: p.secondaryUnit || "Box",
         conversionRate: p.conversionRate || "",
         selectedUnitType: "primary",
-        quantity: "1",
+        quantity: 1,
         currentStock: p.stock,
         purchaseRate: p.purchaseRate || "",
         wholesaleRate: p.wholesaleRate || "",
@@ -393,7 +393,7 @@ export default function PurchaseGroup() {
             });
           }
         } else {
-          await productApi.add({
+          const productData: any = {
             name: item.productName.trim(),
             groupId,
             groupName: partyName.trim(),
@@ -405,9 +405,14 @@ export default function PurchaseGroup() {
             mrp: baseMRate,
             unit: item.unit.trim() || "Pcs",
             secondaryUnit: item.hasSecondaryUnit ? item.secondaryUnit.trim() : "",
-            conversionRate: item.hasSecondaryUnit ? Number(item.conversionRate) : undefined,
             updatedAt: Date.now(),
-          });
+          };
+
+          if (item.hasSecondaryUnit && Number(item.conversionRate) > 0) {
+            productData.conversionRate = Number(item.conversionRate);
+          }
+
+          await productApi.add(productData);
         }
       }
 
@@ -418,13 +423,12 @@ export default function PurchaseGroup() {
         await partyDueApi.addOrUpdate(groupId, partyName.trim(), dueChange, productNamesStr, isNewParty);
       }
 
-      toast.success("Products saved successfully");
-      window.alert("Purchase saved successfully!");
+      toast.success("Purchase saved successfully");
       
       // Reset or refresh
       setPartyName("");
       setSelectedGroupId(null);
-      setPurchaseItems([]);
+      setPurchaseItems([createNewEmptyRow()]);
       setPayableAmount("");
       localStorage.removeItem("purchase_draft");
     } catch (err: any) {

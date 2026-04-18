@@ -209,31 +209,28 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
   doc.line(pageWidth - margin - 30, footerY + 5, pageWidth - margin, footerY + 5);
 
   // Save or Print PDF
-  const filename = `CHAYANIKA_BILL_${bill.billNo}_${bill.customerName.replace(/\s+/g, "_")}.pdf`;
+  const safeCustomerName = bill.customerName ? bill.customerName.replace(/[^a-z0-9]/gi, "_") : "Unknown";
+  const filename = `CHAYANIKA_BILL_${bill.billNo || "Draft"}_${safeCustomerName}.pdf`;
   
   // More robust mobile/touch detection
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
                    (window.innerWidth <= 800) ||
                    (navigator.maxTouchPoints > 0);
 
-  // Prepare file for sharing
-  const pdfBlob = doc.output("blob");
-  const file = new File([pdfBlob], filename, { type: "application/pdf" });
-
-  // Fallback for environments where navigator.share is missing or fails (like some Applix versions)
   if (action === "print") {
-    doc.autoPrint();
     if (isMobile) {
       try {
         doc.save(filename);
         toast.dismiss(loadingToast);
-        toast.success("Bill saved to downloads. You can print it from there.");
+        toast.success("Bill downloaded. Open it to print.");
       } catch (e) {
+        console.error("Save failed", e);
         toast.dismiss(loadingToast);
-        toast.error("Failed to save bill");
+        toast.error("Failed to download bill");
       }
     } else {
       try {
+        doc.autoPrint();
         const pdfBlobUrl = doc.output("bloburl");
         const printWindow = window.open(pdfBlobUrl, "_blank");
         toast.dismiss(loadingToast);
@@ -242,6 +239,7 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
           toast.success("Bill saved (popup was blocked)");
         }
       } catch (e) {
+        console.error("Desktop print failed", e);
         doc.save(filename);
         toast.dismiss(loadingToast);
       }
