@@ -659,7 +659,7 @@ export default function PurchaseGroup() {
                               <option value="Pcs">Pcs</option>
                               <option value="Box">Box</option>
                               <option value="Pack">Pack</option>
-                              <option value="Roll">Roll</option>
+                              <option value="Chain">Chain</option>
                               <option value="Kg">Kg</option>
                               <option value="Ltr">Ltr</option>
                             </select>
@@ -682,7 +682,7 @@ export default function PurchaseGroup() {
                               >
                                 <option value="Box">Box</option>
                                 <option value="Pack">Pack</option>
-                                <option value="Roll">Roll</option>
+                                <option value="Chain">Chain</option>
                                 <option value="Case">Case</option>
                                 <option value="Dozen">Dozen</option>
                               </select>
