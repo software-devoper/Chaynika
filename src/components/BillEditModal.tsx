@@ -93,12 +93,12 @@ export default function BillEditModal({ bill, onClose }: BillEditModalProps) {
           <div className="overflow-x-auto overflow-y-auto max-h-[40vh] custom-scrollbar rounded-xl border border-accent/20">
             <table className="w-full text-left border-collapse relative">
               <thead className="sticky top-0 z-10 bg-surface shadow-sm">
-                <tr className="bg-accent/5 border-b border-accent/20">
-                  <th className="p-3 font-medium text-text">Product</th>
-                  <th className="p-3 font-medium text-text text-center">Rate</th>
-                  <th className="p-3 font-medium text-text text-center">Qty</th>
-                  <th className="p-3 font-medium text-text text-right">Total</th>
-                  <th className="p-3 font-medium text-text text-center">Action</th>
+                <tr className="bg-accent/10 border-b border-accent/20 text-accent text-sm font-bold uppercase tracking-wider">
+                  <th className="p-3">Product</th>
+                  <th className="p-3 text-center">Rate</th>
+                  <th className="p-3 text-center">Qty</th>
+                  <th className="p-3 text-right">Total</th>
+                  <th className="p-3 text-center">Action</th>
                 </tr>
               </thead>
               <tbody>

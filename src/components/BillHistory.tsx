@@ -138,7 +138,7 @@ export default function BillHistory() {
         {activeTab === "credit" ? (
           <table className="w-full text-center border-collapse whitespace-nowrap md:whitespace-normal relative">
             <thead className="sticky top-0 z-10 bg-surface shadow-sm">
-              <tr className="border-b border-accent/10 text-muted text-xs uppercase tracking-wider">
+              <tr className="border-b border-accent/10 text-accent text-sm font-bold uppercase tracking-wider bg-accent/5">
                 <th className="px-4 py-4 font-medium text-center">Bill No.</th>
                 <th className="px-4 py-4 font-medium text-center">Customer Name</th>
                 <th className="px-4 py-4 font-medium text-center">Phone</th>
@@ -215,7 +215,7 @@ export default function BillHistory() {
         ) : (
           <table className="w-full text-center border-collapse whitespace-nowrap md:whitespace-normal relative">
             <thead className="sticky top-0 z-10 bg-surface shadow-sm">
-              <tr className="border-b border-accent/10 text-muted text-xs uppercase tracking-wider">
+              <tr className="border-b border-accent/10 text-accent text-sm font-bold uppercase tracking-wider bg-accent/5">
                 <th className="px-4 py-4 font-medium text-center">Date</th>
                 <th className="px-4 py-4 font-medium text-center">Product Name</th>
                 <th className="px-4 py-4 font-medium text-center">Qty</th>
@@ -323,7 +323,7 @@ export default function BillHistory() {
                 <div className="border border-gray-200 rounded-lg overflow-x-auto custom-scrollbar">
                   <table className="w-full text-left border-collapse whitespace-nowrap md:whitespace-normal">
                     <thead>
-                      <tr className="bg-gray-50 text-gray-500 text-xs uppercase font-bold">
+                      <tr className="bg-accent/5 text-accent text-sm uppercase font-bold">
                         <th className="px-4 py-3 border-b border-gray-200">Date</th>
                         <th className="px-4 py-3 border-b border-gray-200">Item Description</th>
                         <th className="px-4 py-3 border-b border-gray-200 text-center">MRP</th>

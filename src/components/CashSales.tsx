@@ -372,7 +372,7 @@ export default function CashSales() {
       <div className="overflow-x-auto custom-scrollbar pb-48 -mx-6 px-6 md:mx-0 md:px-0">
         <table className="w-full text-center border-collapse whitespace-nowrap md:whitespace-normal">
           <thead>
-            <tr className="border-b border-accent/10 text-muted text-xs uppercase tracking-wider">
+            <tr className="border-b border-accent/10 text-accent text-sm font-bold uppercase tracking-wider bg-accent/5">
               <th className="px-2 py-3 font-medium text-center">Particulars</th>
               <th className="px-2 py-3 font-medium text-center">Quantity</th>
               <th className="px-2 py-3 font-medium text-center">P. Rate</th>

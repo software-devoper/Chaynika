@@ -595,7 +595,7 @@ export default function PurchaseGroup() {
               <div className="w-full overflow-y-auto max-h-[30vh] custom-scrollbar">
                 <table className="w-full text-center text-xs relative">
                   <thead className="bg-surface sticky top-0 z-10 shadow-sm">
-                    <tr className="text-muted uppercase tracking-wider">
+                    <tr className="text-accent text-sm font-bold uppercase tracking-wider bg-accent/5">
                       <th className="px-3 py-2 font-medium text-center">Product</th>
                       <th className="px-3 py-2 font-medium text-center">Stock</th>
                       <th className="px-3 py-2 font-medium text-center">P.Rate</th>
@@ -655,7 +655,7 @@ export default function PurchaseGroup() {
         <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0 pb-48">
           <table className="w-full text-center border-collapse whitespace-nowrap md:whitespace-normal">
             <thead>
-              <tr className="border-b border-accent/10 text-muted text-xs uppercase tracking-wider">
+              <tr className="border-b border-accent/10 text-accent text-sm font-bold uppercase tracking-wider bg-accent/5">
                 <th className="px-2 py-3 font-medium text-center">Product Name</th>
                 <th className="px-2 py-3 font-medium text-center">Quantity</th>
                 <th className="px-2 py-3 font-medium text-center">Purchase Rate</th>

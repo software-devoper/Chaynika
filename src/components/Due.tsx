@@ -198,7 +198,7 @@ export default function Due() {
       <div className="overflow-x-auto overflow-y-auto max-h-[60vh] custom-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
         <table className="w-full text-center border-collapse whitespace-nowrap md:whitespace-normal relative">
           <thead className="sticky top-0 z-10 bg-surface shadow-sm">
-            <tr className="border-b border-accent/10 text-muted text-xs uppercase tracking-wider">
+            <tr className="border-b border-accent/10 text-accent text-sm font-bold uppercase tracking-wider bg-accent/5">
               <th className="px-4 py-4 font-medium text-center">Sr. No.</th>
               <th className="px-4 py-4 font-medium text-center">{activeTab === "sales" ? "Customer Name" : "Party Name"}</th>
               {activeTab === "sales" && <th className="px-4 py-4 font-medium text-center">Phone</th>}
@@ -384,7 +384,7 @@ export default function Due() {
               <div className="max-h-[60vh] overflow-y-auto">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-primary/50 sticky top-0">
-                    <tr className="text-muted uppercase tracking-wider">
+                    <tr className="text-accent text-sm font-bold uppercase tracking-wider bg-accent/5">
                       <th className="px-3 py-2 font-medium">Product</th>
                       <th className="px-3 py-2 font-medium text-center">Stock</th>
                       <th className="px-3 py-2 font-medium text-center">P.Rate</th>
