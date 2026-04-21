@@ -1,38 +1,11 @@
-import React, { useState } from "react";
+import React from "react";
 import PurchaseGroup from "./PurchaseGroup";
-import PurchaseEdit from "./PurchaseEdit";
-import { cn } from "../lib/utils";
 
 export default function Purchase() {
-  const [activeSubTab, setActiveSubTab] = useState("group");
-
-  const tabs = [
-    { id: "group", label: "Party & Product" },
-    { id: "edit", label: "Edit & Delete" },
-  ];
-
   return (
     <div className="space-y-6">
-      <div className="flex gap-2 p-1 bg-surface border border-accent/10 rounded-xl w-full sm:w-fit overflow-x-auto">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveSubTab(tab.id)}
-            className={cn(
-              "flex-1 sm:flex-none px-6 py-2 rounded-lg font-medium transition-all duration-200 whitespace-nowrap",
-              activeSubTab === tab.id
-                ? "bg-accent text-primary"
-                : "text-muted hover:text-text hover:bg-primary/50"
-            )}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
       <div className="bg-surface border border-accent/10 rounded-2xl p-6 shadow-xl min-h-[400px]">
-        {activeSubTab === "group" && <PurchaseGroup />}
-        {activeSubTab === "edit" && <PurchaseEdit />}
+        <PurchaseGroup />
       </div>
     </div>
   );

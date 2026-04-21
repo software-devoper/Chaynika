@@ -243,7 +243,7 @@ export default function BillForm() {
           if (rowIndex !== -1) {
             let nextRowIndex = rowIndex;
             let nextColIndex = colIndex;
-            const maxCols = 2; // 0=price, 1=qty
+            const maxCols = 3; // 0=name, 1=price, 2=qty
             
             if (e.key === "ArrowRight") nextColIndex++;
             else if (e.key === "ArrowLeft") nextColIndex--;
@@ -283,9 +283,9 @@ export default function BillForm() {
       const match = (e.target as HTMLInputElement).id?.match(/bf-(.+)-col-(\d+)/);
       if (match) {
         const colIndex = parseInt(match[2], 10);
-        if (colIndex === 0) {
+        if (colIndex === 1) {
           qtyInputRefs.current[productId]?.focus();
-        } else if (colIndex === 1) {
+        } else if (colIndex === 2) {
           searchInputRef.current?.focus();
         }
       }
@@ -381,23 +381,82 @@ export default function BillForm() {
   };
 
   const handleProductRowKeyDown = (e: React.KeyboardEvent, oldProductId: string, filteredProducts: Product[]) => {
-    if (activeDropdownRowId !== oldProductId) return;
+    const item = billItems.find(i => i.productId === oldProductId);
+    const isDropdownVisible = activeDropdownRowId === oldProductId && (item?.productName ?? "") !== "";
 
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setActiveProductSuggestionIndex(prev => 
-        prev < filteredProducts.length - 1 ? prev + 1 : prev
-      );
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setActiveProductSuggestionIndex(prev => prev > 0 ? prev - 1 : -1);
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      if (activeProductSuggestionIndex >= 0 && filteredProducts[activeProductSuggestionIndex]) {
-        handleProductRowSelect(oldProductId, filteredProducts[activeProductSuggestionIndex]);
-      } else {
-        qtyInputRefs.current[oldProductId]?.focus();
-        setActiveDropdownRowId(null);
+    if (isDropdownVisible && filteredProducts.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setActiveProductSuggestionIndex(prev => 
+          prev < filteredProducts.length - 1 ? prev + 1 : prev
+        );
+        return;
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setActiveProductSuggestionIndex(prev => prev > 0 ? prev - 1 : -1);
+        return;
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (activeProductSuggestionIndex >= 0 && filteredProducts[activeProductSuggestionIndex]) {
+          handleProductRowSelect(oldProductId, filteredProducts[activeProductSuggestionIndex]);
+        } else {
+          qtyInputRefs.current[oldProductId]?.focus();
+          setActiveDropdownRowId(null);
+        }
+        return;
+      }
+    }
+
+    // Matrix navigation
+    if (["ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown"].includes(e.key)) {
+      const target = e.target as HTMLInputElement;
+      let shouldNavigate = true;
+      
+      if (target.type === "text" && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+        try {
+          if (e.key === "ArrowLeft" && target.selectionStart !== 0) shouldNavigate = false;
+          if (e.key === "ArrowRight" && target.selectionStart !== target.value.length) shouldNavigate = false;
+        } catch (err) {}
+      }
+      
+      if (shouldNavigate) {
+        const match = target.id?.match(/bf-(.+)-col-(\d+)/);
+        if (match) {
+          const matchedId = match[1];
+          let colIndex = parseInt(match[2], 10);
+          const rowIndex = billItems.findIndex(pi => pi.productId === matchedId);
+          
+          if (rowIndex !== -1) {
+            let nextRowIndex = rowIndex;
+            let nextColIndex = colIndex;
+            const maxCols = 3; // 0=name, 1=price, 2=qty
+            
+            if (e.key === "ArrowRight") nextColIndex++;
+            else if (e.key === "ArrowLeft") nextColIndex--;
+            else if (e.key === "ArrowUp") nextRowIndex--;
+            else if (e.key === "ArrowDown") nextRowIndex++;
+            
+            if (nextColIndex >= maxCols) {
+              nextColIndex = 0;
+              nextRowIndex++;
+            } else if (nextColIndex < 0) {
+              nextColIndex = maxCols - 1;
+              nextRowIndex--;
+            }
+            
+            if (nextRowIndex >= 0 && nextRowIndex < billItems.length) {
+              const nextRowId = billItems[nextRowIndex].productId;
+              const nextInputId = `bf-${nextRowId}-col-${nextColIndex}`;
+              const nextEl = document.getElementById(nextInputId) as HTMLInputElement | null;
+              if (nextEl && !nextEl.readOnly && !nextEl.disabled) {
+                e.preventDefault();
+                nextEl.focus();
+                try { nextEl.select(); } catch (err) {}
+              }
+            }
+            return;
+          }
+        }
       }
     }
   };
@@ -750,6 +809,7 @@ export default function BillForm() {
                     <td className="px-2 py-4 text-center">{index + 1}</td>
                     <td className="px-2 py-4 font-medium text-center relative">
                       <input
+                        id={`bf-${item.productId}-col-0`}
                         type="text"
                         value={item.productName}
                         onChange={(e) => {
@@ -763,10 +823,10 @@ export default function BillForm() {
                         }}
                         onBlur={() => setTimeout(() => setActiveDropdownRowId(null), 200)}
                         onKeyDown={(e) => handleProductRowKeyDown(e, item.productId, filteredProducts)}
-                        className="w-full min-w-[600px] bg-transparent border-b border-transparent hover:border-accent/30 focus:border-accent outline-none text-center transition-colors px-2"
+                        className="w-full bg-transparent border-b border-transparent hover:border-accent/30 focus:border-accent outline-none text-center transition-colors px-2"
                       />
                       {activeDropdownRowId === item.productId && item.productName && (
-                        <div className="absolute z-50 w-full mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl max-h-48 overflow-y-auto left-0 text-left min-w-[650px]">
+                        <div className="absolute z-50 w-full mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl max-h-48 overflow-y-auto left-0 text-left min-w-full">
                           {filteredProducts.map((p, idx) => (
                             <div
                               key={p.id}
@@ -800,7 +860,7 @@ export default function BillForm() {
                     </td>
                     <td className="px-2 py-4 text-center">
                       <input
-                        id={`bf-${item.productId}-col-0`}
+                        id={`bf-${item.productId}-col-1`}
                         type="number"
                         step="any"
                         value={item.price}
@@ -812,7 +872,7 @@ export default function BillForm() {
                     <td className="px-2 py-4 text-center align-top">
                       <div className="flex flex-col items-center gap-1">
                         <input
-                          id={`bf-${item.productId}-col-1`}
+                          id={`bf-${item.productId}-col-2`}
                           ref={el => { qtyInputRefs.current[item.productId] = el; }}
                           type="number"
                           value={item.qty}
@@ -865,7 +925,7 @@ export default function BillForm() {
                     />
                     
                     {searchResults.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl z-50 overflow-y-auto max-h-48 divide-y divide-accent/5 min-w-[600px]">
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl z-50 overflow-y-auto max-h-48 divide-y divide-accent/5">
                         {searchResults.map((p, index) => (
                           <button
                             key={`${p.id}-${index}`}

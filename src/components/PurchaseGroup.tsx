@@ -275,7 +275,9 @@ export default function PurchaseGroup() {
   };
 
   const handleProductKeyDown = (e: React.KeyboardEvent, item: PurchaseItem, filteredProducts: Product[]) => {
-    if (activeDropdownRowId === item.rowId && filteredProducts.length > 0) {
+    const isDropdownVisible = activeDropdownRowId === item.rowId && item.productName && item.isNew && filteredProducts.length > 0;
+    
+    if (isDropdownVisible) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         setActiveSuggestionIndex(prev => (prev < filteredProducts.length - 1 ? prev + 1 : prev));
@@ -693,10 +695,10 @@ export default function PurchaseGroup() {
                         onBlur={() => setTimeout(() => setActiveDropdownRowId(null), 200)}
                         onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
                         placeholder="Product Name"
-                        className="w-full min-w-[600px] bg-primary border border-accent/10 rounded px-3 py-2 text-text outline-none focus:border-accent"
+                        className="w-full bg-primary border border-accent/10 rounded px-3 py-2 text-text outline-none focus:border-accent"
                       />
                       {activeDropdownRowId === item.rowId && item.productName && item.isNew && filteredProducts.length > 0 && (
-                        <div className="absolute z-50 w-full mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl max-h-48 overflow-y-auto left-0 min-w-[650px]">
+                        <div className="absolute z-50 w-full mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl max-h-48 overflow-y-auto left-0 min-w-full">
                           {filteredProducts.map((p, idx) => (
                               <div
                                 key={p.id}
@@ -716,7 +718,7 @@ export default function PurchaseGroup() {
                         <div className="text-[10px] text-muted mt-1 text-left">Current Stock: {item.currentStock} {item.unit}</div>
                       )}
                       {item.productName.trim() && !(activeDropdownRowId === item.rowId && filteredProducts.length > 0) && (
-                        <div className="mt-3 text-base flex flex-col gap-4 bg-primary/30 p-4 rounded-xl border border-accent/10 text-left w-full min-w-[600px] shadow-sm">
+                        <div className="mt-3 text-base flex flex-col gap-4 bg-primary/30 p-4 rounded-xl border border-accent/10 text-left w-full min-w-full shadow-sm">
                           <div className="flex gap-4 items-center">
                             <span className="text-muted font-bold">Base Unit:</span>
                             <select 

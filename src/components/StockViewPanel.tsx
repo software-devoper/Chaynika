@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, ChevronLeft, ChevronRight, Edit2, X, Loader2 } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Edit2, X, Loader2, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { formatCurrency, capitalizeFirstLetter } from "../lib/utils";
 import { Product, Group } from "../types";
@@ -85,6 +85,35 @@ export default function StockViewPanel() {
       toast.error("Failed to update product");
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleDelete = async (e: React.MouseEvent | React.KeyboardEvent, product?: Product) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const productToDelete = product || editingProduct;
+    if (!productToDelete) return;
+
+    if (window.confirm("Are you sure you want to delete this product stock completely? This action cannot be undone.")) {
+      try {
+        const originalKey = `${productToDelete.name.toLowerCase()}|${productToDelete.groupName.toLowerCase()}|${productToDelete.purchaseRate}|${productToDelete.wholesaleRate}|${productToDelete.mrp}`;
+        const matchingProducts = products.filter(p => {
+          const key = `${p.name.toLowerCase()}|${p.groupName.toLowerCase()}|${p.purchaseRate}|${p.wholesaleRate}|${p.mrp}`;
+          return key === originalKey;
+        });
+
+        for (const p of matchingProducts) {
+          await productApi.delete(p.id);
+        }
+        toast.success("Product deleted successfully");
+        if (productToDelete === editingProduct) {
+          setEditingProduct(null);
+        }
+      } catch (err) {
+        console.error("Delete error:", err);
+        toast.error("Failed to delete product");
+      }
     }
   };
 
@@ -177,7 +206,7 @@ export default function StockViewPanel() {
                 <td className="px-6 py-4 text-center">
                   <button
                     onClick={() => setEditingProduct(product)}
-                    className="p-2 text-muted hover:text-accent hover:bg-accent/10 rounded-lg transition-colors"
+                    className="p-2 text-muted hover:text-accent hover:bg-accent/10 rounded-lg transition-colors focus:outline-none focus:ring-1 focus:ring-accent"
                     title="Edit Product"
                   >
                     <Edit2 size={16} />
@@ -222,12 +251,15 @@ export default function StockViewPanel() {
               transition={{ duration: 0.3, delay: (index % 10) * 0.05 }}
               className="bg-surface border border-accent/10 rounded-xl p-4 shadow-sm hover:border-accent/30 transition-colors flex flex-col gap-3 relative"
             >
-              <button
-                onClick={() => setEditingProduct(product)}
-                className="absolute top-4 right-4 p-2 text-muted hover:text-accent hover:bg-accent/10 rounded-lg transition-colors"
-              >
-                <Edit2 size={16} />
-              </button>
+              <div className="absolute top-4 right-4 flex items-center gap-1">
+                <button
+                  onClick={() => setEditingProduct(product)}
+                  className="p-2 text-muted hover:text-accent hover:bg-accent/10 rounded-lg transition-colors"
+                  title="Edit Product"
+                >
+                  <Edit2 size={16} />
+                </button>
+              </div>
               <div className="flex justify-between items-start gap-2 pr-10">
                 <div>
                   <div className="text-xs text-muted mb-1">#{(currentPage - 1) * itemsPerPage + index + 1} • {new Date(product.updatedAt).toLocaleDateString()}</div>
@@ -432,6 +464,7 @@ export default function StockViewPanel() {
                       <option value="Chain">Chain</option>
                       <option value="Kg">Kg</option>
                       <option value="Ltr">Ltr</option>
+                      <option value="Bag">Bag</option>
                     </select>
                   </div>
 
@@ -466,6 +499,7 @@ export default function StockViewPanel() {
                             <option value="Chain">Chain</option>
                             <option value="Case">Case</option>
                             <option value="Dozen">Dozen</option>
+                            <option value="Bag">Bag</option>
                           </select>
                         </div>
                         <span className="text-muted font-bold text-lg">=</span>
@@ -485,22 +519,33 @@ export default function StockViewPanel() {
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-accent/10 mt-6">
+                <div className="flex justify-between items-center pt-4 border-t border-accent/10 mt-6">
                   <button
                     type="button"
-                    onClick={() => setEditingProduct(null)}
-                    className="px-6 py-2 text-muted hover:text-text font-medium"
+                    onClick={(e) => handleDelete(e, editingProduct)}
+                    className="px-4 py-2 text-red-500 hover:bg-red-500/10 rounded-xl transition-colors flex items-center gap-2"
                   >
-                    Cancel
+                    <Trash2 size={18} />
+                    <span>Delete Item</span>
                   </button>
-                  <button
-                    type="submit"
-                    disabled={isUpdating}
-                    className="px-6 py-2 bg-accent text-primary font-bold rounded-xl hover:opacity-90 transition-all flex items-center gap-2 disabled:opacity-50"
-                  >
-                    {isUpdating && <Loader2 className="w-4 h-4 animate-spin" />}
-                    Save Changes
-                  </button>
+                  
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setEditingProduct(null)}
+                      className="px-6 py-2 text-muted hover:text-text font-medium"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isUpdating}
+                      className="px-6 py-2 bg-accent text-primary font-bold rounded-xl hover:opacity-90 transition-all flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {isUpdating && <Loader2 className="w-4 h-4 animate-spin" />}
+                      Save Changes
+                    </button>
+                  </div>
                 </div>
               </form>
             </motion.div>
