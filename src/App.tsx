@@ -49,6 +49,35 @@ export default function App() {
       document.documentElement.classList.add('light');
     }
 
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+        switch (e.key.toLowerCase()) {
+          case 'p':
+            e.preventDefault();
+            setActiveTab("purchase");
+            break;
+          case 's':
+            e.preventDefault();
+            setActiveTab("bill");
+            break;
+          case 'd':
+            e.preventDefault();
+            setActiveTab("due");
+            break;
+          case 'r':
+            e.preventDefault();
+            setActiveTab("revenue");
+            break;
+          case 'a':
+            e.preventDefault();
+            setActiveTab("askai");
+            break;
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
@@ -70,7 +99,10 @@ export default function App() {
       }
       setLoading(false);
     });
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const handleAccess = async () => {

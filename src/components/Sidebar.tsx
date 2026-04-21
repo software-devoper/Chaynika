@@ -20,12 +20,13 @@ interface SidebarItemProps {
   key?: string;
   icon: React.ReactNode;
   label: string;
+  shortcut?: string;
   active?: boolean;
   collapsed?: boolean;
   onClick?: () => void;
 }
 
-const SidebarItem = ({ icon, label, active, collapsed, onClick }: SidebarItemProps) => (
+const SidebarItem = ({ icon, label, shortcut, active, collapsed, onClick }: SidebarItemProps) => (
   <button
     onClick={onClick}
     className={cn(
@@ -39,7 +40,19 @@ const SidebarItem = ({ icon, label, active, collapsed, onClick }: SidebarItemPro
       {icon}
     </div>
     {!collapsed && (
-      <span className="whitespace-nowrap overflow-hidden text-ellipsis">{label}</span>
+      <div className="flex-1 flex justify-between items-center overflow-hidden">
+        <span className="whitespace-nowrap overflow-hidden text-ellipsis">{label}</span>
+        {shortcut && (
+          <span className={cn(
+            "text-[10px] px-1.5 py-0.5 rounded shadow-sm border font-bold uppercase tracking-wider hidden md:block",
+            active 
+              ? "bg-primary/20 text-primary border-primary/20" 
+              : "bg-surface text-muted border-accent/10 group-hover:border-accent/30"
+          )}>
+            {shortcut}
+          </span>
+        )}
+      </div>
     )}
   </button>
 );
@@ -55,11 +68,11 @@ interface SidebarProps {
 export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollapsed, onLogout }: SidebarProps) {
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
-    { id: "purchase", label: "Purchase", icon: <Package size={20} /> },
-    { id: "bill", label: "Sales", icon: <ReceiptText size={20} /> },
-    { id: "due", label: "Dues", icon: <Hourglass size={20} /> },
-    { id: "revenue", label: "Revenue", icon: <CircleDollarSign size={20} /> },
-    { id: "askai", label: "Ask AI", icon: <Bot size={20} /> },
+    { id: "purchase", label: "Purchase", icon: <Package size={20} />, shortcut: "Alt+P" },
+    { id: "bill", label: "Sales", icon: <ReceiptText size={20} />, shortcut: "Alt+S" },
+    { id: "due", label: "Dues", icon: <Hourglass size={20} />, shortcut: "Alt+D" },
+    { id: "revenue", label: "Revenue", icon: <CircleDollarSign size={20} />, shortcut: "Alt+R" },
+    { id: "askai", label: "Ask AI", icon: <Bot size={20} />, shortcut: "Alt+A" },
   ];
 
   return (
@@ -84,6 +97,7 @@ export default function Sidebar({ activeTab, setActiveTab, collapsed, setCollaps
             key={item.id}
             icon={item.icon}
             label={item.label}
+            shortcut={item.shortcut}
             active={activeTab === item.id}
             collapsed={collapsed}
             onClick={() => setActiveTab(item.id)}
