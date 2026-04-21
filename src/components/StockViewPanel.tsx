@@ -418,6 +418,71 @@ export default function StockViewPanel() {
                       className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-2 text-text focus:border-accent outline-none transition-all"
                     />
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-muted mb-1">Base Unit</label>
+                    <select
+                      value={editingProduct.unit}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, unit: e.target.value })}
+                      className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-2 text-text focus:border-accent outline-none transition-all"
+                    >
+                      <option value="Pcs">Pcs</option>
+                      <option value="Box">Box</option>
+                      <option value="Pack">Pack</option>
+                      <option value="Chain">Chain</option>
+                      <option value="Kg">Kg</option>
+                      <option value="Ltr">Ltr</option>
+                    </select>
+                  </div>
+
+                  <div className="md:col-span-2 space-y-4">
+                    <label className="flex items-center gap-2 cursor-pointer p-3 border border-accent/10 rounded-xl bg-primary/30">
+                      <input 
+                        type="checkbox" 
+                        checked={!!editingProduct.secondaryUnit}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setEditingProduct({ ...editingProduct, secondaryUnit: "Box", conversionRate: 10 });
+                          } else {
+                            setEditingProduct({ ...editingProduct, secondaryUnit: undefined, conversionRate: undefined });
+                          }
+                        }}
+                        className="accent-accent w-4 h-4"
+                      />
+                      <span className="font-medium text-text">Enable Secondary Unit (Bulk/Pack)</span>
+                    </label>
+
+                    {editingProduct.secondaryUnit && (
+                      <div className="flex gap-4 items-center bg-primary/20 p-4 rounded-xl border border-accent/10">
+                        <div className="flex items-center gap-3 flex-1">
+                          <span className="text-muted font-medium">1</span>
+                          <select 
+                            value={editingProduct.secondaryUnit} 
+                            onChange={(e) => setEditingProduct({ ...editingProduct, secondaryUnit: e.target.value })}
+                            className="w-full bg-surface border border-accent/20 rounded-lg px-3 py-2 text-text outline-none focus:border-accent"
+                          >
+                            <option value="Box">Box</option>
+                            <option value="Pack">Pack</option>
+                            <option value="Chain">Chain</option>
+                            <option value="Case">Case</option>
+                            <option value="Dozen">Dozen</option>
+                          </select>
+                        </div>
+                        <span className="text-muted font-bold text-lg">=</span>
+                        <div className="flex items-center gap-3 flex-1">
+                          <input 
+                            type="number" 
+                            min="1"
+                            value={editingProduct.conversionRate || ""} 
+                            onChange={(e) => setEditingProduct({ ...editingProduct, conversionRate: Number(e.target.value) })}
+                            className="w-full bg-surface border border-accent/20 rounded-lg px-3 py-2 text-center text-text outline-none focus:border-accent"
+                            placeholder="Qty" 
+                          />
+                          <span className="text-muted font-medium w-16 truncate">{editingProduct.unit}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-accent/10 mt-6">

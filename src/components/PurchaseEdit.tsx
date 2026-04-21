@@ -156,14 +156,14 @@ export default function PurchaseEdit() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(capitalizeFirstLetter(e.target.value))}
               onKeyDown={handleKeyDown}
-              className="w-full bg-primary border border-accent/10 rounded-xl pl-12 pr-4 py-3 text-text focus:border-accent outline-none transition-all shadow-sm"
+              className="w-full min-w-[600px] bg-primary border border-accent/10 rounded-xl pl-12 pr-4 py-3 text-text focus:border-accent outline-none transition-all shadow-sm"
             />
             
             {searchTerm && (
               <motion.div 
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-primary border border-accent/10 rounded-xl overflow-y-auto max-h-48 custom-scrollbar divide-y divide-accent/5 shadow-lg absolute z-50 w-full mt-1"
+                className="bg-primary border border-accent/10 rounded-xl overflow-y-auto max-h-48 custom-scrollbar divide-y divide-accent/5 shadow-lg absolute z-50 w-full min-w-[650px] mt-1"
               >
                 {filteredProducts.map((p, index) => (
                   <button
@@ -175,9 +175,9 @@ export default function PurchaseEdit() {
                     }`}
                   >
                     <div className="flex flex-col">
-                      <span className="font-medium">{p.name}</span>
+                      <span className="font-bold text-xl">{p.name}</span>
                     </div>
-                    <span className="text-xs text-muted">{p.groupName}</span>
+                    <span className="text-sm text-muted font-bold">{p.groupName}</span>
                   </button>
                 ))}
                 {filteredProducts.length === 0 && (

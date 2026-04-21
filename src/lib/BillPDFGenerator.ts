@@ -55,10 +55,11 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
     doc.text(bill.customerEmail, pageWidth - margin, 32, { align: "right" });
   }
 
-  // Bill No
+  // Bill No and Date
   doc.setFontSize(baseFontSize);
   doc.setFont("times", "bold");
   doc.text(`Bill No: ${bill.billNo}`, margin, 40);
+  doc.text(`Date: ${formatDate(bill.date)}`, pageWidth - margin, 40, { align: "right" });
 
   // Divider Line
   doc.setDrawColor(200);
@@ -190,10 +191,10 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
   // LEFT: Receiver Signature
   doc.setFontSize(baseFontSize * 0.8);
   doc.setFont("times", "normal");
-  doc.text("Receiver", margin, footerY);
+  doc.text(" Receiver", margin, footerY);
   doc.text("(Customer Signature)", margin, footerY + 4);
   doc.line(margin, footerY + 8, margin + 30, footerY + 8);
-  doc.text(`Date: ${formatDate(bill.date)}`, margin, footerY + 12);
+  doc.text(`Date:`, margin, footerY + 12);
 
   // CENTER: TOTAL AMOUNT (3x larger)
   doc.setFontSize(baseFontSize * 2.5);

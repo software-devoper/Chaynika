@@ -89,11 +89,16 @@ export default function BillHistory() {
 
   const calculateBillProfit = (bill: Bill) => {
     const totalCost = bill.items.reduce((sum, item) => {
-      const product = products.find(p => p.id === item.productId);
-      const purchaseRate = product ? product.purchaseRate : 0;
+      // Prioritize saved purchaseRate for historical accuracy, fallback to current stock rate
+      let purchaseRate = item.purchaseRate;
+      if (typeof purchaseRate === 'undefined') {
+        const product = products.find(p => p.id === item.productId);
+        purchaseRate = product ? product.purchaseRate : 0;
+      }
       return sum + (item.qty * purchaseRate);
     }, 0);
-    return bill.subtotal - totalCost;
+    // Use grandTotal to account for Round Off and Discounts instead of raw subtotal
+    return bill.grandTotal - totalCost;
   };
 
   return (

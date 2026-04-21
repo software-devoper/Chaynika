@@ -24,7 +24,8 @@ export default function Revenue() {
   }, []);
 
   // Calculate stats
-  const creditRevenue = bills.reduce((sum, b) => sum + b.subtotal, 0);
+  // Use grandTotal to account for Round Off and Discounts instead of raw subtotal
+  const creditRevenue = bills.reduce((sum, b) => sum + b.grandTotal, 0);
   const cashRevenue = cashSales.reduce((sum, s) => sum + s.amount, 0);
   const totalRevenue = creditRevenue + cashRevenue;
   
@@ -37,9 +38,15 @@ export default function Revenue() {
   // Process Credit Bills
   bills.forEach(bill => {
     bill.items.forEach(item => {
+      // Prioritize saved purchaseRate for historical accuracy, fallback to current stock rate
+      let pRate = item.purchaseRate;
+      if (typeof pRate === 'undefined') {
+        const product = productMap.get(item.productId);
+        pRate = product?.purchaseRate || 0;
+      }
+      
       const product = productMap.get(item.productId);
-      const pRate = product?.purchaseRate || 0;
-      const wRate = product?.wholesaleRate || 0;
+      const wRate = item.wholesaleRate || product?.wholesaleRate || 0;
       totalPurchaseCost += pRate * item.qty;
 
       const existing = productStats.get(item.productId) || { name: item.productName, qty: 0, purchaseRate: pRate, wholesaleRate: wRate, price: item.price, lastSoldDate: bill.date };

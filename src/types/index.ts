@@ -62,6 +62,8 @@ export interface BillItem {
   productName: string;
   qty: number;
   price: number;
+  purchaseRate?: number;
+  wholesaleRate?: number;
   total: number;
   mrp: number;
   unit?: string;
@@ -100,6 +102,7 @@ export interface CashSale {
   productName: string;
   qty: number;
   purchaseRate: number;
+  wholesaleRate?: number;
   mrp: number;
   amount: number;
   date: number;

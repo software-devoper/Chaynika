@@ -12,6 +12,7 @@ interface CashItem {
   productName: string;
   quantity: number | "";
   purchaseRate: number | "";
+  wholesaleRate: number | "";
   mrp: number | "";
   amount: number | "";
   isNew: boolean;
@@ -24,6 +25,7 @@ export default function CashSales() {
   const [activeDropdownRowId, setActiveDropdownRowId] = useState<string | null>(null);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const [focusNewRow, setFocusNewRow] = useState(false);
+  const [isRoundOff, setIsRoundOff] = useState(true);
   const qtyInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const amountInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const nameInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
@@ -73,6 +75,7 @@ export default function CashSales() {
     productName: "",
     quantity: "",
     purchaseRate: "",
+    wholesaleRate: "",
     mrp: "",
     amount: "",
     isNew: true,
@@ -153,6 +156,7 @@ export default function CashSales() {
         productId: p.id,
         productName: p.name,
         purchaseRate: p.purchaseRate,
+        wholesaleRate: p.wholesaleRate,
         mrp: p.mrp,
         isNew: false,
         quantity: finalQty,
@@ -219,12 +223,13 @@ export default function CashSales() {
 
     setIsSaving(true);
     try {
-      for (const item of validItems) {
+          for (const item of validItems) {
         await cashSaleApi.create({
           productId: item.productId || "",
           productName: item.productName,
           qty: Number(item.quantity),
           purchaseRate: Number(item.purchaseRate),
+          wholesaleRate: Number(item.wholesaleRate),
           mrp: Number(item.mrp),
           amount: Number(item.amount),
         });
@@ -241,28 +246,113 @@ export default function CashSales() {
     }
   };
 
-  const handleProductKeyDown = (e: React.KeyboardEvent, item: CashItem, filtered: Product[]) => {
-    if (activeDropdownRowId !== item.rowId) return;
+  const handleProductKeyDown = (e: React.KeyboardEvent, item: CashItem, filteredProducts: Product[]) => {
+    if (activeDropdownRowId === item.rowId && filteredProducts.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setActiveSuggestionIndex(prev => (prev < filteredProducts.length - 1 ? prev + 1 : prev));
+        return;
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setActiveSuggestionIndex(prev => (prev > 0 ? prev - 1 : prev));
+        return;
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (activeSuggestionIndex >= 0 && activeSuggestionIndex < filteredProducts.length) {
+          handleProductSelect(item, filteredProducts[activeSuggestionIndex]);
+        } else {
+          handleProductSelect(item, filteredProducts[0]);
+        }
+        return;
+      }
+    }
 
-    if (e.key === "ArrowDown") {
+    // Matrix navigation
+    if (["ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown"].includes(e.key)) {
+      const target = e.target as HTMLInputElement;
+      let shouldNavigate = true;
+      
+      // Allow internal text navigation unless at boundaries
+      if (target.type === "text" && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+        try {
+          if (e.key === "ArrowLeft" && target.selectionStart !== 0) shouldNavigate = false;
+          if (e.key === "ArrowRight" && target.selectionStart !== target.value.length) shouldNavigate = false;
+        } catch (err) {
+          // Ignore if selectionStart is not supported
+        }
+      }
+      
+      if (shouldNavigate) {
+        const match = target.id?.match(/cs-(.+)-col-(\d+)/);
+        if (match) {
+          const rowId = match[1];
+          let colIndex = parseInt(match[2], 10);
+          const rowIndex = cashItems.findIndex(pi => pi.rowId === rowId);
+          
+          if (rowIndex !== -1) {
+            let nextRowIndex = rowIndex;
+            let nextColIndex = colIndex;
+            const maxCols = 6; // 0=name, 1=qty, 2=prate, 3=wrate, 4=mrp, 5=amount
+            
+            if (e.key === "ArrowRight") nextColIndex++;
+            else if (e.key === "ArrowLeft") nextColIndex--;
+            else if (e.key === "ArrowUp") nextRowIndex--;
+            else if (e.key === "ArrowDown") nextRowIndex++;
+            
+            if (nextColIndex >= maxCols) {
+              nextColIndex = 0;
+              nextRowIndex++;
+            } else if (nextColIndex < 0) {
+              nextColIndex = maxCols - 1;
+              nextRowIndex--;
+            }
+            
+            if (nextRowIndex >= 0 && nextRowIndex < cashItems.length) {
+              const nextRowId = cashItems[nextRowIndex].rowId;
+              const nextInputId = `cs-${nextRowId}-col-${nextColIndex}`;
+              const nextEl = document.getElementById(nextInputId) as HTMLInputElement | null;
+              if (nextEl && !nextEl.readOnly && !nextEl.disabled) {
+                e.preventDefault();
+                nextEl.focus();
+                try {
+                  nextEl.select();
+                } catch (err) {
+                  // Ignore
+                }
+              }
+            }
+            return;
+          }
+        }
+      }
+    }
+
+    // Default Enter behavior for inputs based on column logic
+    if (e.key === "Enter") {
       e.preventDefault();
-      setActiveSuggestionIndex(prev => (prev < filtered.length - 1 ? prev + 1 : prev));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setActiveSuggestionIndex(prev => (prev > 0 ? prev - 1 : prev));
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      if (activeSuggestionIndex >= 0 && activeSuggestionIndex < filtered.length) {
-        handleProductSelect(item, filtered[activeSuggestionIndex]);
-      } else if (filtered.length > 0) {
-        handleProductSelect(item, filtered[0]);
-      } else if (item.productName.trim()) {
-        qtyInputRefs.current[item.rowId]?.focus();
+      const match = (e.target as HTMLInputElement).id?.match(/cs-(.+)-col-(\d+)/);
+      if (match) {
+        const colIndex = parseInt(match[2], 10);
+        if (colIndex === 0) {
+          qtyInputRefs.current[item.rowId]?.focus();
+        } else if (colIndex === 1) {
+          amountInputRefs.current[item.rowId]?.focus();
+        } else if (colIndex === 5) {
+          const rowIndex = cashItems.findIndex(pi => pi.rowId === item.rowId);
+          const isLast = rowIndex === cashItems.length - 1;
+          if (isLast) {
+            addRow();
+          } else {
+            const nextRowId = cashItems[rowIndex + 1].rowId;
+            nameInputRefs.current[nextRowId]?.focus();
+          }
+        }
       }
     }
   };
 
-  const totalAmount = cashItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  const rawTotalAmount = cashItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  const totalAmount = isRoundOff ? Math.round(rawTotalAmount) : rawTotalAmount;
 
   return (
     <div className="space-y-6">
@@ -283,7 +373,8 @@ export default function CashSales() {
             <tr className="border-b border-accent/10 text-muted text-xs uppercase tracking-wider">
               <th className="px-2 py-3 font-medium text-center">Particulars</th>
               <th className="px-2 py-3 font-medium text-center">Quantity</th>
-              <th className="px-2 py-3 font-medium text-center">Purchase Rate</th>
+              <th className="px-2 py-3 font-medium text-center">P. Rate</th>
+              <th className="px-2 py-3 font-medium text-center text-xs">W. Rate</th>
               <th className="px-2 py-3 font-medium text-center">MRP</th>
               <th className="px-2 py-3 font-medium text-center">Amount</th>
               <th className="px-2 py-3 font-medium text-center"></th>
@@ -306,6 +397,7 @@ export default function CashSales() {
                   >
                     <td className="px-2 py-3 relative text-center">
                       <input
+                        id={`cs-${item.rowId}-col-0`}
                         ref={el => { nameInputRefs.current[item.rowId] = el; }}
                         type="text"
                         value={item.productName}
@@ -318,25 +410,25 @@ export default function CashSales() {
                           setActiveDropdownRowId(item.rowId);
                           setActiveSuggestionIndex(-1);
                         }}
-                        onBlur={() => setTimeout(() => setActiveDropdownRowId(null), 200)}
+                         onBlur={() => setTimeout(() => setActiveDropdownRowId(null), 200)}
                         onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
                         placeholder="Search product..."
-                        className="w-full min-w-[150px] bg-primary border border-accent/10 rounded px-3 py-2 text-text outline-none focus:border-accent"
+                        className="w-full min-w-[600px] bg-primary border border-accent/10 rounded px-3 py-2 text-text outline-none focus:border-accent"
                       />
                       {activeDropdownRowId === item.rowId && item.productName && item.isNew && (
-                        <div className="absolute z-50 w-full mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl max-h-48 overflow-y-auto left-0">
+                        <div className="absolute z-50 w-full mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl max-h-48 overflow-y-auto left-0 min-w-[650px]">
                           {filteredProducts.map((p, idx) => (
                             <div
                               key={p.id}
                               id={`suggestion-${item.rowId}-${idx}`}
-                              className={`px-4 py-2 cursor-pointer text-text border-b border-accent/5 last:border-0 text-left ${
+                              className={`px-4 py-3 cursor-pointer text-text border-b border-accent/5 last:border-0 text-left ${
                                 idx === activeSuggestionIndex ? 'bg-accent/10' : 'hover:bg-primary'
                               }`}
                               onClick={() => handleProductSelect(item, p)}
                             >
-                              <div className="font-medium">{p.name}</div>
-                              <div className="text-[10px] text-muted flex justify-between">
-                                <span>Stock: {p.stock}</span>
+                              <div className="font-bold text-xl">{p.name}</div>
+                              <div className="text-sm text-muted flex justify-between mt-1.5">
+                                <span className={`${p.stock < 5 ? 'text-red-500' : 'text-emerald-500'} font-bold`}>Stock: {p.stock}</span>
                                 <span>MRP: {formatCurrency(p.mrp)}</span>
                               </div>
                             </div>
@@ -346,40 +438,55 @@ export default function CashSales() {
                     </td>
                     <td className="px-2 py-3 text-center">
                       <input
+                        id={`cs-${item.rowId}-col-1`}
                         ref={el => { qtyInputRefs.current[item.rowId] = el; }}
                         type="number"
                         min="0"
                         value={item.quantity}
                         onChange={(e) => updateRow(item.rowId, "quantity", e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            amountInputRefs.current[item.rowId]?.focus();
-                          }
-                        }}
+                        onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
                         placeholder="0"
                         className="w-20 mx-auto block bg-primary border border-accent/10 rounded px-2 py-2 text-center outline-none focus:border-accent"
                       />
                     </td>
                     <td className="px-2 py-3 text-center">
                       <input
+                        id={`cs-${item.rowId}-col-2`}
                         type="number"
                         step="any"
                         value={item.purchaseRate}
                         onChange={(e) => updateRow(item.rowId, "purchaseRate", e.target.value)}
+                        onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
                         readOnly={!item.isNew}
                         placeholder="0"
-                        className={`w-24 mx-auto block border border-accent/10 rounded px-2 py-2 text-center outline-none ${
-                          !item.isNew ? "bg-primary/50 cursor-not-allowed text-muted" : "bg-primary focus:border-accent"
+                        className={`w-20 mx-auto block border border-accent/10 rounded px-2 py-2 text-center outline-none ${
+                          !item.isNew ? "bg-primary/50 cursor-not-allowed text-muted text-xs" : "bg-primary focus:border-accent"
                         }`}
                       />
                     </td>
                     <td className="px-2 py-3 text-center">
                       <input
+                        id={`cs-${item.rowId}-col-3`}
+                        type="number"
+                        step="any"
+                        value={item.wholesaleRate}
+                        onChange={(e) => updateRow(item.rowId, "wholesaleRate", e.target.value)}
+                        onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
+                        readOnly={!item.isNew}
+                        placeholder="0"
+                        className={`w-20 mx-auto block border border-accent/10 rounded px-2 py-2 text-center outline-none ${
+                          !item.isNew ? "bg-primary/50 cursor-not-allowed text-muted text-xs" : "bg-primary focus:border-accent"
+                        }`}
+                      />
+                    </td>
+                    <td className="px-2 py-3 text-center">
+                      <input
+                        id={`cs-${item.rowId}-col-4`}
                         type="number"
                         step="any"
                         value={item.mrp}
                         onChange={(e) => updateRow(item.rowId, "mrp", e.target.value)}
+                        onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
                         readOnly={!item.isNew}
                         placeholder="0"
                         className={`w-24 mx-auto block border border-accent/10 rounded px-2 py-2 text-center outline-none ${
@@ -389,23 +496,13 @@ export default function CashSales() {
                     </td>
                     <td className="px-2 py-3 text-center">
                       <input
+                        id={`cs-${item.rowId}-col-5`}
                         ref={el => { amountInputRefs.current[item.rowId] = el; }}
                         type="number"
                         step="any"
                         value={item.amount}
                         onChange={(e) => updateRow(item.rowId, "amount", e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            const isLast = index === cashItems.length - 1;
-                            if (isLast) {
-                              addRow();
-                            } else {
-                              const nextRowId = cashItems[index + 1].rowId;
-                              nameInputRefs.current[nextRowId]?.focus();
-                            }
-                          }
-                        }}
+                        onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
                         placeholder="0"
                         className="w-24 mx-auto block bg-primary border border-accent/10 rounded px-2 py-2 text-center outline-none focus:border-accent font-bold text-accent"
                       />
@@ -431,7 +528,18 @@ export default function CashSales() {
               <span className="text-xl font-bold text-text">{cashItems.filter(i => i.productName).length}</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-muted text-xs uppercase tracking-wider mb-1">Total Amount</span>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-muted text-xs uppercase tracking-wider">Total Amount</span>
+                <label className="flex items-center gap-1 cursor-pointer bg-primary/50 px-1.5 py-0.5 rounded border border-accent/10">
+                  <input
+                    type="checkbox"
+                    checked={isRoundOff}
+                    onChange={(e) => setIsRoundOff(e.target.checked)}
+                    className="accent-accent"
+                  />
+                  <span className="text-[10px] text-muted uppercase">Round Off</span>
+                </label>
+              </div>
               <span className="text-3xl font-display font-bold text-accent">{formatCurrency(totalAmount)}</span>
             </div>
           </div>

@@ -53,6 +53,7 @@ export default function BillForm() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const qtyInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const [focusQtyId, setFocusQtyId] = useState<string | null>(null);
+  const [isRoundOff, setIsRoundOff] = useState(true);
 
   useEffect(() => {
     if (activeProductSuggestionIndex >= 0 && !activeDropdownRowId) {
@@ -205,6 +206,8 @@ export default function BillForm() {
         productName: product.name,
         qty: 1,
         price: product.wholesaleRate,
+        purchaseRate: product.purchaseRate,
+        wholesaleRate: product.wholesaleRate,
         mrp: product.mrp,
         total: product.wholesaleRate,
         unit: product.unit || "Pcs",
@@ -222,6 +225,71 @@ export default function BillForm() {
 
   const removeProductFromBill = (productId: string) => {
     setBillItems(billItems.filter(item => item.productId !== productId));
+  };
+
+  // Helper logic for table keyboard navigation
+  const handleGridKeyDown = (e: React.KeyboardEvent, productId: string) => {
+    if (["ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown"].includes(e.key)) {
+      const target = e.target as HTMLInputElement;
+      let shouldNavigate = true;
+      
+      if (shouldNavigate) {
+        const match = target.id?.match(/bf-(.+)-col-(\d+)/);
+        if (match) {
+          const matchedId = match[1];
+          let colIndex = parseInt(match[2], 10);
+          const rowIndex = billItems.findIndex(pi => pi.productId === matchedId);
+          
+          if (rowIndex !== -1) {
+            let nextRowIndex = rowIndex;
+            let nextColIndex = colIndex;
+            const maxCols = 2; // 0=price, 1=qty
+            
+            if (e.key === "ArrowRight") nextColIndex++;
+            else if (e.key === "ArrowLeft") nextColIndex--;
+            else if (e.key === "ArrowUp") nextRowIndex--;
+            else if (e.key === "ArrowDown") nextRowIndex++;
+            
+            if (nextColIndex >= maxCols) {
+              nextColIndex = 0;
+              nextRowIndex++;
+            } else if (nextColIndex < 0) {
+              nextColIndex = maxCols - 1;
+              nextRowIndex--;
+            }
+            
+            if (nextRowIndex >= 0 && nextRowIndex < billItems.length) {
+              const nextRowId = billItems[nextRowIndex].productId;
+              const nextInputId = `bf-${nextRowId}-col-${nextColIndex}`;
+              const nextEl = document.getElementById(nextInputId) as HTMLInputElement | null;
+              if (nextEl && !nextEl.readOnly && !nextEl.disabled) {
+                e.preventDefault();
+                nextEl.focus();
+                try {
+                  nextEl.select();
+                } catch (err) {
+                  // Ignore
+                }
+              }
+            }
+            return;
+          }
+        }
+      }
+    }
+
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const match = (e.target as HTMLInputElement).id?.match(/bf-(.+)-col-(\d+)/);
+      if (match) {
+        const colIndex = parseInt(match[2], 10);
+        if (colIndex === 0) {
+          qtyInputRefs.current[productId]?.focus();
+        } else if (colIndex === 1) {
+          searchInputRef.current?.focus();
+        }
+      }
+    }
   };
 
   const updateQuantity = (productId: string, qty: number) => {
@@ -335,8 +403,9 @@ export default function BillForm() {
   };
 
   const subtotal = billItems.reduce((sum, item) => sum + item.total, 0);
-  const grandTotal = subtotal + previousDue;
-  const currentBillDue = Math.max(0, subtotal - paidAmount);
+  const rawGrandTotal = subtotal + previousDue;
+  const grandTotal = isRoundOff ? Math.round(rawGrandTotal) : rawGrandTotal;
+  const currentBillDue = Math.max(0, grandTotal - paidAmount);
 
   const filteredCustomers = Array.from(new Map(customers.map(c => [c.name.toLowerCase(), c])).values())
     .filter(c => c.name.toLowerCase().includes((customer.name || "").toLowerCase()));
@@ -427,9 +496,9 @@ export default function BillForm() {
       customerEmail: customer.email || "",
       items: billItems,
       subtotal,
-      grandTotal: subtotal + previousDue,
+      grandTotal: grandTotal,
       paidAmount,
-      dueAmount: Math.max(0, subtotal + previousDue - paidAmount),
+      dueAmount: Math.max(0, grandTotal - paidAmount),
       date: Date.now(),
     };
 
@@ -657,6 +726,7 @@ export default function BillForm() {
                   </div>
                 </th>
                 <th className="px-2 py-3 font-medium text-center">MRP</th>
+                <th className="px-2 py-3 font-medium text-center text-xs">W. Rate</th>
                 <th className="px-2 py-3 font-medium text-center">Percentage</th>
                 <th className="px-2 py-3 font-medium text-center">Rate</th>
                 <th className="px-2 py-3 font-medium text-center">Qty</th>
@@ -693,22 +763,22 @@ export default function BillForm() {
                         }}
                         onBlur={() => setTimeout(() => setActiveDropdownRowId(null), 200)}
                         onKeyDown={(e) => handleProductRowKeyDown(e, item.productId, filteredProducts)}
-                        className="w-full min-w-[120px] bg-transparent border-b border-transparent hover:border-accent/30 focus:border-accent outline-none text-center transition-colors"
+                        className="w-full min-w-[600px] bg-transparent border-b border-transparent hover:border-accent/30 focus:border-accent outline-none text-center transition-colors px-2"
                       />
                       {activeDropdownRowId === item.productId && item.productName && (
-                        <div className="absolute z-50 w-full mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl max-h-48 overflow-y-auto left-0 text-left">
+                        <div className="absolute z-50 w-full mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl max-h-48 overflow-y-auto left-0 text-left min-w-[650px]">
                           {filteredProducts.map((p, idx) => (
                             <div
                               key={p.id}
                               id={`bill-row-suggestion-${item.productId}-${idx}`}
-                              className={`px-4 py-2 cursor-pointer text-text border-b border-accent/5 last:border-0 ${
+                              className={`px-4 py-3 cursor-pointer text-text border-b border-accent/5 last:border-0 ${
                                 idx === activeProductSuggestionIndex ? 'bg-accent/10' : 'hover:bg-primary'
                               }`}
                               onClick={() => handleProductRowSelect(item.productId, p)}
                             >
-                              <div className="font-medium text-sm">{p.name}</div>
-                              <div className="text-[10px] text-muted mt-0.5 flex gap-x-3">
-                                <span className="text-accent font-bold">Stock: {p.stock}</span>
+                              <div className="font-bold text-xl">{p.name}</div>
+                              <div className="text-sm text-muted mt-1.5 flex gap-x-4">
+                                <span className={`${p.stock < 5 ? 'text-red-500' : 'text-emerald-500'} font-bold`}>Stock: {p.stock}</span>
                                 <span>MRP: {formatCurrency(p.mrp)}</span>
                                 <span>Rate: {formatCurrency(p.wholesaleRate)}</span>
                               </div>
@@ -724,31 +794,30 @@ export default function BillForm() {
                       {showPurchasePrice ? formatCurrency(products.find(p => p.id === item.productId)?.purchaseRate || 0) : ""}
                     </td>
                     <td className="px-2 py-4 text-center">{formatCurrency(item.mrp)}</td>
+                    <td className="px-2 py-4 text-center text-muted text-xs">{formatCurrency(item.wholesaleRate || 0)}</td>
                     <td className="px-2 py-4 text-center text-accent font-bold">
                       {item.mrp > 0 ? (((item.mrp - item.price) / item.mrp) * 100).toFixed(1) : 0}%
                     </td>
                     <td className="px-2 py-4 text-center">
                       <input
+                        id={`bf-${item.productId}-col-0`}
                         type="number"
                         step="any"
                         value={item.price}
                         onChange={(e) => updatePrice(item.productId, Number(e.target.value))}
+                        onKeyDown={(e) => handleGridKeyDown(e, item.productId)}
                         className="w-20 bg-primary border border-accent/10 rounded px-2 py-1 text-center outline-none focus:border-accent mx-auto"
                       />
                     </td>
                     <td className="px-2 py-4 text-center align-top">
                       <div className="flex flex-col items-center gap-1">
                         <input
+                          id={`bf-${item.productId}-col-1`}
                           ref={el => { qtyInputRefs.current[item.productId] = el; }}
                           type="number"
                           value={item.qty}
                           onChange={(e) => updateQuantity(item.productId, Number(e.target.value))}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              searchInputRef.current?.focus();
-                            }
-                          }}
+                          onKeyDown={(e) => handleGridKeyDown(e, item.productId)}
                           className="w-16 bg-primary border border-accent/10 rounded px-2 py-1 text-center outline-none focus:border-accent mx-auto"
                         />
                         {item.hasSecondaryUnit ? (
@@ -796,25 +865,25 @@ export default function BillForm() {
                     />
                     
                     {searchResults.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl z-50 overflow-y-auto max-h-48 divide-y divide-accent/5 min-w-[300px]">
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl z-50 overflow-y-auto max-h-48 divide-y divide-accent/5 min-w-[600px]">
                         {searchResults.map((p, index) => (
                           <button
                             key={`${p.id}-${index}`}
                             id={`bill-suggestion-${index}`}
                             onClick={() => addProductToBill(p)}
-                            className={`w-full text-left px-4 py-2 transition-colors flex justify-between items-center ${
+                            className={`w-full text-left px-4 py-3 transition-colors flex justify-between items-center ${
                               index === activeProductSuggestionIndex ? 'bg-accent/10' : 'hover:bg-primary'
                             }`}
                           >
                             <div>
-                              <div className="font-medium text-sm">{p.name}</div>
-                              <div className="text-[10px] text-muted mt-0.5 flex gap-x-3">
-                                <span className="text-accent font-bold">Stock: {p.stock}</span>
+                              <div className="font-bold text-xl">{p.name}</div>
+                              <div className="text-sm text-muted mt-1.5 flex gap-x-4">
+                                <span className={`${p.stock < 5 ? 'text-red-500' : 'text-emerald-500'} font-bold`}>Stock: {p.stock}</span>
                                 <span>MRP: {formatCurrency(p.mrp)}</span>
                                 <span>Rate: {formatCurrency(p.wholesaleRate)}</span>
                               </div>
                             </div>
-                            <Plus size={14} className="text-accent" />
+                            <Plus size={16} className="text-accent" />
                           </button>
                         ))}
                       </div>
@@ -874,8 +943,19 @@ export default function BillForm() {
                 className="w-24 bg-primary border border-accent/10 rounded px-2 py-1 text-right outline-none focus:border-accent"
               />
             </div>
-            <div className="flex justify-between text-xl font-display font-bold text-accent pt-2 border-t border-accent/10">
-              <span>Grand Total:</span>
+            <div className="flex justify-between items-center text-xl font-display font-bold text-accent pt-2 border-t border-accent/10">
+              <div className="flex items-center gap-2">
+                <span>Grand Total:</span>
+                <label className="flex items-center gap-1.5 cursor-pointer text-xs font-normal text-muted bg-primary/50 px-2 py-1 rounded border border-accent/10">
+                  <input 
+                    type="checkbox" 
+                    checked={isRoundOff} 
+                    onChange={(e) => setIsRoundOff(e.target.checked)} 
+                    className="accent-accent cursor-pointer"
+                  />
+                  <span>Round Off</span>
+                </label>
+              </div>
               <span>{formatCurrency(grandTotal)}</span>
             </div>
             <div className="flex justify-between text-muted text-sm">

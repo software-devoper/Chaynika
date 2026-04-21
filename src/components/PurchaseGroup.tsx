@@ -295,7 +295,67 @@ export default function PurchaseGroup() {
       }
     }
     
-    // If not interacting with dropdown, handle row enter
+    // Matrix navigation
+    if (["ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown"].includes(e.key)) {
+      const target = e.target as HTMLInputElement;
+      let shouldNavigate = true;
+      
+      // Allow internal text navigation unless at boundaries
+      if (target.type === "text" && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+        try {
+          if (e.key === "ArrowLeft" && target.selectionStart !== 0) shouldNavigate = false;
+          if (e.key === "ArrowRight" && target.selectionStart !== target.value.length) shouldNavigate = false;
+        } catch (err) {
+          // Ignore if selectionStart is not supported
+        }
+      }
+      
+      if (shouldNavigate) {
+        const match = target.id.match(/pg-(.+)-col-(\d+)/);
+        if (match) {
+          const rowId = match[1];
+          let colIndex = parseInt(match[2], 10);
+          const rowIndex = purchaseItems.findIndex(pi => pi.rowId === rowId);
+          
+          if (rowIndex !== -1) {
+            let nextRowIndex = rowIndex;
+            let nextColIndex = colIndex;
+            const maxCols = 5; // cols: 0=name, 1=qty, 2=prate, 3=wrate, 4=mrp
+            
+            if (e.key === "ArrowRight") nextColIndex++;
+            else if (e.key === "ArrowLeft") nextColIndex--;
+            else if (e.key === "ArrowUp") nextRowIndex--;
+            else if (e.key === "ArrowDown") nextRowIndex++;
+            
+            if (nextColIndex >= maxCols) {
+              nextColIndex = 0;
+              nextRowIndex++;
+            } else if (nextColIndex < 0) {
+              nextColIndex = maxCols - 1;
+              nextRowIndex--;
+            }
+            
+            if (nextRowIndex >= 0 && nextRowIndex < purchaseItems.length) {
+              const nextRowId = purchaseItems[nextRowIndex].rowId;
+              const nextInputId = `pg-${nextRowId}-col-${nextColIndex}`;
+              const nextEl = document.getElementById(nextInputId) as HTMLInputElement | null;
+              if (nextEl) {
+                e.preventDefault();
+                nextEl.focus();
+                try {
+                  nextEl.select();
+                } catch (err) {
+                  // Ignore selection error for number inputs
+                }
+              }
+            }
+            return;
+          }
+        }
+      }
+    }
+
+    // If not interacting with dropdown or grid, handle row enter
     if (e.key === 'Enter') {
       e.preventDefault();
       addRow();
@@ -386,12 +446,19 @@ export default function PurchaseGroup() {
         );
 
         if (exactMatch) {
+          const updateData: any = {
+            updatedAt: Date.now(),
+            unit: item.unit.trim() || "Pcs",
+          };
           if (baseQty > 0) {
-            await productApi.update(exactMatch.id, {
-              stock: exactMatch.stock + baseQty,
-              updatedAt: Date.now(),
-            });
+            updateData.stock = exactMatch.stock + baseQty;
           }
+          if (item.hasSecondaryUnit && Number(item.conversionRate) > 0) {
+            updateData.secondaryUnit = item.secondaryUnit.trim();
+            updateData.conversionRate = Number(item.conversionRate);
+          }
+          
+          await productApi.update(exactMatch.id, updateData);
         } else {
           const productData: any = {
             name: item.productName.trim(),
@@ -610,6 +677,7 @@ export default function PurchaseGroup() {
                   >
                     <td className="px-2 py-3 relative text-center align-top">
                       <input
+                        id={`pg-${item.rowId}-col-0`}
                         ref={el => { nameInputRefs.current[item.rowId] = el; }}
                         type="text"
                         value={item.productName}
@@ -625,21 +693,21 @@ export default function PurchaseGroup() {
                         onBlur={() => setTimeout(() => setActiveDropdownRowId(null), 200)}
                         onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
                         placeholder="Product Name"
-                        className="w-full min-w-[150px] bg-primary border border-accent/10 rounded px-3 py-2 text-text outline-none focus:border-accent"
+                        className="w-full min-w-[600px] bg-primary border border-accent/10 rounded px-3 py-2 text-text outline-none focus:border-accent"
                       />
-                      {activeDropdownRowId === item.rowId && item.productName && item.isNew && (
-                        <div className="absolute z-50 w-full mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl max-h-48 overflow-y-auto left-0">
+                      {activeDropdownRowId === item.rowId && item.productName && item.isNew && filteredProducts.length > 0 && (
+                        <div className="absolute z-50 w-full mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl max-h-48 overflow-y-auto left-0 min-w-[650px]">
                           {filteredProducts.map((p, idx) => (
                               <div
                                 key={p.id}
                                 id={`purchase-suggestion-${item.rowId}-${idx}`}
-                                className={`px-4 py-2 cursor-pointer text-text border-b border-accent/5 last:border-0 ${
+                                className={`px-4 py-3 cursor-pointer text-text border-b border-accent/5 last:border-0 ${
                                   idx === activeSuggestionIndex ? 'bg-accent/10' : 'hover:bg-primary'
                                 }`}
                                 onClick={() => handleProductSelect(item, p)}
                               >
-                                <div className="font-medium">{p.name}</div>
-                                <div className="text-[10px] text-muted">Party: {p.groupName}</div>
+                                <div className="font-bold text-xl">{p.name}</div>
+                                <div className="text-sm text-muted mt-1.5 flex gap-x-4">Party: {p.groupName}</div>
                               </div>
                             ))}
                         </div>
@@ -647,14 +715,14 @@ export default function PurchaseGroup() {
                       {!item.isNew && (
                         <div className="text-[10px] text-muted mt-1 text-left">Current Stock: {item.currentStock} {item.unit}</div>
                       )}
-                      {item.isNew && item.productName.trim() && (
-                        <div className="mt-2 text-xs flex flex-col gap-2 bg-primary/30 p-2 rounded border border-accent/10 text-left">
-                          <div className="flex gap-2 items-center">
-                            <span className="text-muted">Base Unit:</span>
+                      {item.productName.trim() && !(activeDropdownRowId === item.rowId && filteredProducts.length > 0) && (
+                        <div className="mt-3 text-base flex flex-col gap-4 bg-primary/30 p-4 rounded-xl border border-accent/10 text-left w-full min-w-[600px] shadow-sm">
+                          <div className="flex gap-4 items-center">
+                            <span className="text-muted font-bold">Base Unit:</span>
                             <select 
                               value={item.unit} 
                               onChange={e => updateRow(item.rowId, "unit", e.target.value)}
-                              className="bg-surface border border-accent/10 rounded px-1 py-0.5 outline-none flex-1"
+                              className="bg-surface border border-accent/10 rounded-lg px-3 py-2 outline-none flex-1 font-bold text-lg"
                             >
                               <option value="Pcs">Pcs</option>
                               <option value="Box">Box</option>
@@ -664,21 +732,22 @@ export default function PurchaseGroup() {
                               <option value="Ltr">Ltr</option>
                             </select>
                           </div>
-                          <label className="flex items-center gap-2 cursor-pointer text-muted">
+                          <label className="flex items-center gap-3 cursor-pointer text-text font-bold mt-1">
                             <input 
                               type="checkbox" 
                               checked={item.hasSecondaryUnit} 
                               onChange={e => updateRow(item.rowId, "hasSecondaryUnit", e.target.checked)} 
+                              className="w-5 h-5 accent-accent"
                             />
                             <span>Secondary Unit? (Bulk/Pack)</span>
                           </label>
                           {item.hasSecondaryUnit && (
-                            <div className="flex gap-1 items-center bg-surface p-1 rounded border border-accent/10">
-                              <span className="text-muted">1</span>
+                            <div className="flex gap-3 items-center bg-surface p-3 rounded-xl border border-accent/10">
+                              <span className="text-muted font-bold text-lg">1</span>
                               <select 
                                 value={item.secondaryUnit} 
                                 onChange={e => updateRow(item.rowId, "secondaryUnit", e.target.value)}
-                                className="bg-primary/50 border border-accent/10 rounded outline-none flex-1 font-medium"
+                                className="bg-primary/50 border border-accent/10 rounded-lg px-3 py-2 outline-none flex-1 font-bold text-lg"
                               >
                                 <option value="Box">Box</option>
                                 <option value="Pack">Pack</option>
@@ -686,15 +755,15 @@ export default function PurchaseGroup() {
                                 <option value="Case">Case</option>
                                 <option value="Dozen">Dozen</option>
                               </select>
-                              <span className="text-muted">=</span>
+                              <span className="text-muted font-bold text-lg">=</span>
                               <input 
                                 type="number" 
                                 value={item.conversionRate} 
                                 onChange={e => updateRow(item.rowId, "conversionRate", e.target.value)} 
-                                className="w-12 bg-primary border border-accent/10 rounded px-1 outline-none text-center" 
+                                className="w-24 bg-primary border border-accent/10 rounded-lg px-3 py-2 outline-none text-center font-bold text-lg" 
                                 placeholder="Qty" 
                               />
-                              <span className="text-muted truncate max-w-[40px]">{item.unit}</span>
+                              <span className="text-muted font-bold text-lg truncate min-w-[50px]">{item.unit}</span>
                             </div>
                           )}
                         </div>
@@ -703,6 +772,7 @@ export default function PurchaseGroup() {
                     <td className="px-2 py-3 text-center align-top">
                       <div className="flex flex-col items-center gap-1">
                         <input
+                          id={`pg-${item.rowId}-col-1`}
                           type="number"
                           min="0"
                           value={item.quantity}
@@ -727,6 +797,7 @@ export default function PurchaseGroup() {
                     </td>
                     <td className="px-2 py-3 text-center align-top">
                       <input
+                        id={`pg-${item.rowId}-col-2`}
                         type="number"
                         min="0"
                         step="any"
@@ -739,6 +810,7 @@ export default function PurchaseGroup() {
                     </td>
                     <td className="px-2 py-3 text-center align-top">
                       <input
+                        id={`pg-${item.rowId}-col-3`}
                         type="number"
                         min="0"
                         step="any"
@@ -751,6 +823,7 @@ export default function PurchaseGroup() {
                     </td>
                     <td className="px-2 py-3 text-center align-top">
                       <input
+                        id={`pg-${item.rowId}-col-4`}
                         type="number"
                         min="0"
                         step="any"
