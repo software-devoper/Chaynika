@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Trash2, Save } from 'lucide-react';
 import { Bill, BillItem } from '../types';
 import { billApi } from '../lib/api';
+import { formatCurrency } from '../lib/utils';
 import toast from 'react-hot-toast';
 
 interface BillEditModalProps {
@@ -12,6 +13,7 @@ interface BillEditModalProps {
 export default function BillEditModal({ bill, onClose }: BillEditModalProps) {
   const [items, setItems] = useState<BillItem[]>(bill.items);
   const [paidAmount, setPaidAmount] = useState(bill.paidAmount);
+  const [previousDue, setPreviousDue] = useState(bill.grandTotal - bill.subtotal);
   const [isSaving, setIsSaving] = useState(false);
 
   const updateQty = (productId: string, qty: number) => {
@@ -35,10 +37,8 @@ export default function BillEditModal({ bill, onClose }: BillEditModalProps) {
   };
 
   const subtotal = items.reduce((sum, item) => sum + item.total, 0);
-  // previousDue is kept as it was on the original bill
-  const previousDue = bill.grandTotal - bill.subtotal;
   const grandTotal = subtotal + previousDue;
-  const dueAmount = Math.max(0, subtotal - paidAmount);
+  const dueAmount = Math.max(0, grandTotal - paidAmount);
 
   const handleSave = async () => {
     if (items.length === 0) {
@@ -122,7 +122,7 @@ export default function BillEditModal({ bill, onClose }: BillEditModalProps) {
                       />
                     </td>
                     <td className="p-3 text-right font-medium text-text">
-                      ₹{item.total.toFixed(2)}
+                      {formatCurrency(item.total)}
                     </td>
                     <td className="p-3 text-center">
                       <button
@@ -142,11 +142,16 @@ export default function BillEditModal({ bill, onClose }: BillEditModalProps) {
             <div className="w-64 space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-muted">Subtotal:</span>
-                <span className="font-medium text-text">₹{subtotal.toFixed(2)}</span>
+                <span className="font-medium text-text">{formatCurrency(subtotal)}</span>
               </div>
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between items-center text-sm">
                 <span className="text-muted">Previous Due:</span>
-                <span className="font-medium text-text">₹{previousDue.toFixed(2)}</span>
+                <input
+                  type="number"
+                  value={previousDue}
+                  onChange={(e) => setPreviousDue(Number(e.target.value))}
+                  className="w-24 bg-primary border border-accent/20 rounded px-2 py-1 text-right outline-none focus:border-accent"
+                />
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-muted">Paid Amount:</span>
@@ -159,7 +164,7 @@ export default function BillEditModal({ bill, onClose }: BillEditModalProps) {
               </div>
               <div className="pt-3 border-t border-accent/20 flex justify-between font-bold">
                 <span className="text-text">Current Bill Due:</span>
-                <span className="text-accent">₹{dueAmount.toFixed(2)}</span>
+                <span className="text-accent">{formatCurrency(dueAmount)}</span>
               </div>
             </div>
           </div>

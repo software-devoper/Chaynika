@@ -26,11 +26,12 @@ export default function BillForm() {
     const savedDraft = localStorage.getItem("bill_draft");
     if (savedDraft) {
       try {
-        const { customer: savedCustomer, phones: savedPhones, items: savedItems, paid: savedPaid } = JSON.parse(savedDraft);
+        const { customer: savedCustomer, phones: savedPhones, items: savedItems, paid: savedPaid, previousDue: savedPreviousDue } = JSON.parse(savedDraft);
         if (savedCustomer) setCustomer(savedCustomer);
         if (savedPhones) setPhones(savedPhones);
         if (savedItems && savedItems.length > 0) setBillItems(savedItems);
         if (savedPaid !== undefined) setPaidAmount(savedPaid);
+        if (savedPreviousDue !== undefined) setPreviousDue(savedPreviousDue);
         toast.success("Draft loaded successfully");
       } catch (e) {
         console.error("Failed to load bill draft", e);
@@ -96,10 +97,21 @@ export default function BillForm() {
   useEffect(() => {
     const primaryPhone = phones[0];
     if (primaryPhone && primaryPhone.length === 10) {
-      const unsubscribeDues = dueApi.getAll((dues) => {
-        const due = dues.find(d => d.customerPhone === primaryPhone);
-        setPreviousDue(due ? due.amount : 0);
-      });
+      // Use getOne instead of real-time listener to avoid overwriting manual edits
+      const fetchDue = async () => {
+        try {
+          const dues = await dueApi.getOne(primaryPhone);
+          if (dues) {
+            setPreviousDue(dues.amount);
+          } else {
+            setPreviousDue(0);
+          }
+        } catch (error) {
+          console.error("Error fetching due:", error);
+        }
+      };
+      
+      fetchDue();
       
       const unsubscribeBills = billApi.getAll((bills) => {
         const customerBills = bills.filter(b => b.customerPhone === primaryPhone || (b.additionalPhones && b.additionalPhones.includes(primaryPhone)));
@@ -120,7 +132,6 @@ export default function BillForm() {
       });
 
       return () => {
-        unsubscribeDues();
         unsubscribeBills();
       };
     } else {
@@ -605,7 +616,8 @@ export default function BillForm() {
       customer,
       phones,
       items: billItems,
-      paid: paidAmount
+      paid: paidAmount,
+      previousDue: previousDue
     };
     localStorage.setItem("bill_draft", JSON.stringify(draft));
     toast.success("Draft saved successfully");
@@ -970,7 +982,7 @@ export default function BillForm() {
         <div className="flex flex-col items-end gap-4 border-t border-accent/10 pt-6">
           <div className="space-y-2 text-right w-full md:max-w-xs">
             <div className="flex justify-between text-muted">
-              <span>Sub Total:</span>
+              <span>Subtotal:</span>
               <span>{formatCurrency(subtotal)}</span>
             </div>
             <div className="flex justify-between items-center gap-4 text-muted">
@@ -1019,7 +1031,7 @@ export default function BillForm() {
               <span>{formatCurrency(grandTotal)}</span>
             </div>
             <div className="flex justify-between text-muted text-sm">
-              <span>Sales Due:</span>
+              <span>Current Bill Due:</span>
               <span className="text-red-500">{formatCurrency(Math.max(0, grandTotal - paidAmount))}</span>
             </div>
           </div>

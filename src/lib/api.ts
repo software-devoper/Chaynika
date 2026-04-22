@@ -461,6 +461,18 @@ export const dueApi = {
       handleFirestoreError(error, OperationType.GET, path);
     });
   },
+  getOne: async (phone: string) => {
+    const path = `dues/${phone}`;
+    try {
+      const docSnap = await getDoc(doc(db, "dues", phone));
+      if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() } as CustomerDue;
+      }
+      return null;
+    } catch (error) {
+      handleFirestoreError(error, OperationType.GET, path);
+    }
+  },
   markPaid: async (phone: string, additionalPhones: string[]) => {
     const path = `dues/${phone}`;
     try {
