@@ -138,16 +138,16 @@ export default function BillHistory() {
         {activeTab === "credit" ? (
           <table className="w-full text-center border-collapse whitespace-nowrap md:whitespace-normal relative">
             <thead className="sticky top-0 z-10 bg-surface shadow-sm">
-              <tr className="border-b border-accent/10 text-accent text-sm font-bold uppercase tracking-wider bg-accent/5">
-                <th className="px-4 py-4 font-medium text-center">Bill No.</th>
-                <th className="px-4 py-4 font-medium text-center">Customer Name</th>
-                <th className="px-4 py-4 font-medium text-center">Phone</th>
-                <th className="px-4 py-4 font-medium text-center">Date</th>
-                <th className="px-4 py-4 font-medium text-center">Grand Total</th>
-                <th className="px-4 py-4 font-medium text-center">Profit</th>
-                <th className="px-4 py-4 font-medium text-center">Due</th>
-                <th className="px-4 py-4 font-medium text-center">Status</th>
-                <th className="px-4 py-4 font-medium text-center">Actions</th>
+              <tr className="border-b border-accent/20 text-accent text-base font-black uppercase tracking-widest bg-accent/10">
+                <th className="px-4 py-5 font-bold text-center">Bill No.</th>
+                <th className="px-4 py-5 font-bold text-center">Customer Name</th>
+                <th className="px-4 py-5 font-bold text-center">Phone</th>
+                <th className="px-4 py-5 font-bold text-center">Date</th>
+                <th className="px-4 py-5 font-bold text-center">Grand Total</th>
+                <th className="px-4 py-5 font-bold text-center">Profit</th>
+                <th className="px-4 py-5 font-bold text-center">Due</th>
+                <th className="px-4 py-5 font-bold text-center">Status</th>
+                <th className="px-4 py-5 font-bold text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="text-sm">
@@ -215,14 +215,14 @@ export default function BillHistory() {
         ) : (
           <table className="w-full text-center border-collapse whitespace-nowrap md:whitespace-normal relative">
             <thead className="sticky top-0 z-10 bg-surface shadow-sm">
-              <tr className="border-b border-accent/10 text-accent text-sm font-bold uppercase tracking-wider bg-accent/5">
-                <th className="px-4 py-4 font-medium text-center">Date</th>
-                <th className="px-4 py-4 font-medium text-center">Product Name</th>
-                <th className="px-4 py-4 font-medium text-center">Qty</th>
-                <th className="px-4 py-4 font-medium text-center">Rate</th>
-                <th className="px-4 py-4 font-medium text-center">Total Amount</th>
-                <th className="px-4 py-4 font-medium text-center">Profit</th>
-                <th className="px-4 py-4 font-medium text-center">Actions</th>
+              <tr className="border-b border-accent/20 text-accent text-base font-black uppercase tracking-widest bg-accent/10">
+                <th className="px-4 py-5 font-bold text-center">Date</th>
+                <th className="px-4 py-5 font-bold text-center">Product Name</th>
+                <th className="px-4 py-5 font-bold text-center">Qty</th>
+                <th className="px-4 py-5 font-bold text-center">Rate</th>
+                <th className="px-4 py-5 font-bold text-center">Total Amount</th>
+                <th className="px-4 py-5 font-bold text-center">Profit</th>
+                <th className="px-4 py-5 font-bold text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="text-sm">

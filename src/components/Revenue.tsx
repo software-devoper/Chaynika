@@ -24,8 +24,8 @@ export default function Revenue() {
   }, []);
 
   // Calculate stats
-  // Use grandTotal to account for Round Off and Discounts instead of raw subtotal
-  const creditRevenue = bills.reduce((sum, b) => sum + b.grandTotal, 0);
+  // Use (grandTotal - previousDue) to account for Round Off and Discounts for THIS bill only, excluding past debt
+  const creditRevenue = bills.reduce((sum, b) => sum + (b.grandTotal - (b.previousDue || 0)), 0);
   const cashRevenue = cashSales.reduce((sum, s) => sum + s.amount, 0);
   const totalRevenue = creditRevenue + cashRevenue;
   
@@ -101,14 +101,14 @@ export default function Revenue() {
         <div className="overflow-x-auto overflow-y-auto max-h-[60vh] custom-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
           <table className="w-full text-center border-collapse whitespace-nowrap md:whitespace-normal relative">
             <thead className="sticky top-0 z-10 bg-surface shadow-sm">
-              <tr className="border-b border-accent/10 text-accent text-sm font-bold uppercase tracking-wider bg-accent/5">
-                <th className="px-4 py-4 font-medium text-center">Product</th>
-                <th className="px-4 py-4 font-medium text-center">Last Sold</th>
-                <th className="px-4 py-4 font-medium text-center">Qty Sold</th>
-                <th className="px-4 py-4 font-medium text-center">Purchase Rate</th>
-                <th className="px-4 py-4 font-medium text-center">Wholesale Rate</th>
-                <th className="px-4 py-4 font-medium text-center">Unit Profit</th>
-                <th className="px-4 py-4 font-medium text-center">Total Profit</th>
+              <tr className="border-b border-accent/20 text-accent text-base font-black uppercase tracking-widest bg-accent/10">
+                <th className="px-4 py-5 font-bold text-center">Product</th>
+                <th className="px-4 py-5 font-bold text-center">Last Sold</th>
+                <th className="px-4 py-5 font-bold text-center">Qty Sold</th>
+                <th className="px-4 py-5 font-bold text-center">Purchase Rate</th>
+                <th className="px-4 py-5 font-bold text-center">Wholesale Rate</th>
+                <th className="px-4 py-5 font-bold text-center">Unit Profit</th>
+                <th className="px-4 py-5 font-bold text-center">Total Profit</th>
               </tr>
             </thead>
             <tbody className="text-sm">

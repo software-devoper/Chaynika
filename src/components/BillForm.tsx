@@ -566,6 +566,7 @@ export default function BillForm() {
       customerEmail: customer.email || "",
       items: billItems,
       subtotal,
+      previousDue,
       grandTotal: grandTotal,
       paidAmount,
       dueAmount: Math.max(0, grandTotal - paidAmount),
@@ -782,27 +783,27 @@ export default function BillForm() {
         <div className="overflow-x-auto custom-scrollbar -mx-6 px-6 md:mx-0 md:px-0 pb-48">
           <table className="w-full text-center border-collapse whitespace-nowrap md:whitespace-normal">
             <thead>
-              <tr className="border-b border-accent/10 text-accent text-sm font-bold uppercase tracking-wider bg-accent/5">
-                <th className="px-2 py-3 font-medium text-center">Sr.</th>
-                <th className="px-2 py-3 font-medium text-center">Particulars</th>
-                <th className="px-2 py-3 font-medium text-center">
+              <tr className="border-b border-accent/20 text-accent text-base font-black uppercase tracking-widest bg-accent/10">
+                <th className="px-2 py-5 font-bold text-center">Sr.</th>
+                <th className="px-2 py-5 font-bold text-center">Particulars</th>
+                <th className="px-2 py-5 font-bold text-center">
                   <div className="flex items-center justify-center gap-2">
                     {showPurchasePrice && "Preview"}
                     <button
                       onClick={() => setShowPurchasePrice(!showPurchasePrice)}
-                      className="text-[10px] bg-accent/10 text-accent px-2 py-0.5 rounded hover:bg-accent/20 transition-all"
+                      className="text-[10px] bg-accent/10 text-accent px-2 py-0.5 rounded hover:bg-accent/20 transition-all font-bold"
                     >
                       {showPurchasePrice ? "Hide" : "View Preview"}
                     </button>
                   </div>
                 </th>
-                <th className="px-2 py-3 font-medium text-center">MRP</th>
-                <th className="px-2 py-3 font-medium text-center text-xs">W. Rate</th>
-                <th className="px-2 py-3 font-medium text-center">Percentage</th>
-                <th className="px-2 py-3 font-medium text-center">Rate</th>
-                <th className="px-2 py-3 font-medium text-center">Qty</th>
-                <th className="px-2 py-3 font-medium text-center">Total</th>
-                <th className="px-2 py-3 font-medium text-center"></th>
+                <th className="px-2 py-5 font-bold text-center">MRP</th>
+                <th className="px-2 py-5 font-bold text-center text-xs">W. Rate</th>
+                <th className="px-2 py-5 font-bold text-center">Percentage</th>
+                <th className="px-2 py-5 font-bold text-center">Rate</th>
+                <th className="px-2 py-5 font-bold text-center">Qty</th>
+                <th className="px-2 py-5 font-bold text-center">Total</th>
+                <th className="px-2 py-5 font-bold text-center"></th>
               </tr>
             </thead>
             <tbody className="text-sm">

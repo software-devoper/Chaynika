@@ -168,16 +168,16 @@ export default function StockViewPanel() {
       <div className="hidden md:block overflow-x-auto overflow-y-auto max-h-[60vh] custom-scrollbar rounded-xl border border-accent/10 bg-surface">
         <table className="w-full text-center border-collapse relative">
           <thead className="sticky top-0 z-10 bg-surface shadow-sm">
-            <tr className="bg-accent/10 border-b border-accent/20 text-accent text-sm font-bold uppercase tracking-wider">
-              <th className="px-6 py-4 font-medium text-center">Sr. No.</th>
-              <th className="px-6 py-4 font-medium text-center">Date</th>
-              <th className="px-6 py-4 font-medium text-center">Product Name</th>
-              <th className="px-6 py-4 font-medium text-center">Party Name</th>
-              <th className="px-6 py-4 font-medium text-center">Stock</th>
-              <th className="px-6 py-4 font-medium text-center">Purchase Rate</th>
-              <th className="px-6 py-4 font-medium text-center">Wholesale Rate</th>
-              <th className="px-6 py-4 font-medium text-center">MRP</th>
-              <th className="px-6 py-4 font-medium text-center">Actions</th>
+            <tr className="bg-accent/10 border-b border-accent/20 text-accent text-base font-black uppercase tracking-widest">
+              <th className="px-6 py-5 font-bold text-center">Sr. No.</th>
+              <th className="px-6 py-5 font-bold text-center">Date</th>
+              <th className="px-6 py-5 font-bold text-center">Product Name</th>
+              <th className="px-6 py-5 font-bold text-center">Party Name</th>
+              <th className="px-6 py-5 font-bold text-center">Stock</th>
+              <th className="px-6 py-5 font-bold text-center">Purchase Rate</th>
+              <th className="px-6 py-5 font-bold text-center">Wholesale Rate</th>
+              <th className="px-6 py-5 font-bold text-center">MRP</th>
+              <th className="px-6 py-5 font-bold text-center">Actions</th>
             </tr>
           </thead>
           <tbody className="text-text divide-y divide-accent/5">

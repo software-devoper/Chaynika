@@ -197,19 +197,19 @@ export default function Due() {
 
       <div className="overflow-x-auto overflow-y-auto max-h-[60vh] custom-scrollbar -mx-6 px-6 md:mx-0 md:px-0">
         <table className="w-full text-center border-collapse whitespace-nowrap md:whitespace-normal relative">
-          <thead className="sticky top-0 z-10 bg-surface shadow-sm">
-            <tr className="border-b border-accent/10 text-accent text-sm font-bold uppercase tracking-wider bg-accent/5">
-              <th className="px-4 py-4 font-medium text-center">Sr. No.</th>
-              <th className="px-4 py-4 font-medium text-center">{activeTab === "sales" ? "Customer Name" : "Party Name"}</th>
-              {activeTab === "sales" && <th className="px-4 py-4 font-medium text-center">Phone</th>}
-              {activeTab === "sales" && <th className="px-4 py-4 font-medium text-center">Address</th>}
-              <th className="px-4 py-4 font-medium text-center">{activeTab === "sales" ? "Product Name" : "Products"}</th>
-              <th className="px-4 py-4 font-medium text-center">View Details</th>
-              <th className="px-4 py-4 font-medium text-center">Amount</th>
-              <th className="px-4 py-4 font-medium text-center">{activeTab === "sales" ? "Last Bill Date" : "Last Purchase Date"}</th>
-              <th className="px-4 py-4 font-medium text-center">Action</th>
-            </tr>
-          </thead>
+            <thead className="sticky top-0 z-10 bg-surface shadow-sm">
+              <tr className="border-b border-accent/20 text-accent text-base font-black uppercase tracking-widest bg-accent/10">
+                <th className="px-4 py-5 font-bold text-center">Sr. No.</th>
+                <th className="px-4 py-5 font-bold text-center">{activeTab === "sales" ? "Customer Name" : "Party Name"}</th>
+                {activeTab === "sales" && <th className="px-4 py-5 font-bold text-center">Phone</th>}
+                {activeTab === "sales" && <th className="px-4 py-5 font-bold text-center">Address</th>}
+                <th className="px-4 py-5 font-bold text-center">{activeTab === "sales" ? "Product Name" : "Products"}</th>
+                <th className="px-4 py-5 font-bold text-center">View Details</th>
+                <th className="px-4 py-5 font-bold text-center">Amount</th>
+                <th className="px-4 py-5 font-bold text-center">{activeTab === "sales" ? "Last Bill Date" : "Last Purchase Date"}</th>
+                <th className="px-4 py-5 font-bold text-center">Action</th>
+              </tr>
+            </thead>
           <tbody className="text-sm">
             {loading ? (
               <tr>

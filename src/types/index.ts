@@ -83,6 +83,7 @@ export interface Bill {
   customerEmail?: string;
   items: BillItem[];
   subtotal: number;
+  previousDue: number;
   grandTotal: number;
   paidAmount: number;
   dueAmount: number;

@@ -55,13 +55,15 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
     };
   }, []);
 
-  const totalRevenue = bills.reduce((sum, b) => sum + b.subtotal, 0) + cashSales.reduce((sum, s) => sum + s.amount, 0);
+  const totalCreditRevenue = bills.reduce((sum, b) => sum + (b.grandTotal - (b.previousDue || 0)), 0);
+  const totalCashRevenue = cashSales.reduce((sum, s) => sum + s.amount, 0);
+  const totalRevenue = totalCreditRevenue + totalCashRevenue;
   const totalDues = dues.reduce((sum, d) => sum + d.amount, 0);
   const totalStockQuantity = products.reduce((sum, p) => sum + p.stock, 0);
   const totalStockValue = products.reduce((sum, p) => sum + (p.stock * p.purchaseRate), 0);
   
   const today = new Date().toDateString();
-  const todayCreditSales = bills.filter(b => new Date(b.date).toDateString() === today).reduce((sum, b) => sum + b.subtotal, 0);
+  const todayCreditSales = bills.filter(b => new Date(b.date).toDateString() === today).reduce((sum, b) => sum + (b.grandTotal - (b.previousDue || 0)), 0);
   const todayCashSales = cashSales.filter(s => new Date(s.date).toDateString() === today).reduce((sum, s) => sum + s.amount, 0);
   const todaySales = todayCreditSales + todayCashSales;
 

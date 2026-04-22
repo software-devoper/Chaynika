@@ -50,6 +50,7 @@ export default function BillEditModal({ bill, onClose }: BillEditModalProps) {
       ...bill,
       items,
       subtotal,
+      previousDue,
       grandTotal,
       paidAmount,
       dueAmount
@@ -93,12 +94,12 @@ export default function BillEditModal({ bill, onClose }: BillEditModalProps) {
           <div className="overflow-x-auto overflow-y-auto max-h-[40vh] custom-scrollbar rounded-xl border border-accent/20">
             <table className="w-full text-left border-collapse relative">
               <thead className="sticky top-0 z-10 bg-surface shadow-sm">
-                <tr className="bg-accent/10 border-b border-accent/20 text-accent text-sm font-bold uppercase tracking-wider">
-                  <th className="p-3">Product</th>
-                  <th className="p-3 text-center">Rate</th>
-                  <th className="p-3 text-center">Qty</th>
-                  <th className="p-3 text-right">Total</th>
-                  <th className="p-3 text-center">Action</th>
+                <tr className="bg-accent/10 border-b border-accent/20 text-accent text-base font-black uppercase tracking-widest bg-accent/20">
+                  <th className="p-4 font-bold">Product</th>
+                  <th className="p-4 font-bold text-center">Rate</th>
+                  <th className="p-4 font-bold text-center">Qty</th>
+                  <th className="p-4 font-bold text-right">Total</th>
+                  <th className="p-4 font-bold text-center">Action</th>
                 </tr>
               </thead>
               <tbody>

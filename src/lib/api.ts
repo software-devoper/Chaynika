@@ -323,9 +323,10 @@ export const billApi = {
       }
 
       // Update customer dues
-      const dueChange = bill.subtotal - bill.paidAmount;
+      // We use (grandTotal - paidAmount) because it accounts for manual overrides of previousDue in the UI
+      const finalDueAmount = bill.grandTotal - bill.paidAmount;
       const productNamesStr = bill.items.map(item => item.productName).join(", ");
-      if (dueChange !== 0 || bill.dueAmount > 0) {
+      if (finalDueAmount !== 0 || bill.dueAmount > 0) {
         const duePath = `dues/${bill.customerPhone}`;
         try {
           const dueRef = doc(db, "dues", bill.customerPhone);
@@ -340,7 +341,7 @@ export const billApi = {
             updatedProductNames = combined.join(", ");
 
             await updateDoc(dueRef, cleanData({
-              amount: increment(dueChange),
+              amount: finalDueAmount, // Use the definitive balance from the bill form
               lastBillDate: Date.now(),
               additionalPhones: bill.additionalPhones || [],
               productNames: updatedProductNames
@@ -350,7 +351,7 @@ export const billApi = {
               customerPhone: bill.customerPhone,
               customerName: bill.customerName,
               customerAddress: bill.customerAddress,
-              amount: Math.max(0, dueChange),
+              amount: Math.max(0, finalDueAmount),
               lastBillDate: Date.now(),
               additionalPhones: bill.additionalPhones || [],
               productNames: productNamesStr
@@ -398,9 +399,11 @@ export const billApi = {
 
       // 3. Adjust Customer Dues
       if (oldBill.customerPhone === updatedBill.customerPhone) {
-        const oldDueChange = oldBill.subtotal - oldBill.paidAmount;
-        const newDueChange = updatedBill.subtotal - updatedBill.paidAmount;
-        const dueDifference = newDueChange - oldDueChange;
+        // Calculate the difference in the final balance of this bill.
+        // This accounts for changes in subtotal, paidAmount, AND manual previousDue edits.
+        const oldBillBalance = oldBill.grandTotal - oldBill.paidAmount;
+        const newBillBalance = updatedBill.grandTotal - updatedBill.paidAmount;
+        const dueDifference = newBillBalance - oldBillBalance;
 
         if (dueDifference !== 0) {
           const dueRef = doc(db, "dues", updatedBill.customerPhone);
@@ -414,19 +417,19 @@ export const billApi = {
         }
       } else {
         // If customer changed
-        const oldDueChange = oldBill.subtotal - oldBill.paidAmount;
-        if (oldDueChange !== 0) {
+        const oldBillBalance = oldBill.grandTotal - oldBill.paidAmount;
+        if (oldBillBalance !== 0) {
           await updateDoc(doc(db, "dues", oldBill.customerPhone), {
-            amount: increment(-oldDueChange)
+            amount: increment(-oldBillBalance)
           });
         }
-        const newDueChange = updatedBill.subtotal - updatedBill.paidAmount;
-        if (newDueChange !== 0) {
+        const newBillBalance = updatedBill.grandTotal - updatedBill.paidAmount;
+        if (newBillBalance !== 0) {
           const dueRef = doc(db, "dues", updatedBill.customerPhone);
           const dueSnap = await getDoc(dueRef);
           if (dueSnap.exists()) {
             await updateDoc(dueRef, {
-              amount: increment(newDueChange),
+              amount: increment(newBillBalance),
               lastBillDate: Date.now()
             });
           }
@@ -440,7 +443,38 @@ export const billApi = {
     const path = `bills/${id}`;
     console.log(`Attempting to delete bill at path: ${path}`);
     try {
-      const result = await deleteDoc(doc(db, "bills", id));
+      const billRef = doc(db, "bills", id);
+      const billSnap = await getDoc(billRef);
+      if (!billSnap.exists()) {
+        throw new Error("Bill not found");
+      }
+      const bill = billSnap.data() as Bill;
+
+      // 1. Revert Stock
+      for (const item of bill.items) {
+        const productRef = doc(db, "products", item.productId);
+        const multiplier = item.selectedUnitType === "secondary" && item.conversionRate ? item.conversionRate : 1;
+        const revertQty = item.qty * multiplier;
+        await updateDoc(productRef, {
+          stock: increment(revertQty)
+        });
+      }
+
+      // 2. Revert Customer Dues
+      const dueAmount = bill.dueAmount; // Current bill's contribution to total due
+      if (dueAmount !== 0) {
+        const dueRef = doc(db, "dues", bill.customerPhone);
+        const dueSnap = await getDoc(dueRef);
+        if (dueSnap.exists()) {
+          await updateDoc(dueRef, {
+            amount: increment(-dueAmount),
+            lastBillDate: Date.now()
+          });
+        }
+      }
+
+      // 3. Delete Document
+      const result = await deleteDoc(billRef);
       console.log(`Successfully deleted bill: ${id}`);
       return result;
     } catch (error) {
