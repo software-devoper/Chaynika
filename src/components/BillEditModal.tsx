@@ -13,7 +13,7 @@ interface BillEditModalProps {
 export default function BillEditModal({ bill, onClose }: BillEditModalProps) {
   const [items, setItems] = useState<BillItem[]>(bill.items);
   const [paidAmount, setPaidAmount] = useState(bill.paidAmount);
-  const [previousDue, setPreviousDue] = useState(bill.grandTotal - bill.subtotal);
+  const [previousDue, setPreviousDue] = useState(bill.previousDue || 0);
   const [isSaving, setIsSaving] = useState(false);
 
   const updateQty = (productId: string, qty: number) => {

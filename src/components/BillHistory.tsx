@@ -98,7 +98,8 @@ export default function BillHistory() {
       return sum + (item.qty * purchaseRate);
     }, 0);
     // Use grandTotal to account for Round Off and Discounts instead of raw subtotal
-    return bill.grandTotal - totalCost;
+    // Subtract previousDue to calculate profit for THIS bill only
+    return (bill.grandTotal - (bill.previousDue || 0)) - totalCost;
   };
 
   return (

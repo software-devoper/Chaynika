@@ -171,16 +171,16 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
 
   // RIGHT: TOTALS
   const rightAlignX = pageWidth - margin;
-  const previousDue = bill.grandTotal - bill.subtotal;
+  const prevDue = bill.previousDue || 0;
   
   doc.setFontSize(baseFontSize * 1.1);
   doc.setFont("times", "normal");
-  doc.text(`Previous Due:  ${previousDue.toFixed(2)}`, rightAlignX, finalY + 3, { align: "right" });
+  doc.text(`Previous Due:  ${prevDue.toFixed(2)}`, rightAlignX, finalY + 3, { align: "right" });
   doc.text(`Paid Amount:  ${bill.paidAmount.toFixed(2)}`, rightAlignX, finalY + 8, { align: "right" });
   
   doc.setFontSize(baseFontSize * 1.2);
   doc.setFont("times", "bold");
-  doc.text(`Sub Total:  ${bill.subtotal.toFixed(2)}`, rightAlignX, finalY + 13, { align: "right" });
+  doc.text(`Bill Amount:  ${bill.subtotal.toFixed(2)}`, rightAlignX, finalY + 13, { align: "right" });
   
   doc.setFontSize(baseFontSize * 1.2);
   doc.text(`Balance Due:  ${bill.dueAmount.toFixed(2)}`, rightAlignX, finalY + 18, { align: "right" });

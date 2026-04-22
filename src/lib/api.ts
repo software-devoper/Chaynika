@@ -542,17 +542,18 @@ export const dueApi = {
       const currentDue = dueSnap.data().amount;
       const newDue = Math.max(0, currentDue - amountPaid);
       
+      const batch = writeBatch(db);
+      
       // 1. Update the due document
-      await updateDoc(dueRef, cleanData({
+      batch.update(dueRef, cleanData({
         amount: newDue
       }));
       
       // 2. Update bills to reflect the payment
       const allPhones = [phone, ...additionalPhones];
-      const billsQuery = query(collection(db, "bills"), where("customerPhone", "in", allPhones), orderBy("date", "desc"));
+      const billsQuery = query(collection(db, "bills"), where("customerPhone", "in", allPhones));
       const billsSnapshot = await getDocs(billsQuery);
       
-      const batch = writeBatch(db);
       let remainingPayment = amountPaid;
       
       billsSnapshot.forEach((doc) => {
