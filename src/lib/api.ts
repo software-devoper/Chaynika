@@ -88,6 +88,25 @@ export const authApi = {
 };
 
 // Firestore Helpers
+function cleanData(data: any): any {
+  if (data === undefined) return null;
+  if (data === null) return null;
+  if (Array.isArray(data)) {
+    return data.map(item => cleanData(item));
+  }
+  if (typeof data === 'object') {
+    const cleaned: any = {};
+    Object.keys(data).forEach(key => {
+      const val = cleanData(data[key]);
+      if (val !== undefined && val !== null) {
+        cleaned[key] = val;
+      }
+    });
+    return cleaned;
+  }
+  return data;
+}
+
 export const groupApi = {
   getAll: (callback: (groups: Group[]) => void) => {
     const path = "groups";
@@ -102,7 +121,7 @@ export const groupApi = {
   add: async (name: string) => {
     const path = "groups";
     try {
-      return await addDoc(collection(db, path), { name, createdAt: Date.now() });
+      return await addDoc(collection(db, path), cleanData({ name, createdAt: Date.now() }));
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, path);
     }
@@ -110,7 +129,7 @@ export const groupApi = {
   update: async (id: string, name: string) => {
     const path = `groups/${id}`;
     try {
-      return await updateDoc(doc(db, "groups", id), { name });
+      return await updateDoc(doc(db, "groups", id), cleanData({ name }));
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, path);
     }
@@ -149,7 +168,7 @@ export const subgroupApi = {
   add: async (groupId: string, name: string) => {
     const path = "subgroups";
     try {
-      return await addDoc(collection(db, path), { groupId, name, createdAt: Date.now() });
+      return await addDoc(collection(db, path), cleanData({ groupId, name, createdAt: Date.now() }));
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, path);
     }
@@ -157,7 +176,7 @@ export const subgroupApi = {
   update: async (id: string, name: string) => {
     const path = `subgroups/${id}`;
     try {
-      return await updateDoc(doc(db, "subgroups", id), { name });
+      return await updateDoc(doc(db, "subgroups", id), cleanData({ name }));
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, path);
     }
@@ -187,7 +206,7 @@ export const customerApi = {
     const path = `customers/${customer.phone}`;
     try {
       const docRef = doc(db, "customers", customer.phone);
-      await setDoc(docRef, customer, { merge: true });
+      await setDoc(docRef, cleanData(customer), { merge: true });
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, path);
     }
@@ -216,7 +235,7 @@ export const productApi = {
   add: async (product: Omit<Product, "id">) => {
     const path = "products";
     try {
-      return await addDoc(collection(db, path), { ...product, updatedAt: Date.now() });
+      return await addDoc(collection(db, path), cleanData({ ...product, updatedAt: Date.now() }));
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, path);
     }
@@ -224,7 +243,7 @@ export const productApi = {
   update: async (id: string, product: Partial<Product>) => {
     const path = `products/${id}`;
     try {
-      return await updateDoc(doc(db, "products", id), { ...product, updatedAt: Date.now() });
+      return await updateDoc(doc(db, "products", id), cleanData({ ...product, updatedAt: Date.now() }));
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, path);
     }
@@ -261,7 +280,8 @@ export const billApi = {
       let lastBillNo = 0;
       if (!billsSnapshot.empty) {
         const lastBill = billsSnapshot.docs[0].data() as Bill;
-        const match = lastBill.billNo.match(/(\d+)/);
+        const billNoStr = lastBill.billNo || "";
+        const match = billNoStr.match(/(\d+)/);
         if (match) {
           lastBillNo = parseInt(match[1], 10);
         }
@@ -272,7 +292,7 @@ export const billApi = {
       const { id, ...billWithoutId } = bill;
       
       // Create a new document reference with an auto-generated ID
-      const billRef = await addDoc(collection(db, path), { ...billWithoutId, billNo: newBillNo, date: Date.now() });
+      const billRef = await addDoc(collection(db, path), cleanData({ ...billWithoutId, billNo: newBillNo, date: Date.now() }));
       
       // Save/Update customer details
       if (bill.customerPhone) {
@@ -297,7 +317,8 @@ export const billApi = {
             stock: increment(-decrementQty)
           });
         } catch (error) {
-          handleFirestoreError(error, OperationType.UPDATE, productPath);
+          console.error(`Failed to update stock for product ${item.productId}:`, error);
+          // Don't fail the whole bill if stock update fails, but log it
         }
       }
 
@@ -318,14 +339,14 @@ export const billApi = {
             const combined = Array.from(new Set([...existingNames, ...newNames]));
             updatedProductNames = combined.join(", ");
 
-            await updateDoc(dueRef, {
+            await updateDoc(dueRef, cleanData({
               amount: increment(dueChange),
               lastBillDate: Date.now(),
               additionalPhones: bill.additionalPhones || [],
               productNames: updatedProductNames
-            });
+            }));
           } else {
-            await setDoc(dueRef, {
+            await setDoc(dueRef, cleanData({
               customerPhone: bill.customerPhone,
               customerName: bill.customerName,
               customerAddress: bill.customerAddress,
@@ -333,10 +354,10 @@ export const billApi = {
               lastBillDate: Date.now(),
               additionalPhones: bill.additionalPhones || [],
               productNames: productNamesStr
-            });
+            }));
           }
         } catch (error) {
-          handleFirestoreError(error, OperationType.WRITE, duePath);
+          console.error(`Failed to update dues for ${bill.customerPhone}:`, error);
         }
       }
 
@@ -350,15 +371,17 @@ export const billApi = {
     try {
       // 1. Update Bill Document
       const { id, ...billData } = updatedBill;
-      await updateDoc(doc(db, "bills", billId), billData);
+      await updateDoc(doc(db, "bills", billId), cleanData(billData));
 
       // 2. Adjust Stock
       const stockChanges: Record<string, number> = {};
       oldBill.items.forEach(item => {
-        stockChanges[item.productId] = (stockChanges[item.productId] || 0) + item.qty;
+        const multiplier = item.selectedUnitType === "secondary" && item.conversionRate ? item.conversionRate : 1;
+        stockChanges[item.productId] = (stockChanges[item.productId] || 0) + (item.qty * multiplier);
       });
       updatedBill.items.forEach(item => {
-        stockChanges[item.productId] = (stockChanges[item.productId] || 0) - item.qty;
+        const multiplier = item.selectedUnitType === "secondary" && item.conversionRate ? item.conversionRate : 1;
+        stockChanges[item.productId] = (stockChanges[item.productId] || 0) - (item.qty * multiplier);
       });
 
       for (const [productId, change] of Object.entries(stockChanges)) {
@@ -474,9 +497,9 @@ export const dueApi = {
       const newDue = Math.max(0, currentDue - amountPaid);
       
       // 1. Update the due document
-      await updateDoc(dueRef, {
+      await updateDoc(dueRef, cleanData({
         amount: newDue
-      });
+      }));
       
       // 2. Update bills to reflect the payment
       const allPhones = [phone, ...additionalPhones];
@@ -550,19 +573,19 @@ export const partyDueApi = {
           updatedProductNames = combined.join(", ");
         }
 
-        await updateDoc(dueRef, {
+        await updateDoc(dueRef, cleanData({
           amount: increment(dueChange),
           lastPurchaseDate: Date.now(),
           ...(productNames ? { productNames: updatedProductNames } : {})
-        });
+        }));
       } else {
-        await setDoc(dueRef, {
+        await setDoc(dueRef, cleanData({
           groupId,
           partyName,
           amount: Math.max(0, dueChange),
           lastPurchaseDate: Date.now(),
           productNames: productNames || ""
-        });
+        }));
       }
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, path);
@@ -615,7 +638,7 @@ export const settingsApi = {
     try {
       const docRef = doc(db, "settings", "access");
       const hashedPassword = await bcrypt.hash(newPassword, 10);
-      await setDoc(docRef, { password: hashedPassword }, { merge: true });
+      await setDoc(docRef, cleanData({ password: hashedPassword }), { merge: true });
     } catch (error: any) {
       console.error("Error updating password:", error);
       throw new Error("Failed to update password. Please check your permissions.");
@@ -634,7 +657,7 @@ export const settingsApi = {
   updateBusinessInfo: async (info: any) => {
     try {
       const docRef = doc(db, "settings", "business");
-      await setDoc(docRef, info, { merge: true });
+      await setDoc(docRef, cleanData(info), { merge: true });
     } catch (error) {
       console.error("Error updating business info:", error);
       throw new Error("Failed to update business info.");
@@ -694,7 +717,7 @@ export const cashSaleApi = {
   create: async (sale: any) => {
     const path = "cashSales";
     try {
-      const saleRef = await addDoc(collection(db, path), { ...sale, date: Date.now() });
+      const saleRef = await addDoc(collection(db, path), cleanData({ ...sale, date: Date.now() }));
       
       // Update stock
       const productRef = doc(db, "products", sale.productId);

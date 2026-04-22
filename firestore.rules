@@ -79,6 +79,13 @@ service cloud.firestore {
              data.createdAt is number;
     }
 
+    function isValidSubgroup(data) {
+      return data.keys().hasAll(['groupId', 'name', 'createdAt']) &&
+             data.groupId is string &&
+             data.name is string && data.name.size() > 0 &&
+             data.createdAt is number;
+    }
+
     function isValidProduct(data) {
       return data.keys().hasAll(['name', 'groupId', 'groupName', 'purchaseRate', 'wholesaleRate', 'mrp', 'stock', 'unit', 'updatedAt']) &&
              data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
@@ -137,19 +144,31 @@ service cloud.firestore {
     }
 
     match /groups/{groupId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidGroup(request.resource.data);
+      allow update: if isAuthenticated() && isValidGroup(request.resource.data);
+      allow delete: if isAuthenticated();
     }
     
     match /subgroups/{subgroupId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidSubgroup(request.resource.data); 
+      allow update: if isAuthenticated() && isValidSubgroup(request.resource.data);
+      allow delete: if isAuthenticated();
     }
 
     match /products/{productId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidProduct(request.resource.data);
+      allow update: if isAuthenticated() && isValidProduct(request.resource.data);
+      allow delete: if isAuthenticated();
     }
 
     match /bills/{billId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidBill(request.resource.data);
+      allow update: if isAuthenticated() && isValidBill(request.resource.data);
+      allow delete: if isAuthenticated();
     }
 
     match /customers/{customerId} {
@@ -157,7 +176,8 @@ service cloud.firestore {
     }
 
     match /dues/{dueId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
     }
 
     match /partyDues/{dueId} {
@@ -165,7 +185,10 @@ service cloud.firestore {
     }
 
     match /cashSales/{saleId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidCashSale(request.resource.data);
+      allow update: if isAuthenticated() && isValidCashSale(request.resource.data);
+      allow delete: if isAuthenticated();
     }
   }
 }
