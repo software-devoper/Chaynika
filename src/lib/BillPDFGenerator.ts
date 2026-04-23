@@ -213,37 +213,42 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
   const safeCustomerName = bill.customerName ? bill.customerName.replace(/[^a-z0-9]/gi, "_") : "Unknown";
   const filename = `CHAYANIKA_BILL_${bill.billNo || "Draft"}_${safeCustomerName}.pdf`;
   
-  // More robust mobile/touch detection
+  // More robust mobile detection (avoiding touch points check for desktop touch laptops)
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-                   (window.innerWidth <= 800) ||
-                   (navigator.maxTouchPoints > 0);
+                   (window.innerWidth <= 768);
 
   if (action === "print") {
-    if (isMobile) {
-      try {
-        doc.save(filename);
-        toast.dismiss(loadingToast);
-        toast.success("Bill downloaded. Open it to print.");
-      } catch (e) {
-        console.error("Save failed", e);
-        toast.dismiss(loadingToast);
-        toast.error("Failed to download bill");
+    try {
+      doc.autoPrint();
+      const pdfBlob = doc.output("blob");
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      
+      const printWindow = window.open(pdfUrl, "_blank");
+      toast.dismiss(loadingToast);
+      
+      if (!printWindow) {
+        // Fallback for pop-up blockers - try an iframe
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
+        iframe.src = pdfUrl;
+        document.body.appendChild(iframe);
+        
+        iframe.onload = () => {
+          setTimeout(() => {
+            iframe.contentWindow?.print();
+            // We don't remove the iframe immediately to allow print dialog to handle it
+          }, 500);
+        };
+        toast.success("Opening print dialog...");
+      } else {
+        toast.success("Print dialog opened");
       }
-    } else {
-      try {
-        doc.autoPrint();
-        const pdfBlobUrl = doc.output("bloburl");
-        const printWindow = window.open(pdfBlobUrl, "_blank");
-        toast.dismiss(loadingToast);
-        if (!printWindow) {
-          doc.save(filename);
-          toast.success("Bill saved (popup was blocked)");
-        }
-      } catch (e) {
-        console.error("Desktop print failed", e);
-        doc.save(filename);
-        toast.dismiss(loadingToast);
-      }
+    } catch (e) {
+      console.error("Print failed", e);
+      // Final fallback to save only if print attempt totally fails
+      doc.save(filename);
+      toast.dismiss(loadingToast);
+      toast.success("Print failed, bill saved to downloads");
     }
   } else {
     try {

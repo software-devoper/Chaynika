@@ -50,6 +50,33 @@ export default function App() {
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey) {
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          window.scrollBy({ top: -300, behavior: 'smooth' });
+          
+          // Try to scroll the active tab's scrollable container if it has one
+          const customScrollbars = document.querySelectorAll('.custom-scrollbar');
+          customScrollbars.forEach(el => {
+            if (el.getBoundingClientRect().height > 0) {
+              el.scrollBy({ top: -300, behavior: 'smooth' });
+            }
+          });
+          return;
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          window.scrollBy({ top: 300, behavior: 'smooth' });
+
+          const customScrollbars = document.querySelectorAll('.custom-scrollbar');
+          customScrollbars.forEach(el => {
+            if (el.getBoundingClientRect().height > 0) {
+              el.scrollBy({ top: 300, behavior: 'smooth' });
+            }
+          });
+          return;
+        }
+      }
+
       if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
         switch (e.key.toLowerCase()) {
           case 'p':

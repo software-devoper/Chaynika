@@ -625,13 +625,13 @@ export default function BillForm() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
       {/* Left Panel: Customer Details */}
-      <div className="lg:col-span-1 space-y-6">
+      <div className="lg:col-span-1 space-y-4">
         <h4 className="text-lg font-bold text-accent border-b border-accent/10 pb-2">Customer Details</h4>
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="relative">
-            <label className="block text-sm font-medium text-muted mb-2">Customer Name</label>
+            <label className="block text-sm font-medium text-muted mb-1">Customer Name</label>
             <input
               type="text"
               value={customer.name}
@@ -643,7 +643,7 @@ export default function BillForm() {
               onFocus={() => setShowCustomerDropdown(true)}
               onBlur={() => setTimeout(() => setShowCustomerDropdown(false), 200)}
               onKeyDown={handleCustomerKeyDown}
-              className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
+              className="w-full bg-primary border border-accent/10 rounded-xl px-3 py-2.5 text-text focus:border-accent outline-none transition-all text-sm"
               placeholder="Enter name"
             />
             {showCustomerDropdown && customers.length > 0 && (
@@ -679,31 +679,31 @@ export default function BillForm() {
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-muted mb-2">Address</label>
+            <label className="block text-sm font-medium text-muted mb-1">Address</label>
             <input
               type="text"
               value={customer.address}
               onChange={(e) => setCustomer({ ...customer, address: capitalizeFirstLetter(e.target.value) })}
-              className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
+              className="w-full bg-primary border border-accent/10 rounded-xl px-3 py-2.5 text-text focus:border-accent outline-none transition-all text-sm"
               placeholder="Enter address"
             />
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex justify-between items-center">
               <label className="block text-sm font-medium text-muted">Phone Number(s) *</label>
               {phones.length < 3 && (
                 <button 
                   onClick={addPhoneField}
-                  className="text-xs flex items-center gap-1.5 bg-accent/10 text-accent px-3 py-1.5 rounded-lg hover:bg-accent/20 transition-all font-bold"
+                  className="text-[10px] flex items-center gap-1.5 bg-accent/10 text-accent px-2 py-1 rounded-lg hover:bg-accent/20 transition-all font-bold"
                 >
-                  <Plus size={14} /> Add Alternate
+                  <Plus size={12} /> Add Alternate
                 </button>
               )}
             </div>
             {phones.map((phone, index) => (
               <div key={`phone-${index}`} className="relative group">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted text-xs font-bold">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[10px] font-bold">
                   {index === 0 ? "PRI" : `ALT ${index}`}
                 </div>
                 <input
@@ -711,8 +711,8 @@ export default function BillForm() {
                   required={index === 0}
                   value={phone}
                   onChange={(e) => handlePhoneChange(index, e.target.value)}
-                  className="w-full bg-primary border border-accent/10 rounded-xl pl-16 pr-12 py-3 text-text focus:border-accent outline-none transition-all font-mono tracking-wider"
-                  placeholder="10 digit number"
+                  className="w-full bg-primary border border-accent/10 rounded-xl pl-12 pr-10 py-2.5 text-text focus:border-accent outline-none transition-all font-mono tracking-wider text-sm"
+                  placeholder="10 digit"
                 />
                 {phones.length > 1 && (
                   <button 
@@ -728,18 +728,18 @@ export default function BillForm() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-muted mb-2">Email (Optional)</label>
+            <label className="block text-sm font-medium text-muted mb-1 text-xs">Email (Optional)</label>
             <input
               type="email"
               value={customer.email}
               onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
-              className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
+              className="w-full bg-primary border border-accent/10 rounded-xl px-3 py-2 text-text focus:border-accent outline-none transition-all text-sm"
               placeholder="Enter email"
             />
           </div>
 
-          <div className="pt-4 p-4 bg-primary/30 rounded-xl border border-accent/5">
-            <div className="flex justify-between items-center">
+          <div className="pt-2 p-3 bg-primary/30 rounded-xl border border-accent/5">
+            <div className="flex justify-between items-center text-sm">
               <span className="text-muted">Previous Due:</span>
               <span className="text-accent font-bold">{formatCurrency(previousDue)}</span>
             </div>
@@ -779,31 +779,31 @@ export default function BillForm() {
       </div>
 
       {/* Right Panel: Product Search & Table */}
-      <div className="lg:col-span-2 space-y-6">
-        <div className="overflow-x-auto custom-scrollbar -mx-6 px-6 md:mx-0 md:px-0 pb-48">
-          <table className="w-full text-center border-collapse whitespace-nowrap md:whitespace-normal">
-            <thead>
-              <tr className="border-b border-accent/20 text-accent text-base font-black uppercase tracking-widest bg-accent/10">
-                <th className="px-2 py-5 font-bold text-center">Sr.</th>
-                <th className="px-2 py-5 font-bold text-center">Particulars</th>
-                <th className="px-2 py-5 font-bold text-center">
-                  <div className="flex items-center justify-center gap-2">
-                    {showPurchasePrice && "Preview"}
+      <div className="lg:col-span-3 space-y-4">
+        <div className="overflow-x-auto overflow-y-auto max-h-[60vh] custom-scrollbar -mx-6 px-6 md:mx-0 md:px-0 pb-32 relative rounded-xl border border-accent/10">
+          <table className="w-full text-center border-collapse whitespace-nowrap min-w-[800px]">
+            <thead className="sticky top-0 z-20 bg-surface shadow-sm outline outline-1 outline-accent/10">
+              <tr className="border-b border-accent/20 text-accent text-xs font-black uppercase tracking-widest bg-accent/10">
+                <th className="px-1 py-3 font-bold text-center w-8">Sr.</th>
+                <th className="px-2 py-3 font-bold text-left min-w-[150px]">Particulars</th>
+                <th className="px-1 py-3 font-bold text-center">
+                  <div className="flex items-center justify-center gap-1">
+                    {showPurchasePrice && "Prev"}
                     <button
                       onClick={() => setShowPurchasePrice(!showPurchasePrice)}
-                      className="text-[10px] bg-accent/10 text-accent px-2 py-0.5 rounded hover:bg-accent/20 transition-all font-bold"
+                      className="text-[9px] bg-accent/10 text-accent px-1.5 py-0.5 rounded hover:bg-accent/20 transition-all"
                     >
-                      {showPurchasePrice ? "Hide" : "View Preview"}
+                      {showPurchasePrice ? "Hide" : "Stock"}
                     </button>
                   </div>
                 </th>
-                <th className="px-2 py-5 font-bold text-center">MRP</th>
-                <th className="px-2 py-5 font-bold text-center text-xs">W. Rate</th>
-                <th className="px-2 py-5 font-bold text-center">Percentage</th>
-                <th className="px-2 py-5 font-bold text-center">Rate</th>
-                <th className="px-2 py-5 font-bold text-center">Qty</th>
-                <th className="px-2 py-5 font-bold text-center">Total</th>
-                <th className="px-2 py-5 font-bold text-center"></th>
+                <th className="px-1 py-3 font-bold text-center">MRP</th>
+                <th className="px-1 py-3 font-bold text-center">W.Rate</th>
+                <th className="px-1 py-3 font-bold text-center">%</th>
+                <th className="px-1 py-3 font-bold text-center">Rate</th>
+                <th className="px-1 py-3 font-bold text-center w-16">Qty</th>
+                <th className="px-2 py-3 font-bold text-center">Total</th>
+                <th className="px-1 py-3 font-bold text-center w-8"></th>
               </tr>
             </thead>
             <tbody className="text-sm">
@@ -819,8 +819,8 @@ export default function BillForm() {
                     key={item.productId} 
                     className="border-b border-accent/5 group relative"
                   >
-                    <td className="px-2 py-4 text-center">{index + 1}</td>
-                    <td className="px-2 py-4 font-medium text-center relative">
+                    <td className="px-1 py-1 text-center text-xs">{index + 1}</td>
+                    <td className="px-1 py-1 font-medium text-left relative min-w-[150px]">
                       <input
                         id={`bf-${item.productId}-col-0`}
                         type="text"
@@ -836,7 +836,8 @@ export default function BillForm() {
                         }}
                         onBlur={() => setTimeout(() => setActiveDropdownRowId(null), 200)}
                         onKeyDown={(e) => handleProductRowKeyDown(e, item.productId, filteredProducts)}
-                        className="w-full bg-transparent border-b border-transparent hover:border-accent/30 focus:border-accent outline-none text-center transition-colors px-2"
+                        className="w-full bg-primary/30 border border-accent/5 rounded px-2 py-1 text-xs text-text outline-none focus:border-accent"
+                        placeholder="Product Name"
                       />
                       {activeDropdownRowId === item.productId && item.productName && (
                         <div className="absolute z-50 w-full mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl max-h-48 overflow-y-auto left-0 text-left min-w-full">
@@ -863,15 +864,15 @@ export default function BillForm() {
                         </div>
                       )}
                     </td>
-                    <td className="px-2 py-4 text-center text-muted">
+                    <td className="px-1 py-1 text-center text-muted text-xs">
                       {showPurchasePrice ? formatCurrency(products.find(p => p.id === item.productId)?.purchaseRate || 0) : ""}
                     </td>
-                    <td className="px-2 py-4 text-center">{formatCurrency(item.mrp)}</td>
-                    <td className="px-2 py-4 text-center text-muted text-xs">{formatCurrency(item.wholesaleRate || 0)}</td>
-                    <td className="px-2 py-4 text-center text-accent font-bold">
+                    <td className="px-1 py-1 text-center text-xs">{formatCurrency(item.mrp)}</td>
+                    <td className="px-1 py-1 text-center text-muted text-[10px]">{formatCurrency(item.wholesaleRate || 0)}</td>
+                    <td className="px-1 py-1 text-center text-accent font-bold text-xs">
                       {item.mrp > 0 ? (((item.mrp - item.price) / item.mrp) * 100).toFixed(1) : 0}%
                     </td>
-                    <td className="px-2 py-4 text-center">
+                    <td className="px-1 py-1 text-center">
                       <input
                         id={`bf-${item.productId}-col-1`}
                         type="number"
@@ -879,11 +880,11 @@ export default function BillForm() {
                         value={item.price}
                         onChange={(e) => updatePrice(item.productId, Number(e.target.value))}
                         onKeyDown={(e) => handleGridKeyDown(e, item.productId)}
-                        className="w-20 bg-primary border border-accent/10 rounded px-2 py-1 text-center outline-none focus:border-accent mx-auto"
+                        className="w-16 bg-primary border border-accent/10 rounded px-1 py-0.5 text-center outline-none focus:border-accent mx-auto text-xs"
                       />
                     </td>
-                    <td className="px-2 py-4 text-center align-top">
-                      <div className="flex flex-col items-center gap-1">
+                    <td className="px-1 py-1 text-center align-middle">
+                      <div className="flex flex-col items-center">
                         <input
                           id={`bf-${item.productId}-col-2`}
                           ref={el => { qtyInputRefs.current[item.productId] = el; }}
@@ -891,26 +892,26 @@ export default function BillForm() {
                           value={item.qty}
                           onChange={(e) => updateQuantity(item.productId, Number(e.target.value))}
                           onKeyDown={(e) => handleGridKeyDown(e, item.productId)}
-                          className="w-16 bg-primary border border-accent/10 rounded px-2 py-1 text-center outline-none focus:border-accent mx-auto"
+                          className="w-12 bg-primary border border-accent/10 rounded px-1 py-0.5 text-center outline-none focus:border-accent mx-auto text-xs"
                         />
                         {item.hasSecondaryUnit ? (
                           <select 
                             value={item.selectedUnitType || "primary"} 
                             onChange={e => updateUnitType(item.productId, e.target.value as "primary" | "secondary")} 
-                            className="w-16 text-[10px] font-medium bg-accent/10 text-accent border border-accent/20 rounded px-1 py-1 outline-none cursor-pointer uppercase mx-auto block"
+                            className="w-12 text-[8px] font-medium bg-accent/10 text-accent border border-accent/20 rounded px-1 py-0.5 outline-none cursor-pointer uppercase mx-auto block mt-0.5"
                           >
                             <option value="primary">{item.unit || "Pcs"}</option>
                             <option value="secondary">{item.secondaryUnit}</option>
                           </select>
                         ) : (
-                          <span className="text-[10px] text-muted font-medium bg-accent/5 px-2 py-0.5 rounded uppercase mx-auto block w-fit">{item.unit || "Pcs"}</span>
+                          <span className="text-[8px] text-muted font-medium bg-accent/5 px-1 py-0.5 rounded uppercase mx-auto block w-fit mt-0.5">{item.unit || "Pcs"}</span>
                         )}
                       </div>
                     </td>
-                    <td className="px-2 py-4 text-center font-medium">{formatCurrency(item.total)}</td>
-                    <td className="px-2 py-4 text-center">
-                      <button onClick={() => removeProductFromBill(item.productId)} className="text-muted hover:text-red-500 transition-colors mx-auto block">
-                        <X size={16} className="mx-auto" />
+                    <td className="px-1 py-1 text-center font-medium text-xs text-text">{formatCurrency(item.total)}</td>
+                    <td className="px-1 py-1 text-center">
+                      <button onClick={() => removeProductFromBill(item.productId)} className="text-muted hover:text-red-500 transition-colors mx-auto block p-1">
+                        <X size={14} className="mx-auto" />
                       </button>
                     </td>
                   </motion.tr>
@@ -920,10 +921,10 @@ export default function BillForm() {
               
               {/* Search Row */}
               <tr className="bg-accent/5">
-                <td className="px-2 py-4 text-center text-muted font-bold">{billItems.length + 1}</td>
-                <td className="px-2 py-4 text-center relative" colSpan={2}>
+                <td className="px-1 py-1 text-center text-muted font-bold text-xs">{billItems.length + 1}</td>
+                <td className="px-1 py-1 text-center relative" colSpan={3}>
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={14} />
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-muted" size={12} />
                     <input
                       ref={searchInputRef}
                       type="text"
@@ -934,7 +935,7 @@ export default function BillForm() {
                         setActiveProductSuggestionIndex(-1);
                       }}
                       onKeyDown={handleProductSearchKeyDown}
-                      className="w-full bg-primary border border-accent/10 rounded-lg pl-9 pr-4 py-2 text-sm text-text focus:border-accent outline-none transition-all"
+                      className="w-full bg-primary border border-accent/10 rounded px-2 pl-8 py-1.5 text-xs text-text focus:border-accent outline-none transition-all"
                     />
                     
                     {searchResults.length > 0 && (

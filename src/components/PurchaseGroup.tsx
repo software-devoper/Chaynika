@@ -532,13 +532,13 @@ export default function PurchaseGroup() {
   }, [products, selectedGroupId, groups]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:gap-6">
       {/* Left Panel: Party Details */}
-      <div className="lg:col-span-1 space-y-6">
+      <div className="lg:col-span-1 space-y-4">
         <h4 className="text-lg font-bold text-accent border-b border-accent/10 pb-2">Party Details</h4>
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="relative">
-            <label className="block text-sm font-medium text-muted mb-2">Party Name *</label>
+            <label className="block text-sm font-medium text-muted mb-1">Party Name *</label>
             <input
               required
               type="text"
@@ -552,7 +552,7 @@ export default function PurchaseGroup() {
               onFocus={() => setShowGroupDropdown(true)}
               onBlur={() => setTimeout(() => setShowGroupDropdown(false), 200)}
               onKeyDown={handlePartyKeyDown}
-              className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-3 text-text focus:border-accent outline-none transition-all"
+              className="w-full bg-primary border border-accent/10 rounded-xl px-3 py-2.5 text-text focus:border-accent outline-none transition-all text-sm"
               placeholder="Select or type party name"
               autoComplete="off"
             />
@@ -629,13 +629,13 @@ export default function PurchaseGroup() {
       </div>
 
       {/* Right Panel: Products Table */}
-      <div className="lg:col-span-3 space-y-6">
+      <div className="lg:col-span-4 space-y-4">
         <div className="flex justify-between items-center border-b border-accent/10 pb-2">
           <h4 className="text-lg font-bold text-accent">Products</h4>
           <button
             type="button"
             onClick={addRow}
-            className="text-sm flex items-center gap-1.5 bg-accent/10 text-accent px-4 py-2 rounded-lg hover:bg-accent/20 transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-xs flex items-center gap-1.5 bg-accent/10 text-accent px-3 py-1.5 rounded-lg hover:bg-accent/20 transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={purchaseItems.length > 0 && (
               !purchaseItems[purchaseItems.length - 1].productName.trim() || 
               purchaseItems[purchaseItems.length - 1].quantity === "" || 
@@ -652,16 +652,16 @@ export default function PurchaseGroup() {
           </button>
         </div>
 
-        <div className="overflow-x-auto -mx-6 px-6 md:mx-0 md:px-0 pb-48">
-          <table className="w-full text-center border-collapse whitespace-nowrap md:whitespace-normal">
-            <thead>
-              <tr className="border-b border-accent/10 text-accent text-sm font-bold uppercase tracking-wider bg-accent/5">
-                <th className="px-2 py-3 font-medium text-center">Product Name</th>
-                <th className="px-2 py-3 font-medium text-center">Quantity</th>
-                <th className="px-2 py-3 font-medium text-center">Purchase Rate</th>
-                <th className="px-2 py-3 font-medium text-center">Wholesale Rate</th>
-                <th className="px-2 py-3 font-medium text-center">MRP</th>
-                <th className="px-2 py-3 font-medium text-center"></th>
+        <div className="overflow-x-auto overflow-y-auto max-h-[60vh] custom-scrollbar -mx-6 px-6 md:mx-0 md:px-0 pb-32 relative rounded-xl border border-accent/10">
+          <table className="w-full text-center border-collapse whitespace-nowrap min-w-[700px]">
+            <thead className="sticky top-0 z-20 bg-surface shadow-sm outline outline-1 outline-accent/10">
+              <tr className="border-b border-accent/10 text-accent text-xs font-bold uppercase tracking-wider bg-accent/10">
+                <th className="px-1 py-3 font-medium text-left min-w-[150px]">Product Name</th>
+                <th className="px-1 py-3 font-medium text-center w-20">Qty</th>
+                <th className="px-1 py-3 font-medium text-center w-24">P.Rate</th>
+                <th className="px-1 py-3 font-medium text-center w-24">W.Rate</th>
+                <th className="px-1 py-3 font-medium text-center w-24">MRP</th>
+                <th className="px-1 py-3 font-medium text-center w-8"></th>
               </tr>
             </thead>
             <tbody className="text-sm">
@@ -677,7 +677,7 @@ export default function PurchaseGroup() {
                     key={item.rowId} 
                     className="border-b border-accent/5 group"
                   >
-                    <td className="px-2 py-3 relative text-center align-top">
+                    <td className="px-1 py-1 relative text-left align-middle">
                       <input
                         id={`pg-${item.rowId}-col-0`}
                         ref={el => { nameInputRefs.current[item.rowId] = el; }}
@@ -695,7 +695,7 @@ export default function PurchaseGroup() {
                         onBlur={() => setTimeout(() => setActiveDropdownRowId(null), 200)}
                         onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
                         placeholder="Product Name"
-                        className="w-full bg-primary border border-accent/10 rounded px-3 py-2 text-text outline-none focus:border-accent"
+                        className="w-full bg-primary/30 border border-accent/10 rounded px-2 py-1.5 text-xs text-text outline-none focus:border-accent"
                       />
                       {activeDropdownRowId === item.rowId && item.productName && item.isNew && filteredProducts.length > 0 && (
                         <div className="absolute z-50 w-full mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl max-h-48 overflow-y-auto left-0 min-w-full">
@@ -771,8 +771,8 @@ export default function PurchaseGroup() {
                         </div>
                       )}
                     </td>
-                    <td className="px-2 py-3 text-center align-top">
-                      <div className="flex flex-col items-center gap-1">
+                    <td className="px-1 py-1 text-center align-middle">
+                      <div className="flex flex-col items-center">
                         <input
                           id={`pg-${item.rowId}-col-1`}
                           type="number"
@@ -781,15 +781,15 @@ export default function PurchaseGroup() {
                           onChange={(e) => updateRow(item.rowId, "quantity", e.target.value)}
                           onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
                           placeholder="0"
-                          className="w-20 bg-primary border border-accent/10 rounded px-2 py-2 text-center outline-none focus:border-accent"
+                          className="w-16 bg-primary border border-accent/10 rounded px-1 py-1 text-center outline-none focus:border-accent text-xs font-bold"
                         />
                         {!item.hasSecondaryUnit ? (
-                          <span className="text-[10px] text-muted font-medium bg-accent/5 px-2 py-0.5 rounded uppercase">{item.unit}</span>
+                          <span className="text-[8px] text-muted font-medium bg-accent/5 px-1 py-0.5 rounded uppercase mt-0.5">{item.unit}</span>
                         ) : (
                           <select 
                             value={item.selectedUnitType} 
                             onChange={e => updateRow(item.rowId, "selectedUnitType", e.target.value)} 
-                            className="w-20 text-[10px] font-medium bg-accent/10 text-accent border border-accent/20 rounded px-1 py-1 outline-none cursor-pointer uppercase"
+                            className="w-16 text-[8px] font-medium bg-accent/10 text-accent border border-accent/20 rounded px-1 py-0.5 outline-none cursor-pointer uppercase mt-0.5"
                           >
                             <option value="primary">{item.unit}</option>
                             <option value="secondary">{item.secondaryUnit}</option>
@@ -797,7 +797,7 @@ export default function PurchaseGroup() {
                         )}
                       </div>
                     </td>
-                    <td className="px-2 py-3 text-center align-top">
+                    <td className="px-1 py-1 text-center align-middle">
                       <input
                         id={`pg-${item.rowId}-col-2`}
                         type="number"
@@ -807,10 +807,10 @@ export default function PurchaseGroup() {
                         onChange={(e) => updateRow(item.rowId, "purchaseRate", e.target.value)}
                         onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
                         placeholder="0"
-                        className="w-24 mx-auto block bg-primary border border-accent/10 rounded px-2 py-2 text-center outline-none focus:border-accent"
+                        className="w-20 mx-auto block bg-primary border border-accent/10 rounded px-1 py-1 text-center outline-none focus:border-accent text-xs"
                       />
                     </td>
-                    <td className="px-2 py-3 text-center align-top">
+                    <td className="px-1 py-1 text-center align-middle">
                       <input
                         id={`pg-${item.rowId}-col-3`}
                         type="number"
@@ -820,10 +820,10 @@ export default function PurchaseGroup() {
                         onChange={(e) => updateRow(item.rowId, "wholesaleRate", e.target.value)}
                         onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
                         placeholder="0"
-                        className="w-24 mx-auto block bg-primary border border-accent/10 rounded px-2 py-2 text-center outline-none focus:border-accent"
+                        className="w-20 mx-auto block bg-primary border border-accent/10 rounded px-1 py-1 text-center outline-none focus:border-accent text-xs"
                       />
                     </td>
-                    <td className="px-2 py-3 text-center align-top">
+                    <td className="px-1 py-1 text-center align-middle">
                       <input
                         id={`pg-${item.rowId}-col-4`}
                         type="number"
@@ -833,16 +833,16 @@ export default function PurchaseGroup() {
                         onChange={(e) => updateRow(item.rowId, "mrp", e.target.value)}
                         onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
                         placeholder="0"
-                        className="w-24 mx-auto block bg-primary border border-accent/10 rounded px-2 py-2 text-center outline-none focus:border-accent"
+                        className="w-20 mx-auto block bg-primary border border-accent/10 rounded px-1 py-1 text-center outline-none focus:border-accent text-xs"
                       />
                     </td>
-                    <td className="px-2 py-3 text-center align-top">
+                    <td className="px-1 py-1 text-center align-middle">
                       <button 
                         type="button"
                         onClick={() => removeRow(item.rowId)} 
-                        className="text-muted hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-500/10 mx-auto block"
+                        className="text-muted hover:text-red-500 transition-colors p-1 rounded-lg hover:bg-red-500/10 mx-auto block"
                       >
-                        <Trash2 size={16} className="mx-auto" />
+                        <Trash2 size={14} className="mx-auto" />
                       </button>
                     </td>
                   </motion.tr>
