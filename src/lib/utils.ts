@@ -6,10 +6,11 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(amount: number) {
+  const safeAmount = isNaN(amount) ? 0 : amount;
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
-  }).format(amount);
+  }).format(safeAmount);
 }
 
 export function formatDate(timestamp: number) {

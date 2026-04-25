@@ -91,6 +91,7 @@ export const authApi = {
 function cleanData(data: any): any {
   if (data === undefined) return null;
   if (data === null) return null;
+  if (typeof data === 'number' && isNaN(data)) return 0;
   if (Array.isArray(data)) {
     return data.map(item => cleanData(item));
   }
@@ -539,8 +540,8 @@ export const dueApi = {
         throw new Error("Due document not found");
       }
       
-      const currentDue = dueSnap.data().amount;
-      const newDue = Math.max(0, currentDue - amountPaid);
+      const currentDue = Number(dueSnap.data().amount) || 0;
+      const newDue = Math.max(0, currentDue - (Number(amountPaid) || 0));
       
       const batch = writeBatch(db);
       
@@ -597,6 +598,7 @@ export const partyDueApi = {
   },
   addOrUpdate: async (groupId: string, partyName: string, dueChange: number, productNames?: string, isNewParty: boolean = false) => {
     const path = `partyDues/${groupId}`;
+    const safeDueChange = isNaN(dueChange) ? 0 : dueChange;
     try {
       let dueRef = doc(db, "partyDues", groupId);
       let dueSnap = await getDoc(dueRef);
@@ -621,7 +623,7 @@ export const partyDueApi = {
         }
 
         await updateDoc(dueRef, cleanData({
-          amount: increment(dueChange),
+          amount: increment(safeDueChange),
           lastPurchaseDate: Date.now(),
           ...(productNames ? { productNames: updatedProductNames } : {})
         }));
@@ -629,7 +631,7 @@ export const partyDueApi = {
         await setDoc(dueRef, cleanData({
           groupId,
           partyName,
-          amount: Math.max(0, dueChange),
+          amount: Math.max(0, safeDueChange),
           lastPurchaseDate: Date.now(),
           productNames: productNames || ""
         }));

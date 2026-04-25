@@ -139,8 +139,8 @@ export default function Due() {
     }
   };
 
-  const totalSalesDue = customerDues.reduce((sum, due) => sum + due.amount, 0);
-  const totalPurchaseDue = partyDues.reduce((sum, due) => sum + due.amount, 0);
+  const totalSalesDue = customerDues.reduce((sum, due) => sum + (Number(due.amount) || 0), 0);
+  const totalPurchaseDue = partyDues.reduce((sum, due) => sum + (Number(due.amount) || 0), 0);
 
   return (
     <motion.div 
