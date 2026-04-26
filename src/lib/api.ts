@@ -96,6 +96,10 @@ function cleanData(data: any): any {
     return data.map(item => cleanData(item));
   }
   if (typeof data === 'object') {
+    // Preserve special objects like Firestore FieldValue
+    if (data.constructor && data.constructor.name !== 'Object' && data.constructor.name !== 'Array') {
+      return data;
+    }
     const cleaned: any = {};
     Object.keys(data).forEach(key => {
       const val = cleanData(data[key]);

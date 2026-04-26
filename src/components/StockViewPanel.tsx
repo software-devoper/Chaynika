@@ -45,11 +45,11 @@ export default function StockViewPanel() {
       const originalProduct = products.find(p => p.id === editingProduct.id);
       
       if (originalProduct) {
-        const originalKey = `${originalProduct.name.toLowerCase()}|${originalProduct.groupName.toLowerCase()}|${originalProduct.purchaseRate}|${originalProduct.wholesaleRate}|${originalProduct.mrp}`;
+        const originalKey = `${originalProduct.name.toLowerCase()}|${originalProduct.purchaseRate}|${originalProduct.wholesaleRate}|${originalProduct.mrp}`;
         
         // Find all products that match this key
         const matchingProducts = products.filter(p => {
-          const key = `${p.name.toLowerCase()}|${p.groupName.toLowerCase()}|${p.purchaseRate}|${p.wholesaleRate}|${p.mrp}`;
+          const key = `${p.name.toLowerCase()}|${p.purchaseRate}|${p.wholesaleRate}|${p.mrp}`;
           return key === originalKey;
         });
 
@@ -97,9 +97,9 @@ export default function StockViewPanel() {
 
     if (window.confirm("Are you sure you want to delete this product stock completely? This action cannot be undone.")) {
       try {
-        const originalKey = `${productToDelete.name.toLowerCase()}|${productToDelete.groupName.toLowerCase()}|${productToDelete.purchaseRate}|${productToDelete.wholesaleRate}|${productToDelete.mrp}`;
+        const originalKey = `${productToDelete.name.toLowerCase()}|${productToDelete.purchaseRate}|${productToDelete.wholesaleRate}|${productToDelete.mrp}`;
         const matchingProducts = products.filter(p => {
-          const key = `${p.name.toLowerCase()}|${p.groupName.toLowerCase()}|${p.purchaseRate}|${p.wholesaleRate}|${p.mrp}`;
+          const key = `${p.name.toLowerCase()}|${p.purchaseRate}|${p.wholesaleRate}|${p.mrp}`;
           return key === originalKey;
         });
 
@@ -121,7 +121,7 @@ export default function StockViewPanel() {
     const map = new Map<string, Product>();
     
     products.forEach(p => {
-      const key = `${p.name.toLowerCase()}|${p.groupName.toLowerCase()}|${p.purchaseRate}|${p.wholesaleRate}|${p.mrp}`;
+      const key = `${p.name.toLowerCase()}|${p.purchaseRate}|${p.wholesaleRate}|${p.mrp}`;
       if (map.has(key)) {
         const existing = map.get(key)!;
         map.set(key, {
@@ -139,8 +139,7 @@ export default function StockViewPanel() {
 
   const filteredProducts = mergedProducts.filter(
     (p) =>
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.groupName.toLowerCase().includes(searchTerm.toLowerCase())
+      p.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const totalQuantity = filteredProducts.reduce((sum, p) => sum + p.stock, 0);
@@ -157,7 +156,7 @@ export default function StockViewPanel() {
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" size={18} />
         <input
           type="text"
-          placeholder="Search by Product or Party..."
+          placeholder="Search by Product..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full bg-primary border border-accent/10 rounded-xl pl-12 pr-4 py-3 text-text focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all shadow-sm"
@@ -172,7 +171,6 @@ export default function StockViewPanel() {
               <th className="px-6 py-5 font-bold text-center">Sr. No.</th>
               <th className="px-6 py-5 font-bold text-center">Date</th>
               <th className="px-6 py-5 font-bold text-center">Product Name</th>
-              <th className="px-6 py-5 font-bold text-center">Party Name</th>
               <th className="px-6 py-5 font-bold text-center">Stock</th>
               <th className="px-6 py-5 font-bold text-center">Purchase Rate</th>
               <th className="px-6 py-5 font-bold text-center">Wholesale Rate</th>
@@ -183,7 +181,7 @@ export default function StockViewPanel() {
           <tbody className="text-text divide-y divide-accent/5">
             {loading ? (
               <tr>
-                <td colSpan={9} className="px-6 py-12 text-center text-muted italic">
+                <td colSpan={8} className="px-6 py-12 text-center text-muted italic">
                   Loading stock data...
                 </td>
               </tr>
@@ -198,7 +196,6 @@ export default function StockViewPanel() {
                 <td className="px-6 py-4 text-muted text-center">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                 <td className="px-6 py-4 text-muted text-center">{new Date(product.updatedAt).toLocaleDateString()}</td>
                 <td className="px-6 py-4 font-medium group-hover:text-accent transition-colors text-center">{product.name}</td>
-                <td className="px-6 py-4 text-muted text-center">{product.groupName}</td>
                 <td className="px-6 py-4 text-center font-medium">{product.stock}</td>
                 <td className="px-6 py-4 text-center text-muted">{formatCurrency(product.purchaseRate)}</td>
                 <td className="px-6 py-4 text-center text-muted">{formatCurrency(product.wholesaleRate)}</td>
@@ -221,7 +218,7 @@ export default function StockViewPanel() {
             ))}
             {!loading && paginatedProducts.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-6 py-12 text-center text-muted italic">
+                <td colSpan={8} className="px-6 py-12 text-center text-muted italic">
                   No products found matching your search.
                 </td>
               </tr>
@@ -229,7 +226,7 @@ export default function StockViewPanel() {
           </tbody>
           <tfoot className="bg-primary/50 border-t border-accent/10">
             <tr className="font-bold text-text">
-              <td colSpan={4} className="px-6 py-4 text-right uppercase tracking-wider text-xs text-muted">Total Stock Quantity:</td>
+              <td colSpan={4} className="px-6 py-4 text-right uppercase tracking-wider text-xs text-muted">Total Stock:</td>
               <td className="px-6 py-4 text-center text-lg text-accent">{totalQuantity}</td>
               <td colSpan={4} className="px-6 py-4"></td>
             </tr>
@@ -278,9 +275,6 @@ export default function StockViewPanel() {
               </div>
               
               <div className="flex flex-wrap gap-2">
-                <span className="px-2.5 py-1 bg-primary text-muted text-xs rounded-md border border-accent/5">
-                  {product.groupName}
-                </span>
                 <span className="px-2.5 py-1 bg-accent/10 text-accent font-bold text-xs rounded-md border border-accent/20">
                   Stock: {product.stock}
                 </span>
@@ -396,22 +390,6 @@ export default function StockViewPanel() {
                       onChange={(e) => setEditingProduct({ ...editingProduct, name: capitalizeFirstLetter(e.target.value) })}
                       className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-2 text-text focus:border-accent outline-none transition-all"
                     />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-muted mb-1">Party Name</label>
-                    <select
-                      required
-                      value={editingProduct.groupId}
-                      onChange={(e) => setEditingProduct({ ...editingProduct, groupId: e.target.value })}
-                      className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-2 text-text focus:border-accent outline-none transition-all"
-                    >
-                      {groups.map((group) => (
-                        <option key={group.id} value={group.id}>
-                          {group.name}
-                        </option>
-                      ))}
-                    </select>
                   </div>
 
                   <div>

@@ -176,8 +176,13 @@ export default function PurchaseGroup() {
   };
 
   const totalPurchaseAmount = purchaseItems.reduce((sum, item) => {
+    const targetProduct = item.productId ? products.find(p => p.id === item.productId) : products.find(p => p.groupId === selectedGroupId && p.name.toLowerCase() === item.productName.trim().toLowerCase());
     const qty = Number(item.quantity) || 0;
-    const rate = Number(item.purchaseRate) || 0;
+    let rate = Number(item.purchaseRate);
+    if (item.purchaseRate === "") {
+        const multiplier = (item.selectedUnitType === "secondary" && Number(item.conversionRate) > 0) ? Number(item.conversionRate) : 1;
+        rate = (targetProduct?.purchaseRate || 0) * multiplier;
+    }
     return sum + (qty * rate);
   }, 0);
 
@@ -438,9 +443,8 @@ export default function PurchaseGroup() {
         const baseWRate = uiWRate / multiplier;
         const baseMRate = uiMRate / multiplier;
 
-        // Check if there's an existing product with the exact same name, party, and rates
+        // Check if there's an existing product with the exact same name and rates
         const exactMatch = products.find(p => 
-          p.groupId === groupId && 
           p.name.toLowerCase() === item.productName.trim().toLowerCase() &&
           p.purchaseRate === basePRate &&
           p.wholesaleRate === baseWRate &&
@@ -487,10 +491,8 @@ export default function PurchaseGroup() {
 
       // 3. Handle Party Due
       const dueChange = totalPurchaseAmount - (Number(payableAmount) || 0);
-      if (dueChange !== 0) {
-        const productNamesStr = itemsToProcess.map(item => item.productName.trim()).join(", ");
-        await partyDueApi.addOrUpdate(groupId, partyName.trim(), dueChange, productNamesStr, isNewParty);
-      }
+      const productNamesStr = itemsToProcess.map(item => item.productName.trim()).join(", ");
+      await partyDueApi.addOrUpdate(groupId, partyName.trim(), dueChange, productNamesStr, isNewParty);
 
       toast.success("Purchase saved successfully");
       
