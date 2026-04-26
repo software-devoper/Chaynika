@@ -8,6 +8,7 @@ export default function Revenue() {
   const [products, setProducts] = useState<Product[]>([]);
   const [cashSales, setCashSales] = useState<CashSale[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filterDays, setFilterDays] = useState<number | null>(null);
 
   useEffect(() => {
     const unsubBills = billApi.getAll((data) => setBills(data));
@@ -23,10 +24,14 @@ export default function Revenue() {
     };
   }, []);
 
+  const filterTimestamp = filterDays ? Date.now() - (filterDays * 24 * 60 * 60 * 1000) : 0;
+  const filteredBills = bills.filter(b => b.date >= filterTimestamp);
+  const filteredCashSales = cashSales.filter(s => s.date >= filterTimestamp);
+
   // Calculate stats
   // Use (grandTotal - previousDue) to account for Round Off and Discounts for THIS bill only, excluding past debt
-  const creditRevenue = bills.reduce((sum, b) => sum + (b.grandTotal - (b.previousDue || 0)), 0);
-  const cashRevenue = cashSales.reduce((sum, s) => sum + s.amount, 0);
+  const creditRevenue = filteredBills.reduce((sum, b) => sum + (b.grandTotal - (b.previousDue || 0)), 0);
+  const cashRevenue = filteredCashSales.reduce((sum, s) => sum + s.amount, 0);
   const totalRevenue = creditRevenue + cashRevenue;
   
   // For profit, we need to know the purchase price of items sold
@@ -36,7 +41,7 @@ export default function Revenue() {
   const productStats = new Map<string, { name: string, qty: number, purchaseRate: number, wholesaleRate: number, price: number, lastSoldDate: number }>();
 
   // Process Credit Bills
-  bills.forEach(bill => {
+  filteredBills.forEach(bill => {
     bill.items.forEach(item => {
       // Prioritize saved purchaseRate for historical accuracy, fallback to current stock rate
       let pRate = item.purchaseRate;
@@ -59,7 +64,7 @@ export default function Revenue() {
   });
 
   // Process Cash Sales
-  cashSales.forEach(sale => {
+  filteredCashSales.forEach(sale => {
     const product = productMap.get(sale.productId);
     const pRate = product?.purchaseRate || sale.purchaseRate || 0;
     const wRate = product?.wholesaleRate || (sale.amount / sale.qty) || 0;
@@ -74,13 +79,31 @@ export default function Revenue() {
   });
 
   const totalProfit = totalRevenue - totalPurchaseCost;
-  const firstSaleDate = bills.length > 0 || cashSales.length > 0 
-    ? Math.min(...[...bills.map(b => b.date), ...cashSales.map(s => s.date)]) 
+  const firstSaleDate = filteredBills.length > 0 || filteredCashSales.length > 0 
+    ? Math.min(...[...filteredBills.map(b => b.date), ...filteredCashSales.map(s => s.date)]) 
     : null;
-  const dateRangeText = firstSaleDate ? `Since ${formatDate(firstSaleDate)}` : "All Time";
+  const dateRangeText = filterDays 
+    ? `Last ${filterDays} Days` 
+    : (firstSaleDate ? `Since ${formatDate(firstSaleDate)}` : "All Time");
 
   return (
     <div className="space-y-8">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-accent font-display">Revenue Overview</h2>
+        <select 
+          value={filterDays === null ? "all" : filterDays.toString()} 
+          onChange={(e) => setFilterDays(e.target.value === "all" ? null : Number(e.target.value))}
+          className="bg-primary/50 text-text border border-accent/20 rounded-xl px-4 py-2 font-medium focus:border-accent outline-none cursor-pointer"
+        >
+          <option value="all">All Time</option>
+          <option value="1">Last 24 Hours</option>
+          <option value="7">Last 7 Days</option>
+          <option value="30">Last 30 Days</option>
+          <option value="90">Last 90 Days</option>
+          <option value="365">Last 365 Days</option>
+        </select>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-surface border border-accent/10 rounded-2xl p-6 shadow-lg">
           <div className="text-muted text-sm mb-2">Total Revenue <span className="text-xs opacity-70">({dateRangeText})</span></div>

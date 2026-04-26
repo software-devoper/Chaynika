@@ -83,15 +83,29 @@ export default function BillForm() {
     };
   }, []);
 
+  const uniqueProducts = React.useMemo(() => {
+    const map = new Map<string, Product>();
+    products.forEach(p => {
+      const key = `${p.name.toLowerCase()}|${p.purchaseRate}|${p.wholesaleRate}|${p.mrp}`;
+      if (map.has(key)) {
+        const existing = map.get(key)!;
+        map.set(key, { ...existing, stock: existing.stock + p.stock });
+      } else {
+        map.set(key, { ...p });
+      }
+    });
+    return Array.from(map.values());
+  }, [products]);
+
   useEffect(() => {
     if (searchTerm.length > 1) {
-      setSearchResults(products.filter(p => 
+      setSearchResults(uniqueProducts.filter(p => 
         p.name.toLowerCase().includes(searchTerm.toLowerCase()) && p.stock > 0
       ));
     } else {
       setSearchResults([]);
     }
-  }, [searchTerm, products]);
+  }, [searchTerm, uniqueProducts]);
 
   // Fetch previous due and history when primary phone changes
   useEffect(() => {
@@ -809,7 +823,7 @@ export default function BillForm() {
             <tbody className="text-sm">
               <AnimatePresence mode="popLayout">
                 {billItems.map((item, index) => {
-                  const filteredProducts = products.filter(p => p.name.toLowerCase().includes(item.productName.toLowerCase()) && p.stock > 0);
+                  const filteredProducts = uniqueProducts.filter(p => p.name.toLowerCase().includes(item.productName.toLowerCase()) && p.stock > 0);
                   return (
                   <motion.tr 
                     layout

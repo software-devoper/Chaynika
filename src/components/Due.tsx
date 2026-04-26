@@ -252,7 +252,13 @@ export default function Due() {
                   </td>
                   <td className="px-4 py-4 text-center">
                     <button 
-                      onClick={() => setSelectedDueDetails({ name: due.customerName, products: products.filter(p => due.productNames?.includes(p.name)) })}
+                      onClick={() => {
+                        const productNamesArray = due.productNames ? due.productNames.split(',').map(n => n.trim().toLowerCase()) : [];
+                        setSelectedDueDetails({ 
+                          name: due.customerName, 
+                          products: products.filter(p => productNamesArray.includes(p.name.toLowerCase())) 
+                        });
+                      }}
                       className="text-accent hover:text-accent/80 text-xs font-bold"
                     >
                       View Details
@@ -297,22 +303,30 @@ export default function Due() {
                   <td className="px-4 py-4 font-medium text-center">{due.partyName}</td>
                   <td className="px-4 py-4 text-center">
                     <div className="space-y-2 max-h-[85px] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden mx-auto">
-                      {products.filter(p => p.groupName.toLowerCase() === due.partyName.toLowerCase()).length > 0 ? (
-                        products.filter(p => p.groupName.toLowerCase() === due.partyName.toLowerCase()).map(p => (
-                          <div key={p.id} className="text-xs border-b border-accent/10 pb-1 last:border-0 last:pb-0">
-                            <div className="font-bold text-text truncate text-center" title={p.name}>{p.name}</div>
-                          </div>
-                        ))
+                      { due.productNames ? (
+                        due.productNames.split(',').map((name, idx) => {
+                          const trimmedStr = name.trim();
+                          if (!trimmedStr) return null;
+                          return (
+                            <div key={idx} className="text-xs border-b border-accent/10 pb-1 last:border-0 last:pb-0">
+                              <div className="font-bold text-text truncate text-center" title={trimmedStr}>{trimmedStr}</div>
+                            </div>
+                          );
+                        })
                       ) : (
-                        <div className="text-muted text-xs italic text-center">
-                          {due.productNames || "N/A"}
-                        </div>
+                        <div className="text-muted text-xs italic text-center">N/A</div>
                       )}
                     </div>
                   </td>
                   <td className="px-4 py-4 text-center">
                     <button 
-                      onClick={() => setSelectedDueDetails({ name: due.partyName, products: products.filter(p => p.groupName.toLowerCase() === due.partyName.toLowerCase()) })}
+                      onClick={() => {
+                        const productNamesArray = due.productNames ? due.productNames.split(',').map(n => n.trim().toLowerCase()) : [];
+                        setSelectedDueDetails({ 
+                          name: due.partyName, 
+                          products: products.filter(p => productNamesArray.includes(p.name.toLowerCase())) 
+                        });
+                      }}
                       className="text-accent hover:text-accent/80 text-xs font-bold"
                     >
                       View Details

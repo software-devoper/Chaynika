@@ -20,6 +20,21 @@ interface CashItem {
 
 export default function CashSales() {
   const [products, setProducts] = useState<Product[]>([]);
+  
+  const uniqueProducts = React.useMemo(() => {
+    const map = new Map<string, Product>();
+    products.forEach(p => {
+      const key = `${p.name.toLowerCase()}|${p.purchaseRate}|${p.wholesaleRate}|${p.mrp}`;
+      if (map.has(key)) {
+        const existing = map.get(key)!;
+        map.set(key, { ...existing, stock: existing.stock + p.stock });
+      } else {
+        map.set(key, { ...p });
+      }
+    });
+    return Array.from(map.values());
+  }, [products]);
+
   const [isSaving, setIsSaving] = useState(false);
   const [cashItems, setCashItems] = useState<CashItem[]>([]);
   const [activeDropdownRowId, setActiveDropdownRowId] = useState<string | null>(null);
@@ -385,7 +400,7 @@ export default function CashSales() {
           <tbody className="text-sm">
             <AnimatePresence mode="popLayout">
               {cashItems.map((item, index) => {
-                const filteredProducts = products.filter(p => 
+                const filteredProducts = uniqueProducts.filter(p => 
                   p.name.toLowerCase().includes(item.productName.toLowerCase()) && p.stock > 0
                 );
                 return (

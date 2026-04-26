@@ -620,8 +620,8 @@ export const partyDueApi = {
         const data = dueSnap.data();
         let updatedProductNames = data.productNames || "";
         if (productNames) {
-          const existingNames = updatedProductNames.split(", ").filter(Boolean);
-          const newNames = productNames.split(", ").filter(Boolean);
+          const existingNames = updatedProductNames.split(",").map((s: string) => s.trim()).filter(Boolean);
+          const newNames = productNames.split(",").map((s: string) => s.trim()).filter(Boolean);
           const combined = Array.from(new Set([...existingNames, ...newNames]));
           updatedProductNames = combined.join(", ");
         }

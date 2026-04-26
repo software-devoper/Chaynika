@@ -29,6 +29,20 @@ export default function PurchaseGroup() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   
+  const uniqueProducts = React.useMemo(() => {
+    const map = new Map<string, Product>();
+    products.forEach(p => {
+      const key = `${p.name.toLowerCase()}|${p.purchaseRate}|${p.wholesaleRate}|${p.mrp}`;
+      if (map.has(key)) {
+        const existing = map.get(key)!;
+        map.set(key, { ...existing, stock: existing.stock + p.stock });
+      } else {
+        map.set(key, { ...p });
+      }
+    });
+    return Array.from(map.values());
+  }, [products]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [partyName, setPartyName] = useState("");
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
@@ -669,7 +683,7 @@ export default function PurchaseGroup() {
             <tbody className="text-sm">
               <AnimatePresence mode="popLayout">
                 {purchaseItems.map((item, index) => {
-                  const filteredProducts = products.filter(p => p.name.toLowerCase().includes(item.productName.toLowerCase()));
+                  const filteredProducts = uniqueProducts.filter(p => p.name.toLowerCase().includes(item.productName.toLowerCase()));
                   return (
                   <motion.tr 
                     layout
