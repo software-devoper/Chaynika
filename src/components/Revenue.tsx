@@ -38,7 +38,7 @@ export default function Revenue() {
   const productMap = new Map<string, Product>(products.map(p => [p.id, p]));
   
   let totalPurchaseCost = 0;
-  const productStats = new Map<string, { name: string, qty: number, purchaseRate: number, wholesaleRate: number, price: number, lastSoldDate: number }>();
+  const productStats = new Map<string, { name: string, qty: number, cost: number, revenue: number, lastSoldDate: number }>();
 
   // Process Credit Bills
   filteredBills.forEach(bill => {
@@ -50,12 +50,17 @@ export default function Revenue() {
         pRate = product?.purchaseRate || 0;
       }
       
-      const product = productMap.get(item.productId);
-      const wRate = item.wholesaleRate || product?.wholesaleRate || 0;
-      totalPurchaseCost += pRate * item.qty;
+      const multiplier = item.selectedUnitType === "secondary" && item.conversionRate ? item.conversionRate : 1;
+      const baseQty = item.qty * multiplier;
+      const cost = pRate * baseQty;
+      const revenue = item.total || (item.qty * item.price);
+      
+      totalPurchaseCost += cost;
 
-      const existing = productStats.get(item.productId) || { name: item.productName, qty: 0, purchaseRate: pRate, wholesaleRate: wRate, price: item.price, lastSoldDate: bill.date };
-      existing.qty += item.qty;
+      const existing = productStats.get(item.productId) || { name: item.productName, qty: 0, cost: 0, revenue: 0, lastSoldDate: bill.date };
+      existing.qty += baseQty;
+      existing.cost += cost;
+      existing.revenue += revenue;
       if (bill.date > existing.lastSoldDate) {
         existing.lastSoldDate = bill.date;
       }
@@ -65,13 +70,16 @@ export default function Revenue() {
 
   // Process Cash Sales
   filteredCashSales.forEach(sale => {
-    const product = productMap.get(sale.productId);
-    const pRate = product?.purchaseRate || sale.purchaseRate || 0;
-    const wRate = product?.wholesaleRate || (sale.amount / sale.qty) || 0;
-    totalPurchaseCost += pRate * sale.qty;
+    const pRate = sale.purchaseRate || productMap.get(sale.productId)?.purchaseRate || 0;
+    const cost = pRate * sale.qty;
+    const revenue = sale.amount || (sale.amount === 0 ? 0 : 0);
+    
+    totalPurchaseCost += cost;
 
-    const existing = productStats.get(sale.productId) || { name: sale.productName, qty: 0, purchaseRate: pRate, wholesaleRate: wRate, price: sale.amount / sale.qty, lastSoldDate: sale.date };
+    const existing = productStats.get(sale.productId) || { name: sale.productName, qty: 0, cost: 0, revenue: 0, lastSoldDate: sale.date };
     existing.qty += sale.qty;
+    existing.cost += cost;
+    existing.revenue += revenue;
     if (sale.date > existing.lastSoldDate) {
       existing.lastSoldDate = sale.date;
     }
@@ -128,24 +136,29 @@ export default function Revenue() {
                 <th className="px-4 py-5 font-bold text-center">Product</th>
                 <th className="px-4 py-5 font-bold text-center">Last Sold</th>
                 <th className="px-4 py-5 font-bold text-center">Qty Sold</th>
-                <th className="px-4 py-5 font-bold text-center">Purchase Rate</th>
-                <th className="px-4 py-5 font-bold text-center">Wholesale Rate</th>
-                <th className="px-4 py-5 font-bold text-center">Unit Profit</th>
+                <th className="px-4 py-5 font-bold text-center">Avg Purchase Rate</th>
+                <th className="px-4 py-5 font-bold text-center">Avg Sale Rate</th>
+                <th className="px-4 py-5 font-bold text-center">Avg Unit Profit</th>
                 <th className="px-4 py-5 font-bold text-center">Total Profit</th>
               </tr>
             </thead>
             <tbody className="text-sm">
-              {Array.from(productStats.values()).map((stat, index) => (
-                <tr key={index} className="border-b border-accent/5 hover:bg-primary/50 transition-colors">
-                  <td className="px-4 py-4 font-medium text-center">{stat.name}</td>
-                  <td className="px-4 py-4 text-muted text-xs text-center">{formatDate(stat.lastSoldDate)}</td>
-                  <td className="px-4 py-4 text-center">{stat.qty}</td>
-                  <td className="px-4 py-4 text-center">{formatCurrency(stat.purchaseRate)}</td>
-                  <td className="px-4 py-4 text-center">{formatCurrency(stat.wholesaleRate)}</td>
-                  <td className="px-4 py-4 text-center text-green-500">{formatCurrency(stat.wholesaleRate - stat.purchaseRate)}</td>
-                  <td className="px-4 py-4 text-center font-bold text-green-500">{formatCurrency((stat.wholesaleRate - stat.purchaseRate) * stat.qty)}</td>
-                </tr>
-              ))}
+              {Array.from(productStats.values()).map((stat, index) => {
+                const avgCost = stat.qty > 0 ? stat.cost / stat.qty : 0;
+                const avgRevenue = stat.qty > 0 ? stat.revenue / stat.qty : 0;
+                const totalProfit = stat.revenue - stat.cost;
+                return (
+                  <tr key={index} className="border-b border-accent/5 hover:bg-primary/50 transition-colors">
+                    <td className="px-4 py-4 font-medium text-center">{stat.name}</td>
+                    <td className="px-4 py-4 text-muted text-xs text-center">{formatDate(stat.lastSoldDate)}</td>
+                    <td className="px-4 py-4 text-center">{stat.qty}</td>
+                    <td className="px-4 py-4 text-center">{formatCurrency(avgCost)}</td>
+                    <td className="px-4 py-4 text-center">{formatCurrency(avgRevenue)}</td>
+                    <td className="px-4 py-4 text-center text-green-500">{formatCurrency(avgRevenue - avgCost)}</td>
+                    <td className="px-4 py-4 text-center font-bold text-green-500">{formatCurrency(totalProfit)}</td>
+                  </tr>
+                );
+              })}
               {productStats.size === 0 && (
                 <tr>
                   <td colSpan={7} className="px-4 py-12 text-center text-muted italic">

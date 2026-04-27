@@ -748,6 +748,7 @@ export default function PurchaseGroup() {
                               <option value="Chain">Chain</option>
                               <option value="Kg">Kg</option>
                               <option value="Ltr">Ltr</option>
+                              <option value="Bag">Bag</option>
                             </select>
                           </div>
                           <label className="flex items-center gap-3 cursor-pointer text-text font-bold mt-1">
@@ -772,6 +773,7 @@ export default function PurchaseGroup() {
                                 <option value="Chain">Chain</option>
                                 <option value="Case">Case</option>
                                 <option value="Dozen">Dozen</option>
+                                <option value="Bag">Bag</option>
                               </select>
                               <span className="text-muted font-bold text-lg">=</span>
                               <input 

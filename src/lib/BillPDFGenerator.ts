@@ -175,15 +175,14 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
   
   doc.setFontSize(baseFontSize * 1.1);
   doc.setFont("times", "normal");
-  doc.text(`Previous Due:  ${prevDue.toFixed(2)}`, rightAlignX, finalY + 3, { align: "right" });
-  doc.text(`Paid Amount:  ${bill.paidAmount.toFixed(2)}`, rightAlignX, finalY + 8, { align: "right" });
+  doc.text(`Current Bill:  ${bill.subtotal.toFixed(2)}`, rightAlignX, finalY + 3, { align: "right" });
+  doc.text(`Previous Due:  + ${prevDue.toFixed(2)}`, rightAlignX, finalY + 8, { align: "right" });
+  doc.text(`Grand Total:  = ${bill.grandTotal.toFixed(2)}`, rightAlignX, finalY + 13, { align: "right" });
+  doc.text(`Paid Amount:  - ${bill.paidAmount.toFixed(2)}`, rightAlignX, finalY + 18, { align: "right" });
   
   doc.setFontSize(baseFontSize * 1.2);
   doc.setFont("times", "bold");
-  doc.text(`Bill Amount:  ${bill.subtotal.toFixed(2)}`, rightAlignX, finalY + 13, { align: "right" });
-  
-  doc.setFontSize(baseFontSize * 1.2);
-  doc.text(`Balance Due:  ${bill.dueAmount.toFixed(2)}`, rightAlignX, finalY + 18, { align: "right" });
+  doc.text(`Balance Due:  ${bill.dueAmount.toFixed(2)}`, rightAlignX, finalY + 24, { align: "right" });
 
   // FOOTER
   const footerY = doc.internal.pageSize.getHeight() - 12;
@@ -196,12 +195,12 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
   doc.line(margin, footerY + 8, margin + 30, footerY + 8);
   doc.text(`Date:`, margin, footerY + 12);
 
-  // CENTER: TOTAL AMOUNT (3x larger)
+  // CENTER: GRAND TOTAL (3x larger)
   doc.setFontSize(baseFontSize * 2.5);
   doc.setFont("times", "bold");
   doc.text(`${bill.grandTotal.toFixed(2)}`, pageWidth / 2, footerY + 5, { align: "center" });
   doc.setFontSize(baseFontSize * 0.8);
-  doc.text("TOTAL AMOUNT", pageWidth / 2, footerY - 5, { align: "center" });
+  doc.text("GRAND TOTAL", pageWidth / 2, footerY - 5, { align: "center" });
 
   // RIGHT: Owner Signature
   doc.setFontSize(baseFontSize * 0.8);

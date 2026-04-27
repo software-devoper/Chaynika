@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, ChevronLeft, ChevronRight, Edit2, X, Loader2, Trash2 } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Edit2, X, Loader2, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { formatCurrency, capitalizeFirstLetter } from "../lib/utils";
 import { Product, Group } from "../types";
@@ -142,25 +142,64 @@ export default function StockViewPanel() {
       p.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const totalQuantity = filteredProducts.reduce((sum, p) => sum + p.stock, 0);
+  const [sortOption, setSortOption] = useState<'default' | 'asc' | 'desc'>('default');
+
+  const displayProducts = React.useMemo(() => {
+    let sortableItems = [...filteredProducts];
+    if (sortOption !== 'default') {
+      sortableItems.sort((a, b) => {
+        if (a.stock < b.stock) {
+          return sortOption === 'asc' ? -1 : 1;
+        }
+        if (a.stock > b.stock) {
+          return sortOption === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [filteredProducts, sortOption]);
+
+  const totalQuantity = displayProducts.reduce((sum, p) => sum + p.stock, 0);
   
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const paginatedProducts = filteredProducts.slice(
+  const totalPages = Math.ceil(displayProducts.length / itemsPerPage);
+  const paginatedProducts = displayProducts.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
   return (
     <div className="space-y-6 relative">
-      <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" size={18} />
-        <input
-          type="text"
-          placeholder="Search by Product..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full bg-primary border border-accent/10 rounded-xl pl-12 pr-4 py-3 text-text focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all shadow-sm"
-        />
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" size={18} />
+          <input
+            type="text"
+            placeholder="Search by Product..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-primary border border-accent/10 rounded-xl pl-12 pr-4 py-3 text-text focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-all shadow-sm"
+          />
+        </div>
+        <select
+          value={sortOption}
+          onChange={(e) => setSortOption(e.target.value as 'default' | 'asc' | 'desc')}
+          className="bg-primary/50 text-text border border-accent/20 rounded-xl px-4 py-3 font-medium focus:border-accent outline-none cursor-pointer hidden md:block"
+        >
+          <option value="default">Sort by: Default</option>
+          <option value="asc">Stock: Low to High</option>
+          <option value="desc">Stock: High to Low</option>
+        </select>
+        <select
+          value={sortOption}
+          onChange={(e) => setSortOption(e.target.value as 'default' | 'asc' | 'desc')}
+          className="md:hidden bg-surface border border-accent/10 text-muted hover:text-text rounded-xl px-3 py-3 w-12 appearance-none text-center outline-none"
+          title="Sort by stock value"
+        >
+          <option value="default">-</option>
+          <option value="asc">↑</option>
+          <option value="desc">↓</option>
+        </select>
       </div>
 
       {/* Desktop Table View */}
