@@ -176,9 +176,9 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
   doc.setFontSize(baseFontSize * 1.1);
   doc.setFont("times", "normal");
   doc.text(`Current Bill:  ${bill.subtotal.toFixed(2)}`, rightAlignX, finalY + 3, { align: "right" });
-  doc.text(`Previous Due:  + ${prevDue.toFixed(2)}`, rightAlignX, finalY + 8, { align: "right" });
-  doc.text(`Grand Total:  = ${bill.grandTotal.toFixed(2)}`, rightAlignX, finalY + 13, { align: "right" });
-  doc.text(`Paid Amount:  - ${bill.paidAmount.toFixed(2)}`, rightAlignX, finalY + 18, { align: "right" });
+  doc.text(`Previous Due:  ${prevDue.toFixed(2)}`, rightAlignX, finalY + 8, { align: "right" });
+  doc.text(`Grand Total:  ${bill.grandTotal.toFixed(2)}`, rightAlignX, finalY + 13, { align: "right" });
+  doc.text(`Paid Amount:  ${bill.paidAmount.toFixed(2)}`, rightAlignX, finalY + 18, { align: "right" });
   
   doc.setFontSize(baseFontSize * 1.2);
   doc.setFont("times", "bold");
@@ -195,12 +195,12 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
   doc.line(margin, footerY + 8, margin + 30, footerY + 8);
   doc.text(`Date:`, margin, footerY + 12);
 
-  // CENTER: GRAND TOTAL (3x larger)
+  // CENTER: PAYABLE AMOUNT (3x larger)
   doc.setFontSize(baseFontSize * 2.5);
   doc.setFont("times", "bold");
-  doc.text(`${bill.grandTotal.toFixed(2)}`, pageWidth / 2, footerY + 5, { align: "center" });
+  doc.text(`${bill.dueAmount.toFixed(2)}`, pageWidth / 2, footerY + 5, { align: "center" });
   doc.setFontSize(baseFontSize * 0.8);
-  doc.text("GRAND TOTAL", pageWidth / 2, footerY - 5, { align: "center" });
+  doc.text("PAYABLE AMOUNT", pageWidth / 2, footerY - 5, { align: "center" });
 
   // RIGHT: Owner Signature
   doc.setFontSize(baseFontSize * 0.8);
@@ -226,19 +226,10 @@ export const generateBillPDF = async (bill: Bill, action: "save" | "print" = "sa
       toast.dismiss(loadingToast);
       
       if (!printWindow) {
-        // Fallback for pop-up blockers - try an iframe
-        const iframe = document.createElement("iframe");
-        iframe.style.display = "none";
-        iframe.src = pdfUrl;
-        document.body.appendChild(iframe);
-        
-        iframe.onload = () => {
-          setTimeout(() => {
-            iframe.contentWindow?.print();
-            // We don't remove the iframe immediately to allow print dialog to handle it
-          }, 500);
-        };
-        toast.success("Opening print dialog...");
+        // Fallback for pop-up blockers or restrictive iframes (like AI Studio preview)
+        console.warn("Popup blocked or unsupported. Falling back to save.");
+        doc.save(filename);
+        toast.error("Pop-up blocked. PDF downloaded instead.");
       } else {
         toast.success("Print dialog opened");
       }
