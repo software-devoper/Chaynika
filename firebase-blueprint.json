@@ -33,12 +33,15 @@
         "subgroupName": { "type": "string", "description": "Name of the subgroup it belongs to" },
         "purchaseRate": { "type": "number", "description": "Cost price" },
         "wholesaleRate": { "type": "number", "description": "Wholesale price" },
+        "cashSalesRate": { "type": "number", "description": "Cash sales rate" },
         "mrp": { "type": "number", "description": "Selling price" },
         "stock": { "type": "number", "description": "Current stock quantity" },
         "unit": { "type": "string", "description": "Unit of measurement (e.g., Pcs, Kg)" },
+        "secondaryUnit": { "type": "string" },
+        "conversionRate": { "type": "number" },
         "updatedAt": { "type": "number", "description": "Timestamp of last update" }
       },
-      "required": ["name", "groupId", "subgroupId", "purchaseRate", "wholesaleRate", "mrp", "stock", "unit", "updatedAt"]
+      "required": ["name", "groupId", "subgroupId", "purchaseRate", "wholesaleRate", "cashSalesRate", "mrp", "stock", "unit", "updatedAt"]
     },
     "Bill": {
       "title": "Bill",
@@ -50,25 +53,19 @@
         "customerPhone": { "type": "string", "description": "Phone number of the customer" },
         "additionalPhones": { "type": "array", "items": { "type": "string" }, "description": "Additional phone numbers" },
         "customerAddress": { "type": "string", "description": "Address of the customer" },
+        "customerEmail": { "type": "string" },
         "items": {
           "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "productId": { "type": "string" },
-              "productName": { "type": "string" },
-              "qty": { "type": "number" },
-              "rate": { "type": "number" },
-              "total": { "type": "number" }
-            }
-          }
+          "items": { "type": "object" }
         },
-        "totalAmount": { "type": "number" },
+        "subtotal": { "type": "number" },
+        "previousDue": { "type": "number" },
+        "grandTotal": { "type": "number" },
         "paidAmount": { "type": "number" },
         "dueAmount": { "type": "number" },
         "date": { "type": "number" }
       },
-      "required": ["billNo", "customerName", "customerPhone", "totalAmount", "paidAmount", "dueAmount", "date"]
+      "required": ["billNo", "customerName", "customerPhone", "subtotal", "grandTotal", "paidAmount", "dueAmount", "date"]
     },
     "CustomerDue": {
       "title": "Customer Due",
@@ -76,14 +73,42 @@
       "type": "object",
       "properties": {
         "customerPhone": { "type": "string" },
-        "additionalPhones": { "type": "array", "items": { "type": "string" }, "description": "Additional phone numbers" },
         "customerName": { "type": "string" },
         "customerAddress": { "type": "string" },
-        "totalDue": { "type": "number" },
+        "additionalPhones": { "type": "array", "items": { "type": "string" } },
+        "amount": { "type": "number" },
         "lastBillDate": { "type": "number" },
-        "lastUpdated": { "type": "number" }
+        "productNames": { "type": "string" }
       },
-      "required": ["customerPhone", "customerName", "totalDue", "lastBillDate", "lastUpdated"]
+      "required": ["customerPhone", "customerName", "amount", "lastBillDate"]
+    },
+    "PartyDue": {
+      "title": "Party Due",
+      "description": "Outstanding balance for a supplier/party",
+      "type": "object",
+      "properties": {
+        "groupId": { "type": "string" },
+        "partyName": { "type": "string" },
+        "amount": { "type": "number" },
+        "lastPurchaseDate": { "type": "number" },
+        "productNames": { "type": "string" }
+      },
+      "required": ["groupId", "partyName", "amount", "lastPurchaseDate"]
+    },
+    "CashSale": {
+      "title": "Cash Sale",
+      "description": "A single cash sale entry",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "productName": { "type": "string" },
+        "qty": { "type": "number" },
+        "purchaseRate": { "type": "number" },
+        "mrp": { "type": "number" },
+        "amount": { "type": "number" },
+        "date": { "type": "number" }
+      },
+      "required": ["productId", "productName", "qty", "amount", "date"]
     },
     "Profile": {
       "title": "User Profile",
@@ -111,6 +136,8 @@
     "/products": { "schema": "Product", "description": "Collection of products" },
     "/bills": { "schema": "Bill", "description": "Collection of sales bills" },
     "/dues": { "schema": "CustomerDue", "description": "Collection of customer dues" },
+    "/partyDues": { "schema": "PartyDue", "description": "Collection of party dues" },
+    "/cashSales": { "schema": "CashSale", "description": "Collection of cash sales" },
     "/profiles": { "schema": "Profile", "description": "Collection of user profiles" },
     "/settings": { "schema": "Settings", "description": "Collection of app settings" }
   }

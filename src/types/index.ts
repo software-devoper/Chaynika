@@ -8,6 +8,7 @@ export interface Product {
   stock: number;
   purchaseRate: number;
   wholesaleRate: number;
+  cashSalesRate: number;
   mrp: number;
   unit: string;
   secondaryUnit?: string;
@@ -64,6 +65,7 @@ export interface BillItem {
   price: number;
   purchaseRate?: number;
   wholesaleRate?: number;
+  cashSalesRate?: number;
   total: number;
   mrp: number;
   unit?: string;
@@ -104,6 +106,7 @@ export interface CashSale {
   qty: number;
   purchaseRate: number;
   wholesaleRate?: number;
+  cashSalesRate?: number;
   mrp: number;
   amount: number;
   date: number;

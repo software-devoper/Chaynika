@@ -21,6 +21,7 @@ interface PurchaseItem {
   currentStock: number;
   purchaseRate: number | "";
   wholesaleRate: number | "";
+  cashSalesRate: number | "";
   mrp: number | "";
   isNew: boolean;
 }
@@ -150,6 +151,7 @@ export default function PurchaseGroup() {
     currentStock: 0,
     purchaseRate: "",
     wholesaleRate: "",
+    cashSalesRate: "",
     mrp: "",
     isNew: true,
   });
@@ -284,6 +286,7 @@ export default function PurchaseGroup() {
         currentStock: p.stock,
         purchaseRate: p.purchaseRate || "",
         wholesaleRate: p.wholesaleRate || "",
+        cashSalesRate: p.cashSalesRate || "",
         mrp: p.mrp || "",
         isNew: false
       } as PurchaseItem) : pi
@@ -341,7 +344,7 @@ export default function PurchaseGroup() {
           if (rowIndex !== -1) {
             let nextRowIndex = rowIndex;
             let nextColIndex = colIndex;
-            const maxCols = 5; // cols: 0=name, 1=qty, 2=prate, 3=wrate, 4=mrp
+            const maxCols = 6; // cols: 0=name, 1=qty, 2=prate, 3=wrate, 4=csrate, 5=mrp
             
             if (e.key === "ArrowRight") nextColIndex++;
             else if (e.key === "ArrowLeft") nextColIndex--;
@@ -451,10 +454,12 @@ export default function PurchaseGroup() {
 
         const uiPRate = item.purchaseRate === "" ? ((targetProduct?.purchaseRate || 0) * (item.selectedUnitType === "secondary" && targetProduct?.conversionRate ? targetProduct.conversionRate : 1)) : Number(item.purchaseRate);
         const uiWRate = item.wholesaleRate === "" ? ((targetProduct?.wholesaleRate || 0) * (item.selectedUnitType === "secondary" && targetProduct?.conversionRate ? targetProduct.conversionRate : 1)) : Number(item.wholesaleRate);
+        const uiCSRate = item.cashSalesRate === "" ? ((targetProduct?.cashSalesRate || 0) * (item.selectedUnitType === "secondary" && targetProduct?.conversionRate ? targetProduct.conversionRate : 1)) : Number(item.cashSalesRate);
         const uiMRate = item.mrp === "" ? ((targetProduct?.mrp || 0) * (item.selectedUnitType === "secondary" && targetProduct?.conversionRate ? targetProduct.conversionRate : 1)) : Number(item.mrp);
 
         const basePRate = uiPRate / multiplier;
         const baseWRate = uiWRate / multiplier;
+        const baseCSRate = uiCSRate / multiplier;
         const baseMRate = uiMRate / multiplier;
 
         // Check if there's an existing product with the exact same name and rates
@@ -462,6 +467,7 @@ export default function PurchaseGroup() {
           p.name.toLowerCase() === item.productName.trim().toLowerCase() &&
           p.purchaseRate === basePRate &&
           p.wholesaleRate === baseWRate &&
+          p.cashSalesRate === baseCSRate &&
           p.mrp === baseMRate
         );
 
@@ -489,6 +495,7 @@ export default function PurchaseGroup() {
             stock: baseQty,
             purchaseRate: basePRate,
             wholesaleRate: baseWRate,
+            cashSalesRate: baseCSRate,
             mrp: baseMRate,
             unit: item.unit.trim() || "Pcs",
             secondaryUnit: item.hasSecondaryUnit ? item.secondaryUnit.trim() : "",
@@ -533,7 +540,7 @@ export default function PurchaseGroup() {
     products
       .filter(p => p.groupName.toLowerCase() === selectedGroup.name.toLowerCase())
       .forEach(p => {
-        const key = `${p.name.toLowerCase()}|${p.purchaseRate}|${p.wholesaleRate}|${p.mrp}`;
+        const key = `${p.name.toLowerCase()}|${p.purchaseRate}|${p.wholesaleRate}|${p.cashSalesRate}|${p.mrp}`;
         if (map.has(key)) {
           const existing = map.get(key)!;
           map.set(key, {
@@ -616,6 +623,7 @@ export default function PurchaseGroup() {
                       <th className="px-3 py-2 font-medium text-center">Stock</th>
                       <th className="px-3 py-2 font-medium text-center">P.Rate</th>
                       <th className="px-3 py-2 font-medium text-center">W.Rate</th>
+                      <th className="px-3 py-2 font-medium text-center">CSR</th>
                       <th className="px-3 py-2 font-medium text-center">MRP</th>
                     </tr>
                   </thead>
@@ -626,6 +634,7 @@ export default function PurchaseGroup() {
                           <td className="px-3 py-2 text-center text-accent font-bold">{p.stock}</td>
                           <td className="px-3 py-2 text-center text-muted">{p.purchaseRate}</td>
                           <td className="px-3 py-2 text-center text-muted">{p.wholesaleRate}</td>
+                          <td className="px-3 py-2 text-center text-muted">{p.cashSalesRate}</td>
                           <td className="px-3 py-2 text-center text-muted">{p.mrp}</td>
                         </tr>
                       ))}
@@ -676,6 +685,7 @@ export default function PurchaseGroup() {
                 <th className="px-1 py-3 font-medium text-center w-20">Qty</th>
                 <th className="px-1 py-3 font-medium text-center w-24">P.Rate</th>
                 <th className="px-1 py-3 font-medium text-center w-24">W.Rate</th>
+                <th className="px-1 py-3 font-medium text-center w-24">CS Rate</th>
                 <th className="px-1 py-3 font-medium text-center w-24">MRP</th>
                 <th className="px-1 py-3 font-medium text-center w-8"></th>
               </tr>
@@ -847,6 +857,19 @@ export default function PurchaseGroup() {
                         type="number"
                         min="0"
                         step="any"
+                        value={item.cashSalesRate}
+                        onChange={(e) => updateRow(item.rowId, "cashSalesRate", e.target.value)}
+                        onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
+                        placeholder="0"
+                        className="w-20 mx-auto block bg-primary border border-accent/10 rounded px-1 py-1 text-center outline-none focus:border-accent text-xs"
+                      />
+                    </td>
+                    <td className="px-1 py-1 text-center align-middle">
+                      <input
+                        id={`pg-${item.rowId}-col-5`}
+                        type="number"
+                        min="0"
+                        step="any"
                         value={item.mrp}
                         onChange={(e) => updateRow(item.rowId, "mrp", e.target.value)}
                         onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
@@ -869,7 +892,7 @@ export default function PurchaseGroup() {
               </AnimatePresence>
               {purchaseItems.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-2 py-8 text-center text-muted italic">
+                  <td colSpan={7} className="px-2 py-8 text-center text-muted italic">
                     No products added. Select a party or add a product.
                   </td>
                 </tr>

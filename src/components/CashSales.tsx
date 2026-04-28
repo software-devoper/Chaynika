@@ -12,7 +12,7 @@ interface CashItem {
   productName: string;
   quantity: number | "";
   purchaseRate: number | "";
-  wholesaleRate: number | "";
+  cashSalesRate: number | "";
   mrp: number | "";
   amount: number | "";
   isNew: boolean;
@@ -90,7 +90,7 @@ export default function CashSales() {
     productName: "",
     quantity: "",
     purchaseRate: "",
-    wholesaleRate: "",
+    cashSalesRate: "",
     mrp: "",
     amount: "",
     isNew: true,
@@ -121,20 +121,19 @@ export default function CashSales() {
       if (item.rowId === rowId) {
         let updated = { ...item, [field]: value };
         
-        // If product name changes, reset product ID and mark as new if not selected from list
         if (field === "productName") {
           updated.productId = undefined;
           updated.isNew = true;
           updated.purchaseRate = "";
+          updated.cashSalesRate = "";
           updated.mrp = "";
           updated.amount = "";
-          // When typing a new name, we don't clear rates immediately to allow user to type them
-          // but we ensure they aren't read-only anymore (handled in JSX)
         }
 
-        if (field === "quantity" || field === "mrp") {
+        if (field === "quantity" || field === "mrp" || field === "cashSalesRate") {
           const q = field === "quantity" ? Number(value) : Number(item.quantity);
           const m = field === "mrp" ? Number(value) : Number(item.mrp);
+          const csr = field === "cashSalesRate" ? Number(value) : Number(item.cashSalesRate);
           
           if (field === "quantity" && item.productId) {
             const product = products.find(p => p.id === item.productId);
@@ -144,8 +143,8 @@ export default function CashSales() {
             }
           }
 
-          if (q && m) {
-            updated.amount = q * m;
+          if (q && m && csr) {
+            updated.amount = q * m * csr;
           } else {
             updated.amount = "";
           }
@@ -171,11 +170,11 @@ export default function CashSales() {
         productId: p.id,
         productName: p.name,
         purchaseRate: p.purchaseRate,
-        wholesaleRate: p.wholesaleRate,
+        cashSalesRate: p.cashSalesRate || 1,
         mrp: p.mrp,
         isNew: false,
         quantity: finalQty,
-        amount: finalQty ? Number(finalQty) * p.mrp : ""
+        amount: finalQty ? Number(finalQty) * p.mrp * (p.cashSalesRate || 1) : ""
       } : ci
     ));
     setActiveDropdownRowId(null);
@@ -244,7 +243,7 @@ export default function CashSales() {
           productName: item.productName,
           qty: Number(item.quantity),
           purchaseRate: Number(item.purchaseRate),
-          wholesaleRate: Number(item.wholesaleRate),
+          cashSalesRate: Number(item.cashSalesRate),
           mrp: Number(item.mrp),
           amount: Number(item.amount),
         });
@@ -309,7 +308,7 @@ export default function CashSales() {
           if (rowIndex !== -1) {
             let nextRowIndex = rowIndex;
             let nextColIndex = colIndex;
-            const maxCols = 6; // 0=name, 1=qty, 2=prate, 3=wrate, 4=mrp, 5=amount
+            const maxCols = 6; // 0=name, 1=qty, 2=prate, 3=mrp, 4=csrate, 5=amount
             
             if (e.key === "ArrowRight") nextColIndex++;
             else if (e.key === "ArrowLeft") nextColIndex--;
@@ -353,7 +352,9 @@ export default function CashSales() {
         if (colIndex === 0) {
           qtyInputRefs.current[item.rowId]?.focus();
         } else if (colIndex === 1) {
-          amountInputRefs.current[item.rowId]?.focus();
+          // Go to MRP
+          const mrpEl = document.getElementById(`cs-${item.rowId}-col-3`) as HTMLInputElement | null;
+          mrpEl?.focus();
         } else if (colIndex === 5) {
           const rowIndex = cashItems.findIndex(pi => pi.rowId === item.rowId);
           const isLast = rowIndex === cashItems.length - 1;
@@ -391,8 +392,8 @@ export default function CashSales() {
               <th className="px-2 py-3 font-medium text-center">Particulars</th>
               <th className="px-2 py-3 font-medium text-center">Quantity</th>
               <th className="px-2 py-3 font-medium text-center">P. Rate</th>
-              <th className="px-2 py-3 font-medium text-center text-xs">W. Rate</th>
               <th className="px-2 py-3 font-medium text-center">MRP</th>
+              <th className="px-2 py-3 font-medium text-center text-xs">CS Rate</th>
               <th className="px-2 py-3 font-medium text-center">Amount</th>
               <th className="px-2 py-3 font-medium text-center"></th>
             </tr>
@@ -486,21 +487,6 @@ export default function CashSales() {
                         id={`cs-${item.rowId}-col-3`}
                         type="number"
                         step="any"
-                        value={item.wholesaleRate}
-                        onChange={(e) => updateRow(item.rowId, "wholesaleRate", e.target.value)}
-                        onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
-                        readOnly={!item.isNew}
-                        placeholder="0"
-                        className={`w-20 mx-auto block border border-accent/10 rounded px-2 py-2 text-center outline-none ${
-                          !item.isNew ? "bg-primary/50 cursor-not-allowed text-muted text-xs" : "bg-primary focus:border-accent"
-                        }`}
-                      />
-                    </td>
-                    <td className="px-2 py-3 text-center">
-                      <input
-                        id={`cs-${item.rowId}-col-4`}
-                        type="number"
-                        step="any"
                         value={item.mrp}
                         onChange={(e) => updateRow(item.rowId, "mrp", e.target.value)}
                         onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
@@ -508,6 +494,21 @@ export default function CashSales() {
                         placeholder="0"
                         className={`w-24 mx-auto block border border-accent/10 rounded px-2 py-2 text-center outline-none ${
                           !item.isNew ? "bg-primary/50 cursor-not-allowed text-muted" : "bg-primary focus:border-accent"
+                        }`}
+                      />
+                    </td>
+                    <td className="px-2 py-3 text-center font-bold">
+                      <input
+                        id={`cs-${item.rowId}-col-4`}
+                        type="number"
+                        step="any"
+                        value={item.cashSalesRate}
+                        onChange={(e) => updateRow(item.rowId, "cashSalesRate", e.target.value)}
+                        onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
+                        readOnly={!item.isNew}
+                        placeholder="1"
+                        className={`w-20 mx-auto block border border-accent/10 rounded px-2 py-2 text-center outline-none ${
+                          !item.isNew ? "bg-primary/50 cursor-not-allowed text-muted text-xs" : "bg-primary focus:border-accent"
                         }`}
                       />
                     </td>

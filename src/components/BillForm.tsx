@@ -230,11 +230,11 @@ export default function BillForm() {
         productId: product.id,
         productName: product.name,
         qty: 1,
-        price: product.wholesaleRate,
+        price: product.mrp * (product.cashSalesRate || 1),
         purchaseRate: product.purchaseRate,
-        wholesaleRate: product.wholesaleRate,
+        cashSalesRate: product.cashSalesRate || 1,
         mrp: product.mrp,
-        total: product.wholesaleRate,
+        total: product.mrp * (product.cashSalesRate || 1),
         unit: product.unit || "Pcs",
         secondaryUnit: product.secondaryUnit,
         conversionRate: product.conversionRate,
@@ -320,17 +320,20 @@ export default function BillForm() {
   const updateQuantity = (productId: string, qty: number) => {
     const product = products.find(p => p.id === productId);
     if (!product) return;
-    if (qty < 1) return;
+    
+    // If qty is less than 1, we can either set to 1 or let it be (some businesses allow 0.5 etc but usually qty is integer)
+    // We'll stick to 1 as minimum for now if it's not a secondary unit that allows fractions
+    const finalQty = qty < 0 ? 0 : qty;
 
     setBillItems(billItems.map(item => {
       if (item.productId === productId) {
         const multiplier = item.selectedUnitType === "secondary" && item.conversionRate ? item.conversionRate : 1;
-        const baseQty = qty * multiplier;
+        const baseQty = finalQty * multiplier;
         if (baseQty > product.stock) {
            toast.error(`Out of stock. Only ${product.stock} base units available.`);
            return item;
         }
-        return { ...item, qty, total: qty * item.price };
+        return { ...item, qty: finalQty, total: finalQty * item.price };
       }
       return item;
     }));
@@ -343,7 +346,7 @@ export default function BillForm() {
     setBillItems(billItems.map(item => {
       if (item.productId === productId) {
         const multiplier = type === "secondary" && product.conversionRate ? product.conversionRate : 1;
-        const newPrice = product.wholesaleRate * multiplier;
+        const newPrice = product.mrp * (product.cashSalesRate || 1) * multiplier;
         const newMrp = product.mrp * multiplier;
         
         const baseQtyRequired = item.qty * multiplier;
@@ -386,16 +389,17 @@ export default function BillForm() {
       toast.error("Product already in bill");
       return;
     }
-
++
     setBillItems(billItems.map(item => {
       if (item.productId === oldProductId) {
         return {
           productId: newProduct.id,
           productName: newProduct.name,
           qty: 1,
-          price: newProduct.wholesaleRate,
+          price: newProduct.mrp * (newProduct.cashSalesRate || 1),
+          cashSalesRate: newProduct.cashSalesRate || 1,
           mrp: newProduct.mrp,
-          total: newProduct.wholesaleRate,
+          total: newProduct.mrp * (newProduct.cashSalesRate || 1),
         };
       }
       return item;
@@ -561,6 +565,11 @@ export default function BillForm() {
 
     if (paidAmount > grandTotal) {
       toast.error(`Paid amount cannot exceed grand total (${formatCurrency(grandTotal)})`);
+      return;
+    }
+
+    if (paidAmount < 0) {
+      toast.error("Paid amount cannot be negative");
       return;
     }
 
@@ -812,7 +821,6 @@ export default function BillForm() {
                   </div>
                 </th>
                 <th className="px-1 py-3 font-bold text-center">MRP</th>
-                <th className="px-1 py-3 font-bold text-center">W.Rate</th>
                 <th className="px-1 py-3 font-bold text-center">%</th>
                 <th className="px-1 py-3 font-bold text-center">Rate</th>
                 <th className="px-1 py-3 font-bold text-center w-16">Qty</th>
@@ -868,7 +876,6 @@ export default function BillForm() {
                               <div className="text-sm text-muted mt-1.5 flex gap-x-4">
                                 <span className={`${p.stock < 5 ? 'text-red-500' : 'text-emerald-500'} font-bold`}>Stock: {p.stock}</span>
                                 <span>MRP: {formatCurrency(p.mrp)}</span>
-                                <span>Rate: {formatCurrency(p.wholesaleRate)}</span>
                               </div>
                             </div>
                           ))}
@@ -882,7 +889,6 @@ export default function BillForm() {
                       {showPurchasePrice ? formatCurrency(products.find(p => p.id === item.productId)?.purchaseRate || 0) : ""}
                     </td>
                     <td className="px-1 py-1 text-center text-xs">{formatCurrency(item.mrp)}</td>
-                    <td className="px-1 py-1 text-center text-muted text-[10px]">{formatCurrency(item.wholesaleRate || 0)}</td>
                     <td className="px-1 py-1 text-center text-accent font-bold text-xs">
                       {item.mrp > 0 ? (((item.mrp - item.price) / item.mrp) * 100).toFixed(1) : 0}%
                     </td>
@@ -903,6 +909,8 @@ export default function BillForm() {
                           id={`bf-${item.productId}-col-2`}
                           ref={el => { qtyInputRefs.current[item.productId] = el; }}
                           type="number"
+                          min="0"
+                          max={products.find(p => p.id === item.productId)?.stock || 1000}
                           value={item.qty}
                           onChange={(e) => updateQuantity(item.productId, Number(e.target.value))}
                           onKeyDown={(e) => handleGridKeyDown(e, item.productId)}
@@ -968,7 +976,6 @@ export default function BillForm() {
                               <div className="text-sm text-muted mt-1.5 flex gap-x-4">
                                 <span className={`${p.stock < 5 ? 'text-red-500' : 'text-emerald-500'} font-bold`}>Stock: {p.stock}</span>
                                 <span>MRP: {formatCurrency(p.mrp)}</span>
-                                <span>Rate: {formatCurrency(p.wholesaleRate)}</span>
                               </div>
                             </div>
                             <Plus size={16} className="text-accent" />
@@ -982,13 +989,12 @@ export default function BillForm() {
                 <td className="px-2 py-4 text-center text-muted">-</td>
                 <td className="px-2 py-4 text-center text-muted">-</td>
                 <td className="px-2 py-4 text-center text-muted">-</td>
-                <td className="px-2 py-4 text-center text-muted">-</td>
                 <td className="px-2 py-4 text-center"></td>
               </tr>
 
               {billItems.length === 0 && searchTerm === "" && (
                 <tr>
-                  <td colSpan={9} className="px-2 py-8 text-center text-muted italic">No products added. Use the search row above to start.</td>
+                  <td colSpan={8} className="px-2 py-8 text-center text-muted italic">No products added. Use the search row above to start.</td>
                 </tr>
               )}
             </tbody>
@@ -1024,6 +1030,9 @@ export default function BillForm() {
                   if (val > grandTotal) {
                     setPaidAmount(grandTotal);
                     toast.error(`Paid amount cannot exceed grand total (${formatCurrency(grandTotal)})`);
+                  } else if (val < 0) {
+                    setPaidAmount(0);
+                    toast.error("Paid amount cannot be negative");
                   } else {
                     setPaidAmount(val);
                   }

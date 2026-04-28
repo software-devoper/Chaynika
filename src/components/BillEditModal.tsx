@@ -117,8 +117,12 @@ export default function BillEditModal({ bill, onClose }: BillEditModalProps) {
                     <td className="p-3 text-center">
                       <input
                         type="number"
+                        min="0"
                         value={item.qty}
-                        onChange={(e) => updateQty(item.productId, Number(e.target.value))}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          updateQty(item.productId, val < 0 ? 0 : val);
+                        }}
                         className="w-20 bg-primary border border-accent/20 rounded px-2 py-1 text-center outline-none focus:border-accent"
                       />
                     </td>
@@ -158,8 +162,20 @@ export default function BillEditModal({ bill, onClose }: BillEditModalProps) {
                 <span className="text-muted">Paid Amount:</span>
                 <input
                   type="number"
+                  min="0"
+                  max={grandTotal}
                   value={paidAmount}
-                  onChange={(e) => setPaidAmount(Number(e.target.value))}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    if (val > grandTotal) {
+                      setPaidAmount(grandTotal);
+                      toast.error(`Paid amount cannot exceed grand total (${formatCurrency(grandTotal)})`);
+                    } else if (val < 0) {
+                      setPaidAmount(0);
+                    } else {
+                      setPaidAmount(val);
+                    }
+                  }}
                   className="w-24 bg-primary border border-accent/20 rounded px-2 py-1 text-right outline-none focus:border-accent"
                 />
               </div>

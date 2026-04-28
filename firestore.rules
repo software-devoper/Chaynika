@@ -1,81 +1,42 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    //
-    // Collection: groups
-    // Fields:
-    //   - name: string (required)
-    //   - createdAt: number (required)
-    //
-    // Collection: products
-    // Fields:
-    //   - name: string (required)
-    //   - groupId: string (required)
-    //   - groupName: string (required)
-    //   - purchaseRate: number (required)
-    //   - mrp: number (required)
-    //   - stock: number (required)
-    //   - unit: string (required)
-    //   - updatedAt: number (required)
-    //
-    // Collection: bills
-    // Fields:
-    //   - billNo: string (required)
-    //   - customerName: string (required)
-    //   - customerPhone: string (required)
-    //   - items: list (required)
-    //   - totalAmount: number (required)
-    //   - paidAmount: number (required)
-    //   - dueAmount: number (required)
-    //   - date: number (required)
-    //
-    // Collection: dues
-    // Fields:
-    //   - customerPhone: string (required)
-    //   - customerName: string (required)
-    //   - totalDue: number (required)
-    //   - lastBillDate: number (required)
-    //   - lastUpdated: number (required)
-    //
-    // Collection: cashSales
-    // Fields:
-    //   - productId: string (required)
-    //   - productName: string (required)
-    //   - qty: number (required)
-    //   - purchaseRate: number (required)
-    //   - mrp: number (required)
-    //   - amount: number (required)
-    //   - date: number (required)
-    //
-    // ===============================================================
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
 
     // Helper Functions
-    function isAuthenticated() {
+    function isSignedIn() {
       return request.auth != null;
     }
 
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
     function isAdmin() {
-      return isAuthenticated() && 
-        (request.auth.token.email == "subhadipmondal0101@gmail.com" && request.auth.token.email_verified == true);
+      return isSignedIn() && 
+        request.auth.token.email == "subhadipmondal0101@gmail.com" && 
+        request.auth.token.email_verified == true;
     }
 
-    function isValidCashSale(data) {
-      return data.keys().hasAll(['productId', 'productName', 'qty', 'purchaseRate', 'mrp', 'amount', 'date']) &&
-             data.productId is string &&
-             data.productName is string && data.productName.size() > 0 &&
-             data.qty is number && data.qty > 0 &&
-             data.purchaseRate is number &&
-             data.mrp is number &&
-             data.amount is number && data.amount > 0 &&
-             data.date is number;
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128;
     }
 
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Global Validation Helpers
     function isValidGroup(data) {
       return data.keys().hasAll(['name', 'createdAt']) &&
-             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
              data.createdAt is number;
     }
 
@@ -87,22 +48,21 @@ service cloud.firestore {
     }
 
     function isValidProduct(data) {
-      return data.keys().hasAll(['name', 'groupId', 'groupName', 'purchaseRate', 'wholesaleRate', 'mrp', 'stock', 'unit', 'updatedAt']) &&
-             data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
+      return data.keys().hasAll(['name', 'groupId', 'groupName', 'subgroupId', 'purchaseRate', 'wholesaleRate', 'cashSalesRate', 'mrp', 'stock', 'unit', 'updatedAt']) &&
+             data.name is string && data.name.size() > 0 &&
              data.groupId is string &&
-             data.groupName is string &&
-             data.purchaseRate is number && data.purchaseRate >= 0 &&
-             data.wholesaleRate is number && data.wholesaleRate >= 0 &&
-             data.mrp is number && data.mrp >= 0 &&
+             data.purchaseRate is number &&
+             data.wholesaleRate is number &&
+             data.cashSalesRate is number &&
+             data.mrp is number &&
              data.stock is number &&
-             data.unit is string &&
              data.updatedAt is number;
     }
 
     function isValidBill(data) {
       return data.keys().hasAll(['billNo', 'customerName', 'customerPhone', 'items', 'subtotal', 'grandTotal', 'paidAmount', 'dueAmount', 'date']) &&
              data.billNo is string &&
-             data.customerName is string && data.customerName.size() > 0 &&
+             data.customerName is string &&
              data.customerPhone is string &&
              data.items is list &&
              data.subtotal is number &&
@@ -110,6 +70,12 @@ service cloud.firestore {
              data.paidAmount is number &&
              data.dueAmount is number &&
              data.date is number;
+    }
+
+    function isValidCustomer(data) {
+      return data.keys().hasAll(['name', 'phone']) &&
+             data.name is string &&
+             data.phone is string;
     }
 
     function isValidDue(data) {
@@ -120,75 +86,87 @@ service cloud.firestore {
              data.lastBillDate is number;
     }
 
+    function isValidPartyDue(data) {
+      return data.keys().hasAll(['groupId', 'partyName', 'amount', 'lastPurchaseDate']) &&
+             data.groupId is string &&
+             data.partyName is string &&
+             data.amount is number &&
+             data.lastPurchaseDate is number;
+    }
+
+    function isValidCashSale(data) {
+      return data.keys().hasAll(['productId', 'productName', 'qty', 'purchaseRate', 'mrp', 'amount', 'date']) &&
+             data.productId is string &&
+             data.productName is string &&
+             data.qty is number &&
+             data.amount is number &&
+             data.date is number;
+    }
+
     function isValidProfile(data) {
       return data.keys().hasAll(['fullName', 'lastAccess']) &&
-             data.fullName is string && data.fullName.size() > 0 &&
+             data.fullName is string &&
              data.lastAccess is number;
     }
 
-    function isValidSettings(data) {
-      return data.keys().hasAll(['password']) &&
-             data.password is string && data.password.size() > 0;
-    }
-
-    // Rules
+    // Collection match blocks
     match /profiles/{uid} {
-      allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated() && request.auth.uid == uid && isValidProfile(request.resource.data);
-      allow delete: if isAuthenticated() && request.auth.uid == uid;
+      allow read: if isSignedIn();
+      allow create, update: if isOwner(uid) && isValidProfile(incoming());
+      allow delete: if isOwner(uid);
     }
 
-    match /settings/{document=**} {
+    match /settings/{docId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isSignedIn();
     }
 
     match /groups/{groupId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isValidGroup(request.resource.data);
-      allow update: if isAuthenticated() && isValidGroup(request.resource.data);
-      allow delete: if isAuthenticated();
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidGroup(incoming());
+      allow delete: if isSignedIn();
     }
-    
+
     match /subgroups/{subgroupId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isValidSubgroup(request.resource.data); 
-      allow update: if isAuthenticated() && isValidSubgroup(request.resource.data);
-      allow delete: if isAuthenticated();
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidSubgroup(incoming());
+      allow delete: if isSignedIn();
     }
 
     match /products/{productId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isValidProduct(request.resource.data);
-      allow update: if isAuthenticated() && isValidProduct(request.resource.data);
-      allow delete: if isAuthenticated();
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidProduct(incoming());
+      allow delete: if isSignedIn();
     }
 
     match /bills/{billId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isValidBill(request.resource.data);
-      allow update: if isAuthenticated() && isValidBill(request.resource.data);
-      allow delete: if isAuthenticated();
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidBill(incoming());
+      allow delete: if isSignedIn();
     }
 
-    match /customers/{customerId} {
-      allow read, write: if isAuthenticated();
+    match /customers/{phone} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidCustomer(incoming());
+      allow delete: if isSignedIn();
     }
 
-    match /dues/{dueId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
+    match /dues/{phone} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidDue(incoming());
+      allow delete: if isSignedIn();
     }
 
-    match /partyDues/{dueId} {
-      allow read, write: if isAuthenticated();
+    match /partyDues/{id} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidPartyDue(incoming());
+      allow delete: if isSignedIn();
     }
 
     match /cashSales/{saleId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isValidCashSale(request.resource.data);
-      allow update: if isAuthenticated() && isValidCashSale(request.resource.data);
-      allow delete: if isAuthenticated();
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidCashSale(incoming());
+      allow delete: if isSignedIn();
     }
   }
 }
