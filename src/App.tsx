@@ -15,7 +15,9 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { 
   signInAnonymously,
   onAuthStateChanged,
-  signOut
+  signOut,
+  GoogleAuthProvider,
+  signInWithPopup
 } from "firebase/auth";
 import { auth } from "./lib/firebase";
 import Logo from "./components/Logo";
@@ -132,6 +134,28 @@ export default function App() {
     };
   }, []);
 
+  const handleGoogleLogin = async () => {
+    setIsActionLoading(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      // Save profile
+      await profileApi.update(user.uid, user.displayName || "Admin User");
+      
+      setIsAuthenticated(true);
+      setFullName(user.displayName || "Admin User");
+      toast.success(`Welcome back, ${user.displayName}!`);
+      cleanupApi.runCleanup();
+    } catch (err: any) {
+      console.error("Google Login Error:", err);
+      toast.error(err.message || "Google login failed");
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
   const handleAccess = async () => {
     if (!fullName || !accessPassword) {
       return toast.error("Please enter both Full Name and Access Password");
@@ -152,9 +176,19 @@ export default function App() {
       }
 
       // Save profile only if it doesn't exist or name changed
-      const existingProfile = await profileApi.get(uid);
+      let existingProfile = null;
+      try {
+        existingProfile = await profileApi.get(uid);
+      } catch (pErr) {
+        console.warn("Could not fetch profile, continuing...", pErr);
+      }
+
       if (!existingProfile || existingProfile.fullName !== fullName) {
-        await profileApi.update(uid, fullName);
+        try {
+          await profileApi.update(uid, fullName);
+        } catch (pUpdateErr) {
+          console.warn("Could not update profile, continuing...", pUpdateErr);
+        }
       }
       
       setIsAuthenticated(true);
@@ -162,12 +196,24 @@ export default function App() {
       toast.success(`Welcome, ${fullName}!`);
       
       // Run cleanup logic for old records after successful login
-      cleanupApi.runCleanup();
+      try {
+        cleanupApi.runCleanup();
+      } catch (cErr) {
+        console.warn("Cleanup failed, continuing...", cErr);
+      }
     } catch (err: any) {
-      console.error("Access Error:", err);
+      console.error("Access Error Details:", err);
       // If we signed in but something failed, sign out
       if (auth.currentUser) await signOut(auth);
-      toast.error(err.message || "Access failed");
+      
+      let message = "Access failed. Please check your internet or try again.";
+      if (err.code === 'auth/operation-not-allowed') {
+        message = "Anonymous authentication is not enabled in Firebase. Please enable it in the Firebase Console or ask for support.";
+      } else if (err.message) {
+        message = err.message;
+      }
+      
+      toast.error(message, { duration: 5000 });
     } finally {
       setIsActionLoading(false);
     }
@@ -356,6 +402,24 @@ export default function App() {
               >
                 {isActionLoading && <Loader2 className="w-5 h-5 animate-spin" />}
                 Access Page
+              </button>
+
+              <div className="relative py-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-accent/10"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-surface px-2 text-muted">Or continue with</span>
+                </div>
+              </div>
+
+              <button 
+                onClick={handleGoogleLogin}
+                disabled={isActionLoading}
+                className="w-full bg-primary border border-accent/20 text-text font-medium py-3 rounded-xl hover:bg-accent/5 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+              >
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="Google" />
+                Sign in with Google
               </button>
             </div>
           </div>
