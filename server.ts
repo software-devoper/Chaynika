@@ -42,44 +42,17 @@ async function startServer() {
     let db: admin.firestore.Firestore;
     try {
       if (!admin.apps.length) {
-        console.log("Initializing Firebase Admin with config projectId...");
+        console.log(`Initializing Firebase Admin with project: ${firebaseConfig.projectId}`);
         admin.initializeApp({
           projectId: firebaseConfig.projectId,
         });
       }
       
-      const dbDefault = getFirestore(admin.app());
-      const dbNamed = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== "(default)"
-        ? getFirestore(admin.app(), firebaseConfig.firestoreDatabaseId)
-        : dbDefault;
+      const dbId = firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== "(default)"
+        ? firebaseConfig.firestoreDatabaseId
+        : undefined;
 
-      let namedSuccess = false;
-      if (firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== "(default)") {
-        console.log(`Testing named database connection (${firebaseConfig.firestoreDatabaseId})...`);
-        try {
-          // A simple query to test connection
-          await dbNamed.collection("settings").limit(1).get();
-          console.log("Named database connection successful.");
-          namedSuccess = true;
-        } catch (e: any) {
-          console.warn(`Named database connection failed (Error ${e.code}): ${e.message}`);
-          // If it's a permission error, it might be because the rules aren't applied yet or the database is not accessible
-        }
-      }
-
-      db = namedSuccess ? dbNamed : dbDefault;
-      console.log(`Using ${namedSuccess ? "named" : "default"} database as primary.`);
-
-      // Only test primary if we didn't succeed with named, or if named is not used
-      if (!namedSuccess) {
-        console.log("Testing primary database connection...");
-        try {
-          await db.collection("settings").limit(1).get();
-          console.log("Primary database connection successful.");
-        } catch (e: any) {
-          console.error(`Primary database connection failed (Error ${e.code}): ${e.message}`);
-        }
-      }
+      db = dbId ? getFirestore(admin.app(), dbId) : getFirestore(admin.app());
     } catch (adminError: any) {
       console.error("Failed to initialize Firebase Admin:", adminError.message);
       throw adminError;
@@ -87,7 +60,11 @@ async function startServer() {
 
     // API routes
     app.get("/api/health", (req, res) => {
-      res.json({ status: "ok" });
+      res.json({ 
+        status: "ok", 
+        project: firebaseConfig.projectId,
+        database: firebaseConfig.firestoreDatabaseId || "(default)"
+      });
     });
 
     // Auth Routes
