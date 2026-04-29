@@ -230,11 +230,12 @@ export default function BillForm() {
         productId: product.id,
         productName: product.name,
         qty: 1,
-        price: product.mrp * (product.cashSalesRate || 1),
+        price: product.wholesaleRate,
         purchaseRate: product.purchaseRate,
+        wholesaleRate: product.wholesaleRate,
         cashSalesRate: product.cashSalesRate || 1,
         mrp: product.mrp,
-        total: product.mrp * (product.cashSalesRate || 1),
+        total: product.wholesaleRate,
         unit: product.unit || "Pcs",
         secondaryUnit: product.secondaryUnit,
         conversionRate: product.conversionRate,
@@ -346,7 +347,7 @@ export default function BillForm() {
     setBillItems(billItems.map(item => {
       if (item.productId === productId) {
         const multiplier = type === "secondary" && product.conversionRate ? product.conversionRate : 1;
-        const newPrice = product.mrp * (product.cashSalesRate || 1) * multiplier;
+        const newPrice = product.wholesaleRate * multiplier;
         const newMrp = product.mrp * multiplier;
         
         const baseQtyRequired = item.qty * multiplier;
@@ -396,10 +397,11 @@ export default function BillForm() {
           productId: newProduct.id,
           productName: newProduct.name,
           qty: 1,
-          price: newProduct.mrp * (newProduct.cashSalesRate || 1),
+          price: newProduct.wholesaleRate,
+          wholesaleRate: newProduct.wholesaleRate,
           cashSalesRate: newProduct.cashSalesRate || 1,
           mrp: newProduct.mrp,
-          total: newProduct.mrp * (newProduct.cashSalesRate || 1),
+          total: newProduct.wholesaleRate,
         };
       }
       return item;

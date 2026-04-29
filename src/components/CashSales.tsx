@@ -143,8 +143,8 @@ export default function CashSales() {
             }
           }
 
-          if (q && m && csr) {
-            updated.amount = q * m * csr;
+          if (q && csr) {
+            updated.amount = q * csr;
           } else {
             updated.amount = "";
           }
@@ -174,7 +174,7 @@ export default function CashSales() {
         mrp: p.mrp,
         isNew: false,
         quantity: finalQty,
-        amount: finalQty ? Number(finalQty) * p.mrp * (p.cashSalesRate || 1) : ""
+        amount: finalQty ? Number(finalQty) * (p.cashSalesRate || 1) : ""
       } : ci
     ));
     setActiveDropdownRowId(null);
