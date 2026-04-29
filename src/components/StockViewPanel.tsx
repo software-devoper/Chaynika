@@ -45,11 +45,11 @@ export default function StockViewPanel() {
       const originalProduct = products.find(p => p.id === editingProduct.id);
       
       if (originalProduct) {
-        const originalKey = `${originalProduct.name.toLowerCase()}|${originalProduct.purchaseRate}|${originalProduct.cashSalesRate || 0}|${originalProduct.mrp}`;
+        const originalKey = `${originalProduct.name.toLowerCase()}|${originalProduct.purchaseRate}|${originalProduct.wholesaleRate || 0}|${originalProduct.cashSalesRate || 0}|${originalProduct.mrp}`;
         
         // Find all products that match this key
         const matchingProducts = products.filter(p => {
-          const key = `${p.name.toLowerCase()}|${p.purchaseRate}|${p.cashSalesRate || 0}|${p.mrp}`;
+          const key = `${p.name.toLowerCase()}|${p.purchaseRate}|${p.wholesaleRate || 0}|${p.cashSalesRate || 0}|${p.mrp}`;
           return key === originalKey;
         });
 
@@ -97,9 +97,9 @@ export default function StockViewPanel() {
 
     if (window.confirm("Are you sure you want to delete this product stock completely? This action cannot be undone.")) {
       try {
-        const originalKey = `${productToDelete.name.toLowerCase()}|${productToDelete.purchaseRate}|${productToDelete.cashSalesRate || 0}|${productToDelete.mrp}`;
+        const originalKey = `${productToDelete.name.toLowerCase()}|${productToDelete.purchaseRate}|${productToDelete.wholesaleRate || 0}|${productToDelete.cashSalesRate || 0}|${productToDelete.mrp}`;
         const matchingProducts = products.filter(p => {
-          const key = `${p.name.toLowerCase()}|${p.purchaseRate}|${p.cashSalesRate || 0}|${p.mrp}`;
+          const key = `${p.name.toLowerCase()}|${p.purchaseRate}|${p.wholesaleRate || 0}|${p.cashSalesRate || 0}|${p.mrp}`;
           return key === originalKey;
         });
 
@@ -121,7 +121,7 @@ export default function StockViewPanel() {
     const map = new Map<string, Product>();
     
     products.forEach(p => {
-      const key = `${p.name.toLowerCase()}|${p.purchaseRate}|${p.cashSalesRate || 0}|${p.mrp}`;
+      const key = `${p.name.toLowerCase()}|${p.purchaseRate}|${p.wholesaleRate || 0}|${p.cashSalesRate || 0}|${p.mrp}`;
       if (map.has(key)) {
         const existing = map.get(key)!;
         map.set(key, {
@@ -212,6 +212,7 @@ export default function StockViewPanel() {
               <th className="px-6 py-5 font-bold text-center">Product Name</th>
               <th className="px-6 py-5 font-bold text-center">Stock</th>
               <th className="px-6 py-5 font-bold text-center text-xs">P. Rate</th>
+              <th className="px-6 py-5 font-bold text-center text-xs">WS Rate</th>
               <th className="px-6 py-5 font-bold text-center text-xs">CS Rate</th>
               <th className="px-6 py-5 font-bold text-center">MRP</th>
               <th className="px-6 py-5 font-bold text-center">Actions</th>
@@ -237,6 +238,7 @@ export default function StockViewPanel() {
                 <td className="px-6 py-4 font-medium group-hover:text-accent transition-colors text-center">{product.name}</td>
                 <td className="px-6 py-4 text-center font-medium">{product.stock}</td>
                 <td className="px-6 py-4 text-center text-muted">{formatCurrency(product.purchaseRate)}</td>
+                <td className="px-6 py-4 text-center text-muted">{formatCurrency(product.wholesaleRate)}</td>
                 <td className="px-6 py-4 text-center text-muted">{product.cashSalesRate || 1}</td>
                 <td className="px-6 py-4 text-center text-accent font-medium">{formatCurrency(product.mrp)}</td>
                 <td className="px-6 py-4 text-center">
@@ -267,7 +269,7 @@ export default function StockViewPanel() {
             <tr className="font-bold text-text">
               <td colSpan={4} className="px-6 py-4 text-right uppercase tracking-wider text-xs text-muted">Total Stock:</td>
               <td className="px-6 py-4 text-center text-lg text-accent">{totalQuantity}</td>
-              <td colSpan={4} className="px-6 py-4"></td>
+              <td colSpan={5} className="px-6 py-4"></td>
             </tr>
           </tfoot>
         </table>
@@ -319,10 +321,14 @@ export default function StockViewPanel() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-3 gap-4 pt-3 border-t border-accent/5 mt-1">
+              <div className="grid grid-cols-4 gap-4 pt-3 border-t border-accent/5 mt-1">
                 <div>
                   <div className="text-xs text-muted mb-1">P. Rate</div>
                   <div className="font-medium text-text">{formatCurrency(product.purchaseRate)}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted mb-1 text-center">WS Rate</div>
+                  <div className="font-medium text-text text-center">{formatCurrency(product.wholesaleRate)}</div>
                 </div>
                 <div>
                   <div className="text-xs text-muted mb-1 text-center">CS Rate</div>
@@ -454,6 +460,18 @@ export default function StockViewPanel() {
                     />
                   </div>
 
+                  <div>
+                    <label className="block text-sm font-medium text-muted mb-1">Whole Sale Rate</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      value={editingProduct.wholesaleRate}
+                      onChange={(e) => setEditingProduct({ ...editingProduct, wholesaleRate: Number(e.target.value) })}
+                      className="w-full bg-primary border border-accent/10 rounded-xl px-4 py-2 text-text focus:border-accent outline-none transition-all"
+                    />
+                  </div>
+ 
                   <div>
                     <label className="block text-sm font-medium text-muted mb-1">CS Rate</label>
                     <input
