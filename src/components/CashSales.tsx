@@ -12,6 +12,7 @@ interface CashItem {
   productName: string;
   quantity: number | "";
   purchaseRate: number | "";
+  wholesaleRate: number | "";
   cashSalesRate: number | "";
   mrp: number | "";
   amount: number | "";
@@ -90,6 +91,7 @@ export default function CashSales() {
     productName: "",
     quantity: "",
     purchaseRate: "",
+    wholesaleRate: "",
     cashSalesRate: "",
     mrp: "",
     amount: "",
@@ -125,6 +127,7 @@ export default function CashSales() {
           updated.productId = undefined;
           updated.isNew = true;
           updated.purchaseRate = "";
+          updated.wholesaleRate = "";
           updated.cashSalesRate = "";
           updated.mrp = "";
           updated.amount = "";
@@ -170,6 +173,7 @@ export default function CashSales() {
         productId: p.id,
         productName: p.name,
         purchaseRate: p.purchaseRate,
+        wholesaleRate: p.wholesaleRate || "",
         cashSalesRate: p.cashSalesRate || 1,
         mrp: p.mrp,
         isNew: false,
@@ -243,6 +247,7 @@ export default function CashSales() {
           productName: item.productName,
           qty: Number(item.quantity),
           purchaseRate: Number(item.purchaseRate),
+          wholesaleRate: Number(item.wholesaleRate),
           cashSalesRate: Number(item.cashSalesRate),
           mrp: Number(item.mrp),
           amount: Number(item.amount),
@@ -308,7 +313,7 @@ export default function CashSales() {
           if (rowIndex !== -1) {
             let nextRowIndex = rowIndex;
             let nextColIndex = colIndex;
-            const maxCols = 6; // 0=name, 1=qty, 2=prate, 3=mrp, 4=csrate, 5=amount
+            const maxCols = 7; // 0=name, 1=qty, 2=prate, 3=wsrate, 4=mrp, 5=csrate, 6=amount
             
             if (e.key === "ArrowRight") nextColIndex++;
             else if (e.key === "ArrowLeft") nextColIndex--;
@@ -352,10 +357,10 @@ export default function CashSales() {
         if (colIndex === 0) {
           qtyInputRefs.current[item.rowId]?.focus();
         } else if (colIndex === 1) {
-          // Go to MRP
-          const mrpEl = document.getElementById(`cs-${item.rowId}-col-3`) as HTMLInputElement | null;
-          mrpEl?.focus();
-        } else if (colIndex === 5) {
+          // Go to WS Rate
+          const wsRateEl = document.getElementById(`cs-${item.rowId}-col-3`) as HTMLInputElement | null;
+          wsRateEl?.focus();
+        } else if (colIndex === 6) {
           const rowIndex = cashItems.findIndex(pi => pi.rowId === item.rowId);
           const isLast = rowIndex === cashItems.length - 1;
           if (isLast) {
@@ -392,6 +397,7 @@ export default function CashSales() {
               <th className="px-2 py-3 font-medium text-center">Particulars</th>
               <th className="px-2 py-3 font-medium text-center">Quantity</th>
               <th className="px-2 py-3 font-medium text-center">P. Rate</th>
+              <th className="px-2 py-3 font-medium text-center">WS Rate</th>
               <th className="px-2 py-3 font-medium text-center">MRP</th>
               <th className="px-2 py-3 font-medium text-center text-xs">CS Rate</th>
               <th className="px-2 py-3 font-medium text-center">Amount</th>
@@ -487,6 +493,21 @@ export default function CashSales() {
                         id={`cs-${item.rowId}-col-3`}
                         type="number"
                         step="any"
+                        value={item.wholesaleRate}
+                        onChange={(e) => updateRow(item.rowId, "wholesaleRate", e.target.value)}
+                        onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
+                        readOnly={!item.isNew}
+                        placeholder="0"
+                        className={`w-20 mx-auto block border border-accent/10 rounded px-2 py-2 text-center outline-none ${
+                          !item.isNew ? "bg-primary/50 cursor-not-allowed text-muted text-xs" : "bg-primary focus:border-accent"
+                        }`}
+                      />
+                    </td>
+                    <td className="px-2 py-3 text-center">
+                      <input
+                        id={`cs-${item.rowId}-col-4`}
+                        type="number"
+                        step="any"
                         value={item.mrp}
                         onChange={(e) => updateRow(item.rowId, "mrp", e.target.value)}
                         onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
@@ -499,7 +520,7 @@ export default function CashSales() {
                     </td>
                     <td className="px-2 py-3 text-center font-bold">
                       <input
-                        id={`cs-${item.rowId}-col-4`}
+                        id={`cs-${item.rowId}-col-5`}
                         type="number"
                         step="any"
                         value={item.cashSalesRate}
@@ -514,7 +535,7 @@ export default function CashSales() {
                     </td>
                     <td className="px-2 py-3 text-center">
                       <input
-                        id={`cs-${item.rowId}-col-5`}
+                        id={`cs-${item.rowId}-col-6`}
                         ref={el => { amountInputRefs.current[item.rowId] = el; }}
                         type="number"
                         step="any"
