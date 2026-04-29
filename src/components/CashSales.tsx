@@ -241,7 +241,38 @@ export default function CashSales() {
 
     setIsSaving(true);
     try {
-          for (const item of validItems) {
+      for (const item of validItems) {
+        // If it's an existing product, check if properties changed
+        if (item.productId) {
+          const originalProduct = products.find(p => p.id === item.productId);
+          if (originalProduct) {
+            const hasChanged = 
+              Number(item.purchaseRate) !== originalProduct.purchaseRate ||
+              Number(item.wholesaleRate) !== (originalProduct.wholesaleRate || 0) ||
+              Number(item.cashSalesRate) !== (originalProduct.cashSalesRate || 1) ||
+              Number(item.mrp) !== originalProduct.mrp;
+
+            if (hasChanged) {
+              const originalKey = `${originalProduct.name.toLowerCase()}|${originalProduct.purchaseRate}|${originalProduct.wholesaleRate || 0}|${originalProduct.cashSalesRate || 1}|${originalProduct.mrp}`;
+              
+              const matchingProducts = products.filter(p => {
+                const key = `${p.name.toLowerCase()}|${p.purchaseRate}|${p.wholesaleRate || 0}|${p.cashSalesRate || 1}|${p.mrp}`;
+                return key === originalKey;
+              });
+
+              // Update all matching products
+              for (const p of matchingProducts) {
+                await productApi.update(p.id, {
+                  purchaseRate: Number(item.purchaseRate),
+                  wholesaleRate: Number(item.wholesaleRate),
+                  cashSalesRate: Number(item.cashSalesRate),
+                  mrp: Number(item.mrp)
+                });
+              }
+            }
+          }
+        }
+
         await cashSaleApi.create({
           productId: item.productId || "",
           productName: item.productName,
@@ -436,8 +467,11 @@ export default function CashSales() {
                         }}
                          onBlur={() => setTimeout(() => setActiveDropdownRowId(null), 200)}
                         onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
+                        readOnly={!item.isNew}
                         placeholder="Search product..."
-                        className="w-full bg-primary border border-accent/10 rounded px-3 py-2 text-text outline-none focus:border-accent"
+                        className={`w-full border border-accent/10 rounded px-3 py-2 text-text outline-none focus:border-accent ${
+                          !item.isNew ? "bg-primary/50 cursor-not-allowed text-muted" : "bg-primary"
+                        }`}
                       />
                       {activeDropdownRowId === item.rowId && item.productName && item.isNew && (
                         <div className="absolute z-50 w-full mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl max-h-48 overflow-y-auto left-0 min-w-full">
@@ -526,11 +560,8 @@ export default function CashSales() {
                         value={item.cashSalesRate}
                         onChange={(e) => updateRow(item.rowId, "cashSalesRate", e.target.value)}
                         onKeyDown={(e) => handleProductKeyDown(e, item, filteredProducts)}
-                        readOnly={!item.isNew}
                         placeholder="1"
-                        className={`w-20 mx-auto block border border-accent/10 rounded px-2 py-2 text-center outline-none ${
-                          !item.isNew ? "bg-primary/50 cursor-not-allowed text-muted text-xs" : "bg-primary focus:border-accent"
-                        }`}
+                        className="w-20 mx-auto block bg-primary border border-accent/10 rounded px-2 py-2 text-center outline-none focus:border-accent"
                       />
                     </td>
                     <td className="px-2 py-3 text-center">
