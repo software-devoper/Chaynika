@@ -128,6 +128,19 @@
         "password": { "type": "string" }
       },
       "required": ["password"]
+    },
+    "PaymentHistory": {
+      "title": "Payment History",
+      "description": "History of part or full payments",
+      "type": "object",
+      "properties": {
+        "customerName": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "number" },
+        "type": { "type": "string", "enum": ["received", "partly_received", "paid", "partly_paid"] }
+      },
+      "required": ["customerName", "customerPhone", "amount", "date", "type"]
     }
   },
   "firestore": {
@@ -139,6 +152,7 @@
     "/partyDues": { "schema": "PartyDue", "description": "Collection of party dues" },
     "/cashSales": { "schema": "CashSale", "description": "Collection of cash sales" },
     "/profiles": { "schema": "Profile", "description": "Collection of user profiles" },
-    "/settings": { "schema": "Settings", "description": "Collection of app settings" }
+    "/settings": { "schema": "Settings", "description": "Collection of app settings" },
+    "/paymentHistory": { "schema": "PaymentHistory", "description": "Collection of payment history records" }
   }
 }

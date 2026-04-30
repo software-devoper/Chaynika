@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Plus, Loader2, Trash2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { Group, Product } from "../types";
-import { groupApi, productApi, partyDueApi } from "../lib/api";
+import { groupApi, productApi, partyDueApi, paymentHistoryApi } from "../lib/api";
 import { motion, AnimatePresence } from "motion/react";
 import { formatCurrency, capitalizeFirstLetter } from "../lib/utils";
 
@@ -514,6 +514,16 @@ export default function PurchaseGroup() {
       const dueChange = totalPurchaseAmount - (Number(payableAmount) || 0);
       const productNamesStr = itemsToProcess.map(item => item.productName.trim()).join(", ");
       await partyDueApi.addOrUpdate(groupId, partyName.trim(), dueChange, productNamesStr, isNewParty);
+
+      // Record in payment history if any amount is paid
+      if (Number(payableAmount) > 0) {
+        await paymentHistoryApi.add({
+          customerName: partyName.trim(),
+          customerPhone: "N/A",
+          amount: Number(payableAmount),
+          type: "paid"
+        });
+      }
 
       toast.success("Purchase saved successfully");
       

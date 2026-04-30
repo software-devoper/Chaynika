@@ -21,98 +21,13 @@ service cloud.firestore {
         request.auth.token.email_verified == true;
     }
 
-    function isValidId(id) {
-      return id is string && id.size() > 0 && id.size() <= 128;
-    }
-
     function incoming() {
       return request.resource.data;
     }
 
-    function existing() {
-      return resource.data;
-    }
-
-    // Global Validation Helpers
-    function isValidGroup(data) {
-      return data.keys().hasAll(['name', 'createdAt']) &&
-             data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
-             data.createdAt is number;
-    }
-
-    function isValidSubgroup(data) {
-      return data.keys().hasAll(['groupId', 'name', 'createdAt']) &&
-             data.groupId is string &&
-             data.name is string && data.name.size() > 0 &&
-             data.createdAt is number;
-    }
-
-    function isValidProduct(data) {
-      return data.keys().hasAll(['name', 'groupId', 'groupName', 'subgroupId', 'purchaseRate', 'wholesaleRate', 'cashSalesRate', 'mrp', 'stock', 'unit', 'updatedAt']) &&
-             data.name is string && data.name.size() > 0 &&
-             data.groupId is string &&
-             data.purchaseRate is number &&
-             data.wholesaleRate is number &&
-             data.cashSalesRate is number &&
-             data.mrp is number &&
-             data.stock is number &&
-             data.updatedAt is number;
-    }
-
-    function isValidBill(data) {
-      return data.keys().hasAll(['billNo', 'customerName', 'customerPhone', 'items', 'subtotal', 'grandTotal', 'paidAmount', 'dueAmount', 'date']) &&
-             data.billNo is string &&
-             data.customerName is string &&
-             data.customerPhone is string &&
-             data.items is list &&
-             data.subtotal is number &&
-             data.grandTotal is number &&
-             data.paidAmount is number &&
-             data.dueAmount is number &&
-             data.date is number;
-    }
-
-    function isValidCustomer(data) {
-      return data.keys().hasAll(['name', 'phone']) &&
-             data.name is string &&
-             data.phone is string;
-    }
-
-    function isValidDue(data) {
-      return data.keys().hasAll(['customerPhone', 'customerName', 'amount', 'lastBillDate']) &&
-             data.customerPhone is string &&
-             data.customerName is string &&
-             data.amount is number &&
-             data.lastBillDate is number;
-    }
-
-    function isValidPartyDue(data) {
-      return data.keys().hasAll(['groupId', 'partyName', 'amount', 'lastPurchaseDate']) &&
-             data.groupId is string &&
-             data.partyName is string &&
-             data.amount is number &&
-             data.lastPurchaseDate is number;
-    }
-
-    function isValidCashSale(data) {
-      return data.keys().hasAll(['productId', 'productName', 'qty', 'purchaseRate', 'mrp', 'amount', 'date']) &&
-             data.productId is string &&
-             data.productName is string &&
-             data.qty is number &&
-             data.amount is number &&
-             data.date is number;
-    }
-
-    function isValidProfile(data) {
-      return data.keys().hasAll(['fullName', 'lastAccess']) &&
-             data.fullName is string &&
-             data.lastAccess is number;
-    }
-
-    // Collection match blocks
     match /profiles/{uid} {
       allow read: if isSignedIn();
-      allow create, update: if isOwner(uid) && isValidProfile(incoming());
+      allow create, update: if isOwner(uid);
       allow delete: if isOwner(uid);
     }
 
@@ -122,51 +37,39 @@ service cloud.firestore {
     }
 
     match /groups/{groupId} {
-      allow read: if isSignedIn();
-      allow create, update: if isSignedIn() && isValidGroup(incoming());
-      allow delete: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
 
     match /subgroups/{subgroupId} {
-      allow read: if isSignedIn();
-      allow create, update: if isSignedIn() && isValidSubgroup(incoming());
-      allow delete: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
 
     match /products/{productId} {
-      allow read: if isSignedIn();
-      allow create, update: if isSignedIn() && isValidProduct(incoming());
-      allow delete: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
 
     match /bills/{billId} {
-      allow read: if isSignedIn();
-      allow create, update: if isSignedIn() && isValidBill(incoming());
-      allow delete: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
 
     match /customers/{phone} {
-      allow read: if isSignedIn();
-      allow create, update: if isSignedIn() && isValidCustomer(incoming());
-      allow delete: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
 
     match /dues/{phone} {
-      allow read: if isSignedIn();
-      allow create, update: if isSignedIn() && isValidDue(incoming());
-      allow delete: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
 
     match /partyDues/{id} {
-      allow read: if isSignedIn();
-      allow create, update: if isSignedIn() && isValidPartyDue(incoming());
-      allow delete: if isSignedIn();
+      allow read, write: if isSignedIn();
     }
 
     match /cashSales/{saleId} {
-      allow read: if isSignedIn();
-      allow create, update: if isSignedIn() && isValidCashSale(incoming());
-      allow delete: if isSignedIn();
+      allow read, write: if isSignedIn();
+    }
+
+    match /paymentHistory/{paymentId} {
+      allow read, write: if isSignedIn();
     }
   }
 }

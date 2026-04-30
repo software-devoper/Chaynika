@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Package, CircleDollarSign, ReceiptText, Hourglass, TrendingUp, ShoppingBag, CreditCard, Bot } from "lucide-react";
+import { Package, CircleDollarSign, ReceiptText, Hourglass, TrendingUp, ShoppingBag, CreditCard, Bot, DollarSign } from "lucide-react";
 import { motion } from "motion/react";
 import StockViewPanel from "./StockViewPanel";
 import { formatCurrency, formatDate } from "../lib/utils";
@@ -147,6 +147,12 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           label="Revenue" 
           onClick={() => setActiveTab("revenue")} 
           delay={0.4}
+        />
+        <NavButton 
+          icon={DollarSign} 
+          label="Payment History" 
+          onClick={() => setActiveTab("payment-history")} 
+          delay={0.45}
         />
         <NavButton 
           icon={Bot} 

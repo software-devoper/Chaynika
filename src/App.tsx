@@ -7,6 +7,7 @@ import Bill from "./components/Bill";
 import Revenue from "./components/Revenue";
 import Due from "./components/Due";
 import Profile from "./components/Profile";
+import PaymentHistory from "./components/PaymentHistory";
 import AskAI from "./components/AskAI";
 import { Toaster, toast } from "react-hot-toast";
 import { cn } from "./lib/utils";
@@ -239,6 +240,12 @@ export default function App() {
           <>
             <h2 className="text-2xl font-display font-bold text-accent mb-6">Dues</h2>
             <Due />
+          </>
+        );
+      case "payment-history":
+        return (
+          <>
+            <PaymentHistory />
           </>
         );
       case "profile":

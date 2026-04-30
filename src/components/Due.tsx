@@ -3,7 +3,7 @@ import { Search, CheckCircle, Loader2, TrendingDown, TrendingUp } from "lucide-r
 import { toast } from "react-hot-toast";
 import { CustomerDue, PartyDue, Product } from "../types";
 import { formatCurrency, formatDate } from "../lib/utils";
-import { dueApi, partyDueApi, productApi } from "../lib/api";
+import { dueApi, partyDueApi, productApi, paymentHistoryApi } from "../lib/api";
 import { motion, AnimatePresence } from "motion/react";
 
 export default function Due() {
@@ -59,6 +59,15 @@ export default function Due() {
       setProcessingType("full");
       try {
         await dueApi.markPaid(due.customerPhone, due.additionalPhones || []);
+        
+        // Record in payment history
+        await paymentHistoryApi.add({
+          customerName: due.customerName,
+          customerPhone: due.customerPhone,
+          amount: due.amount,
+          type: "received"
+        });
+
         toast.success("Dues cleared successfully");
       } catch (err) {
         toast.error("Failed to clear dues");
@@ -86,6 +95,15 @@ export default function Due() {
       setProcessingType("partly");
       try {
         await dueApi.updateDueAmount(due.customerPhone, due.additionalPhones || [], parsedAmount);
+        
+        // Record in payment history
+        await paymentHistoryApi.add({
+          customerName: due.customerName,
+          customerPhone: due.customerPhone,
+          amount: parsedAmount,
+          type: "partly_received"
+        });
+
         toast.success("Partial payment recorded");
       } catch (err) {
         toast.error("Failed to record partial payment");
@@ -102,6 +120,15 @@ export default function Due() {
       setProcessingType("full");
       try {
         await partyDueApi.markPaid(due.id);
+        
+        // Record in payment history
+        await paymentHistoryApi.add({
+          customerName: due.partyName,
+          customerPhone: "N/A",
+          amount: due.amount,
+          type: "paid"
+        });
+
         toast.success("Party dues cleared successfully");
       } catch (err) {
         toast.error("Failed to clear party dues");
@@ -129,6 +156,15 @@ export default function Due() {
       setProcessingType("partly");
       try {
         await partyDueApi.addOrUpdate(due.id, due.partyName, -parsedAmount);
+        
+        // Record in payment history
+        await paymentHistoryApi.add({
+          customerName: due.partyName,
+          customerPhone: "N/A",
+          amount: parsedAmount,
+          type: "partly_paid"
+        });
+
         toast.success("Partial payment recorded");
       } catch (err) {
         toast.error("Failed to record partial payment");

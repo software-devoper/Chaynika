@@ -793,6 +793,39 @@ export const cashSaleApi = {
   }
 };
 
+export const paymentHistoryApi = {
+  getAll: (callback: (payments: any[]) => void, onError?: (error: any) => void) => {
+    const path = "paymentHistory";
+    const q = query(collection(db, path), orderBy("date", "desc"));
+    return onSnapshot(q, (snapshot) => {
+      const payments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      callback(payments);
+    }, (error) => {
+      if (onError) {
+        onError(error);
+      } else {
+        handleFirestoreError(error, OperationType.GET, path);
+      }
+    });
+  },
+  add: async (payment: any) => {
+    const path = "paymentHistory";
+    try {
+      return await addDoc(collection(db, path), cleanData({ ...payment, date: Date.now() }));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, path);
+    }
+  },
+  delete: async (id: string) => {
+    const path = `paymentHistory/${id}`;
+    try {
+      return await deleteDoc(doc(db, "paymentHistory", id));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, path);
+    }
+  }
+};
+
 export const cleanupApi = {
   runCleanup: async () => {
     if (!auth.currentUser) {

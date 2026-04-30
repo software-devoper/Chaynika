@@ -6,7 +6,7 @@ import { auth } from "../lib/firebase";
 import { Product, BillItem, Customer, Bill } from "../types";
 import { formatCurrency, capitalizeFirstLetter } from "../lib/utils";
 import { generateBillPDF } from "../lib/BillPDFGenerator";
-import { productApi, billApi, dueApi, customerApi } from "../lib/api";
+import { productApi, billApi, dueApi, customerApi, paymentHistoryApi } from "../lib/api";
 import { motion, AnimatePresence } from "motion/react";
 
 export default function BillForm() {
@@ -600,6 +600,17 @@ export default function BillForm() {
 
     try {
       const billRef = await billApi.create(billData);
+      
+      // Record in payment history if any amount is paid
+      if (paidAmount > 0) {
+        await paymentHistoryApi.add({
+          customerName: customer.name,
+          customerPhone: primaryPhone,
+          amount: paidAmount,
+          type: "received"
+        });
+      }
+      
       billData.id = billRef.id;
       // Fetch the generated billNo from the created document
       const billSnap = await getDoc(billRef);
