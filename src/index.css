@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@700&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -79,6 +80,3 @@
     animation: spin-slow 20s linear infinite;
   }
 }
-
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@700&display=swap');
-

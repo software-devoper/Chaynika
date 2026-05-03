@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Search, Plus, Trash2, X, Loader2 } from "lucide-react";
+import Logo from "./Logo";
 import { toast } from "react-hot-toast";
 import { getDoc } from "firebase/firestore";
 import { auth } from "../lib/firebase";
@@ -661,13 +662,17 @@ export default function BillForm() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
+    <>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-2">
       {/* Left Panel: Customer Details */}
-      <div className="lg:col-span-1 space-y-4">
-        <h4 className="text-lg font-bold text-accent border-b border-accent/10 pb-2">Customer Details</h4>
+      <div className="lg:col-span-1 space-y-2">
+        <div className="flex justify-center pb-2">
+          <Logo size={60} showText={true} />
+        </div>
+        <h4 className="text-sm font-bold text-accent font-display border-b border-accent/10 pb-1">Customer Details</h4>
         <div className="space-y-3">
           <div className="relative">
-            <label className="block text-sm font-medium text-muted mb-1">Customer Name</label>
+            <label className="block text-xs font-medium text-muted mb-0.5">Customer Name</label>
             <input
               type="text"
               value={customer.name}
@@ -679,34 +684,33 @@ export default function BillForm() {
               onFocus={() => setShowCustomerDropdown(true)}
               onBlur={() => setTimeout(() => setShowCustomerDropdown(false), 200)}
               onKeyDown={handleCustomerKeyDown}
-              className="w-full bg-primary border border-accent/10 rounded-xl px-3 py-2.5 text-text focus:border-accent outline-none transition-all text-sm"
-              placeholder="Enter name"
+              className="w-full bg-surface border border-accent/10 rounded-md px-2 py-1.5 text-text focus:border-accent outline-none transition-all text-sm"
+              placeholder="Full Name"
             />
             {showCustomerDropdown && customers.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto">
+              <div className="absolute top-full left-0 right-0 mt-0.5 bg-surface border border-accent/10 rounded-md shadow-lg z-[200] max-h-40 overflow-y-auto">
                 {filteredCustomers.map((c, index) => (
                     <div
                       key={`${c.id}-${index}`}
-                      className={`px-4 py-2 cursor-pointer text-sm flex justify-between items-center group/item ${
+                      className={`px-2 py-1.5 cursor-pointer text-xs flex justify-between items-center ${
                         index === activeCustomerSuggestionIndex ? 'bg-accent/10' : 'hover:bg-primary'
                       }`}
                       onClick={() => handleCustomerSelect(c)}
                     >
-                      <div>
+                      <div className="truncate">
                         <div className="font-medium">{c.name}</div>
-                        <div className="text-xs text-muted">{c.phone}</div>
+                        <div className="text-[10px] text-muted">{c.phone}</div>
                       </div>
                       <button
                         type="button"
-                        onMouseDown={(e) => e.preventDefault()}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDeleteCustomer(e, c.phone);
                         }}
-                        className="p-1.5 text-muted/50 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all relative z-50 cursor-pointer pointer-events-auto"
-                        title="Delete suggestion"
+                        className="p-1 text-muted/50 hover:text-red-500 rounded hover:bg-red-500/10"
+                        title="Delete"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={12} />
                       </button>
                     </div>
                   ))}
@@ -715,114 +719,74 @@ export default function BillForm() {
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-muted mb-1">Address</label>
+            <label className="block text-xs font-medium text-muted mb-0.5">Address</label>
             <input
               type="text"
               value={customer.address}
               onChange={(e) => setCustomer({ ...customer, address: capitalizeFirstLetter(e.target.value) })}
-              className="w-full bg-primary border border-accent/10 rounded-xl px-3 py-2.5 text-text focus:border-accent outline-none transition-all text-sm"
-              placeholder="Enter address"
+              className="w-full bg-surface border border-accent/10 rounded-md px-2 py-1.5 text-text focus:border-accent outline-none transition-all text-sm"
+              placeholder="Address"
             />
           </div>
 
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <label className="block text-sm font-medium text-muted">Phone Number(s) *</label>
+              <label className="block text-xs font-medium text-muted">Phone Number(s)</label>
               {phones.length < 3 && (
                 <button 
                   onClick={addPhoneField}
-                  className="text-[10px] flex items-center gap-1.5 bg-accent/10 text-accent px-2 py-1 rounded-lg hover:bg-accent/20 transition-all font-bold"
+                  className="text-[10px] flex items-center gap-1 bg-accent/10 text-accent px-2 py-0.5 rounded hover:bg-accent/20 transition-all font-bold"
                 >
-                  <Plus size={12} /> Add Alternate
+                  <Plus size={10} /> Add
                 </button>
               )}
             </div>
             {phones.map((phone, index) => (
-              <div key={`phone-${index}`} className="relative group">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-[10px] font-bold">
-                  {index === 0 ? "PRI" : `ALT ${index}`}
-                </div>
+              <div key={`phone-${index}`} className="relative">
                 <input
                   type="tel"
                   required={index === 0}
                   value={phone}
                   onChange={(e) => handlePhoneChange(index, e.target.value)}
-                  className="w-full bg-primary border border-accent/10 rounded-xl pl-12 pr-10 py-2.5 text-text focus:border-accent outline-none transition-all font-mono tracking-wider text-sm"
-                  placeholder="10 digit"
+                  className="w-full bg-surface border border-accent/10 rounded-md px-2 py-1.5 text-text focus:border-accent outline-none transition-all font-mono text-sm"
+                  placeholder={index === 0 ? "Primary Phone" : "Alternate Phone"}
                 />
-                {phones.length > 1 && (
-                  <button 
-                    onClick={() => removePhoneField(index)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-red-500 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity p-1 hover:bg-red-500/10 rounded-lg"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
               </div>
             ))}
-            <p className="text-[10px] text-muted italic">Primary number is used for tracking dues.</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-muted mb-1 text-xs">Email (Optional)</label>
+            <label className="block text-xs font-medium text-muted mb-0.5">Email (Optional)</label>
             <input
               type="email"
               value={customer.email}
               onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
-              className="w-full bg-primary border border-accent/10 rounded-xl px-3 py-2 text-text focus:border-accent outline-none transition-all text-sm"
+              className="w-full bg-surface border border-accent/10 rounded-md px-2 py-1.5 text-text focus:border-accent outline-none transition-all text-sm"
               placeholder="Enter email"
             />
           </div>
 
-          <div className="pt-2 p-3 bg-primary/30 rounded-xl border border-accent/5">
+          <div className="pt-2 p-2 bg-primary/30 rounded-md border border-accent/5">
             <div className="flex justify-between items-center text-sm">
               <span className="text-muted">Previous Due:</span>
               <span className="text-accent font-bold">{formatCurrency(previousDue)}</span>
             </div>
           </div>
+        </div>
+        
 
-          {/* Customer History Summary */}
-          {customerHistory.length > 0 && (
-            <div className="mt-6 border-t border-accent/10 pt-6">
-              <h5 className="text-sm font-bold text-accent mb-3">Customer's Past Purchases</h5>
-              <div className="bg-primary/30 rounded-xl border border-accent/10 overflow-hidden">
-                <div className="w-full overflow-y-auto max-h-[30vh] custom-scrollbar">
-                  <table className="w-full text-center text-xs relative">
-                    <thead className="bg-surface sticky top-0 z-10 shadow-sm">
-                      <tr className="text-accent text-sm font-bold uppercase tracking-wider bg-accent/5">
-                        <th className="px-3 py-2 font-medium text-center">Date</th>
-                        <th className="px-3 py-2 font-medium text-center">Particulars</th>
-                        <th className="px-3 py-2 font-medium text-center">Qty</th>
-                        <th className="px-3 py-2 font-medium text-center">Rate</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-accent/5">
-                      {customerHistory.map((item, idx) => (
-                        <tr key={idx} className="hover:bg-primary/50">
-                          <td className="px-3 py-2 text-muted whitespace-nowrap text-center">{new Date(item.date).toLocaleDateString()}</td>
-                          <td className="px-3 py-2 font-medium text-text text-center">{item.productName}</td>
-                          <td className="px-3 py-2 text-center text-accent font-bold">{item.qty}</td>
-                          <td className="px-3 py-2 text-center text-muted">{formatCurrency(item.price)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
+
+
         </div>
       </div>
-
-      {/* Right Panel: Product Search & Table */}
       <div className="lg:col-span-3 space-y-4">
         <div className="overflow-x-auto overflow-y-auto max-h-[60vh] custom-scrollbar -mx-6 px-6 md:mx-0 md:px-0 pb-32 relative rounded-xl border border-accent/10">
           <table className="w-full text-center border-collapse whitespace-nowrap min-w-[800px]">
-            <thead className="sticky top-0 z-20 bg-surface shadow-sm outline outline-1 outline-accent/10">
+            <thead className="z-20 shadow-sm outline outline-1 outline-accent/10">
               <tr className="border-b border-accent/20 text-accent text-xs font-black uppercase tracking-widest bg-accent/10">
-                <th className="px-1 py-3 font-bold text-center w-8">Sr.</th>
-                <th className="px-2 py-3 font-bold text-left min-w-[150px]">Particulars</th>
-                <th className="px-1 py-3 font-bold text-center">
+                <th className="sticky top-0 px-1 py-3 font-bold text-center w-8 bg-surface">Sr.</th>
+                <th className="sticky top-0 px-2 py-3 font-bold text-left min-w-[150px] bg-surface">Particulars</th>
+                <th className="sticky top-0 px-1 py-3 font-bold text-center bg-surface">
                   <div className="flex items-center justify-center gap-1">
                     {showPurchasePrice && "Prev"}
                     <button
@@ -833,12 +797,12 @@ export default function BillForm() {
                     </button>
                   </div>
                 </th>
-                <th className="px-1 py-3 font-bold text-center">MRP</th>
-                <th className="px-1 py-3 font-bold text-center">%</th>
-                <th className="px-1 py-3 font-bold text-center">Rate</th>
-                <th className="px-1 py-3 font-bold text-center w-16">Qty</th>
-                <th className="px-2 py-3 font-bold text-center">Total</th>
-                <th className="px-1 py-3 font-bold text-center w-8"></th>
+                <th className="sticky top-0 px-1 py-3 font-bold text-center bg-surface">MRP</th>
+                <th className="sticky top-0 px-1 py-3 font-bold text-center bg-surface">%</th>
+                <th className="sticky top-0 px-1 py-3 font-bold text-center bg-surface">Rate</th>
+                <th className="sticky top-0 px-1 py-3 font-bold text-center w-16 bg-surface">Qty</th>
+                <th className="sticky top-0 px-2 py-3 font-bold text-center bg-surface">Total</th>
+                <th className="sticky top-0 px-1 py-3 font-bold text-center w-8 bg-surface"></th>
               </tr>
             </thead>
             <tbody className="text-sm">
@@ -954,57 +918,6 @@ export default function BillForm() {
                 })}
               </AnimatePresence>
               
-              {/* Search Row */}
-              <tr className="bg-accent/5">
-                <td className="px-1 py-1 text-center text-muted font-bold text-xs">{billItems.length + 1}</td>
-                <td className="px-1 py-1 text-center relative" colSpan={3}>
-                  <div className="relative">
-                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-muted" size={12} />
-                    <input
-                      ref={searchInputRef}
-                      type="text"
-                      placeholder="Search product..."
-                      value={searchTerm}
-                      onChange={(e) => {
-                        setSearchTerm(capitalizeFirstLetter(e.target.value));
-                        setActiveProductSuggestionIndex(-1);
-                      }}
-                      onKeyDown={handleProductSearchKeyDown}
-                      className="w-full bg-primary border border-accent/10 rounded px-2 pl-8 py-1.5 text-xs text-text focus:border-accent outline-none transition-all"
-                    />
-                    
-                    {searchResults.length > 0 && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-accent/20 rounded-xl shadow-2xl z-50 overflow-y-auto max-h-48 divide-y divide-accent/5">
-                        {searchResults.map((p, index) => (
-                          <button
-                            key={`${p.id}-${index}`}
-                            id={`bill-suggestion-${index}`}
-                            onClick={() => addProductToBill(p)}
-                            className={`w-full text-left px-4 py-3 transition-colors flex justify-between items-center ${
-                              index === activeProductSuggestionIndex ? 'bg-accent/10' : 'hover:bg-primary'
-                            }`}
-                          >
-                            <div>
-                              <div className="font-bold text-xl">{p.name}</div>
-                              <div className="text-sm text-muted mt-1.5 flex gap-x-4">
-                                <span className={`${p.stock < 5 ? 'text-red-500' : 'text-emerald-500'} font-bold`}>Stock: {p.stock}</span>
-                                <span>MRP: {formatCurrency(p.mrp)}</span>
-                              </div>
-                            </div>
-                            <Plus size={16} className="text-accent" />
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </td>
-                <td className="px-2 py-4 text-center text-muted">-</td>
-                <td className="px-2 py-4 text-center text-muted">-</td>
-                <td className="px-2 py-4 text-center text-muted">-</td>
-                <td className="px-2 py-4 text-center text-muted">-</td>
-                <td className="px-2 py-4 text-center"></td>
-              </tr>
-
               {billItems.length === 0 && searchTerm === "" && (
                 <tr>
                   <td colSpan={8} className="px-2 py-8 text-center text-muted italic">No products added. Use the search row above to start.</td>
@@ -1014,8 +927,50 @@ export default function BillForm() {
           </table>
         </div>
 
+        {/* Search Row (Moved outside table for better visibility) */}
+        <div className="relative bg-surface border border-accent/10 rounded-lg p-2">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" size={16} />
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Search product to add..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(capitalizeFirstLetter(e.target.value));
+                setActiveProductSuggestionIndex(-1);
+              }}
+              onKeyDown={handleProductSearchKeyDown}
+              className="w-full bg-primary border border-accent/10 rounded px-4 pl-10 py-2 text-sm text-text focus:border-accent outline-none transition-all"
+            />
+            
+            {searchResults.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-accent/20 rounded-lg shadow-2xl z-[9999] overflow-y-auto max-h-60 divide-y divide-accent/5">
+                {searchResults.map((p, index) => (
+                  <button
+                    key={`${p.id}-${index}`}
+                    id={`bill-suggestion-${index}`}
+                    onClick={() => addProductToBill(p)}
+                    className={`w-full text-left px-3 py-2 transition-colors flex justify-between items-center ${
+                      index === activeProductSuggestionIndex ? 'bg-accent/10' : 'hover:bg-primary'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-bold text-sm">{p.name}</div>
+                      <div className="text-[10px] text-muted flex gap-x-2">
+                        <span className={`${p.stock < 5 ? 'text-red-500' : 'text-emerald-500'} font-bold`}>Stock: {p.stock}</span>
+                        <span>Wholesale: {formatCurrency(p.wholesaleRate)}</span>
+                        <span>MRP: {formatCurrency(p.mrp)}</span>
+                      </div>
+                    </div>
+                    <Plus size={14} className="text-accent" />
+                  </button>
+                ))}
+              </div>
+            )}
+        </div>
+
         <div className="flex flex-col items-end gap-4 border-t border-accent/10 pt-6">
-          <div className="space-y-2 text-right w-full md:max-w-xs">
+          <div className="space-y-1 text-right w-full md:max-w-xs text-xs">
             <div className="flex justify-between text-muted">
               <span>Subtotal:</span>
               <span>{formatCurrency(subtotal)}</span>
@@ -1027,7 +982,7 @@ export default function BillForm() {
                 step="any"
                 value={previousDue}
                 onChange={(e) => setPreviousDue(Number(e.target.value))}
-                className="w-24 bg-transparent border-b border-transparent hover:border-accent/30 focus:border-accent outline-none text-right transition-colors"
+                className="w-16 bg-transparent border-b border-transparent hover:border-accent/30 focus:border-accent outline-none text-right transition-colors"
               />
             </div>
             <div className="flex justify-between items-center gap-4 text-muted">
@@ -1050,13 +1005,19 @@ export default function BillForm() {
                     setPaidAmount(val);
                   }
                 }}
-                className="w-24 bg-primary border border-accent/10 rounded px-2 py-1 text-right outline-none focus:border-accent"
+                className="w-16 bg-primary border border-accent/10 rounded px-1 py-0.5 text-right outline-none focus:border-accent"
               />
             </div>
-            <div className="flex justify-between items-center text-xl font-display font-bold text-accent pt-2 border-t border-accent/10">
+            
+            <div className="flex justify-between text-muted border-t border-accent/10 pt-1">
+              <span>Round Off:</span>
+              <span>{formatCurrency(grandTotal - rawGrandTotal)}</span>
+            </div>
+
+            <div className="flex justify-between items-center text-sm font-bold text-accent pt-1 border-t border-accent/10">
               <div className="flex items-center gap-2">
-                <span>Grand Total:</span>
-                <label className="flex items-center gap-1.5 cursor-pointer text-xs font-normal text-muted bg-primary/50 px-2 py-1 rounded border border-accent/10">
+                <span>Total:</span>
+                <label className="flex items-center gap-1 cursor-pointer text-[10px] font-normal text-muted bg-primary/50 px-1.5 py-0.5 rounded border border-accent/10">
                   <input 
                     type="checkbox" 
                     checked={isRoundOff} 
@@ -1066,11 +1027,11 @@ export default function BillForm() {
                   <span>Round Off</span>
                 </label>
               </div>
-              <span>{formatCurrency(grandTotal)}</span>
+              <span className="text-base">{formatCurrency(grandTotal)}</span>
             </div>
-            <div className="flex justify-between text-muted text-sm">
-              <span>Current Bill Due:</span>
-              <span className="text-red-500">{formatCurrency(Math.max(0, grandTotal - paidAmount))}</span>
+            <div className="flex justify-between text-muted text-xs">
+              <span>Balance Due:</span>
+              <span className="text-red-500 font-bold">{formatCurrency(Math.max(0, grandTotal - paidAmount))}</span>
             </div>
           </div>
           
@@ -1117,6 +1078,6 @@ export default function BillForm() {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
